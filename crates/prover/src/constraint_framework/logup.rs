@@ -7,6 +7,7 @@ use rayon::prelude::*;
 
 use super::EvalAtRow;
 use crate::core::backend::simd::column::SecureColumn;
+use crate::core::backend::cuda::CudaBackend;
 use crate::core::backend::simd::m31::{PackedBaseField, LOG_N_LANES, N_LANES};
 use crate::core::backend::simd::prefix_sum::inclusive_prefix_sum;
 use crate::core::backend::simd::qm31::{batch_inverse_packed_qm31, PackedSecureField};
@@ -21,6 +22,7 @@ use crate::core::poly::circle::{CanonicCoset, CircleEvaluation};
 use crate::core::poly::BitReversedOrder;
 use crate::core::utils::uninit_vec;
 use crate::core::ColumnVec;
+use crate::stwo_cuda::base_field_vec::BaseFieldVec;
 
 /// Evaluates constraints for batched logups.
 /// These constraint enforce the sum of multiplicity_i / (z + sum_j alpha^j * x_j) = claimed_sum.
@@ -73,6 +75,7 @@ impl<E: EvalAtRow> Drop for LogupAtRow<E> {
 
 /// Interaction elements for the logup protocol.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[repr(C)]
 pub struct LookupElements<const N: usize> {
     pub z: SecureField,
     pub alpha: SecureField,
@@ -244,6 +247,48 @@ impl LogupTraceGenerator {
             .flat_map(|eval| {
                 eval.columns.map(|col| {
                     CircleEvaluation::new(CanonicCoset::new(self.log_size).circle_domain(), col)
+                })
+            })
+            .collect_vec();
+        (trace, claimed_sum)
+    }
+
+    pub fn finalize_last_cuda(
+        mut self,
+    ) -> (
+        ColumnVec<CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>>,
+        SecureField,
+    ) {
+        let mut last_col_coords = self.trace.pop().unwrap().columns;
+
+        // Compute cumsum_shift.
+        let coordinate_sums = last_col_coords.each_ref().map(|c| {
+            c.data
+                .iter()
+                .copied()
+                .sum::<PackedBaseField>()
+                .pointwise_sum()
+        });
+        let claimed_sum = SecureField::from_m31_array(coordinate_sums);
+        let cumsum_shift = claimed_sum / BaseField::from_u32_unchecked(1 << self.log_size);
+        let packed_cumsum_shift = PackedSecureField::broadcast(cumsum_shift);
+
+        last_col_coords.iter_mut().enumerate().for_each(|(i, c)| {
+            c.data
+                .iter_mut()
+                .for_each(|x| *x -= packed_cumsum_shift.into_packed_m31s()[i])
+        });
+        let coord_prefix_sum = last_col_coords.map(inclusive_prefix_sum);
+        let secure_prefix_sum = SecureColumnByCoords {
+            columns: coord_prefix_sum,
+        };
+        self.trace.push(secure_prefix_sum);
+        let trace = self
+            .trace
+            .into_iter()
+            .flat_map(|eval| {
+                eval.columns.map(|col| {
+                    CircleEvaluation::new(CanonicCoset::new(self.log_size).circle_domain(), BaseFieldVec::from_vec(col.to_cpu()))
                 })
             })
             .collect_vec();

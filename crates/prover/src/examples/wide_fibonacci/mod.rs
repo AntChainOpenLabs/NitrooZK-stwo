@@ -1,14 +1,20 @@
 use itertools::Itertools;
 
-use crate::constraint_framework::{EvalAtRow, FrameworkComponent, FrameworkEval};
+use crate::constraint_framework::{EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator};
 use crate::core::backend::simd::m31::PackedBaseField;
 use crate::core::backend::simd::SimdBackend;
 use crate::core::backend::{Col, Column};
 use crate::core::fields::m31::BaseField;
+use crate::core::fields::qm31::SecureField;
 use crate::core::fields::FieldExpOps;
-use crate::core::poly::circle::{CanonicCoset, CircleEvaluation};
+use crate::core::poly::circle::{CanonicCoset, CircleEvaluation, PolyOps};
 use crate::core::poly::BitReversedOrder;
 use crate::core::ColumnVec;
+use crate::core::pcs::{CommitmentSchemeProver, PcsConfig};
+use crate::core::channel::Blake2sChannel;
+use crate::core::vcs::blake2_merkle::{Blake2sMerkleChannel, Blake2sMerkleHasher};
+use crate::core::prover::{prove, StarkProof};
+use num_traits::Zero;
 
 pub type WideFibonacciComponent<const N: usize> = FrameworkComponent<WideFibonacciEval<N>>;
 
@@ -20,7 +26,9 @@ pub struct FibInput {
 /// A component that enforces the Fibonacci sequence.
 /// Each row contains a seperate Fibonacci sequence of length `N`.
 #[derive(Clone)]
+#[repr(C)]
 pub struct WideFibonacciEval<const N: usize> {
+    pub eval_id: u32,
     pub log_n_rows: u32,
 }
 impl<const N: usize> FrameworkEval for WideFibonacciEval<N> {
@@ -65,6 +73,185 @@ pub fn generate_trace<const N: usize>(
         .into_iter()
         .map(|eval| CircleEvaluation::<SimdBackend, _, BitReversedOrder>::new(domain, eval))
         .collect_vec()
+}
+
+use crate::core::backend::cuda::CudaBackend;
+use crate::stwo_cuda::base_field_vec::BaseFieldVec;
+use crate::core::backend::simd::m31::LOG_N_LANES;
+use crate::stwo_cuda::bindings;
+use num_traits::One;
+pub fn generate_cuda_trace<const N_COLUMNS: usize>(
+    log_n_instances: u32,
+) -> ColumnVec<CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>> {
+    assert!(log_n_instances >= LOG_N_LANES);
+    let inputs = (0..(1 << (log_n_instances - LOG_N_LANES)))
+        .map(|i| FibInput {
+            a: PackedBaseField::one(),
+            b: PackedBaseField::from_array(std::array::from_fn(|j| {
+                BaseField::from_u32_unchecked((i * 16 + j) as u32)
+            })),
+        })
+        .collect_vec();
+
+    let trace = (0..N_COLUMNS)
+        .map(|_| Col::<CudaBackend, BaseField>::zeros(1 << log_n_instances))
+        .collect_vec();
+
+    let input_a: Vec<_> = inputs.iter()
+        .flat_map(|input| input.a.to_array().to_vec())
+        .collect();
+    let input_b: Vec<_> = inputs.iter()
+        .flat_map(|input| input.b.to_array().to_vec())
+        .collect();
+
+    let input_a_dev = BaseFieldVec::from_vec(input_a);
+    let input_b_dev = BaseFieldVec::from_vec(input_b);
+
+    let traces_vec = trace
+        .iter()
+        .map(|column_evaluations| column_evaluations.device_ptr)
+        .collect_vec();
+
+    unsafe {
+        bindings::generate_wide_fibonacci_trace(
+            input_a_dev.device_ptr,
+            input_b_dev.device_ptr,
+            1 << log_n_instances,
+            traces_vec.as_ptr(),
+            N_COLUMNS as u32,
+            N_COLUMNS as u32,
+        );
+    }
+
+    let domain = CanonicCoset::new(log_n_instances).circle_domain();
+    let traces = trace
+        .into_iter()
+        .map(|eval| CircleEvaluation::new(domain, eval))
+        .collect();
+    traces
+}
+
+pub fn cuda_prove_wide_fibonacci<const N: usize>(
+    log_n_instances: u32,
+    config: PcsConfig,
+) -> (WideFibonacciComponent<N>, StarkProof<Blake2sMerkleHasher>) {
+    // Precompute twiddles.
+    let twiddles = CudaBackend::precompute_twiddles(
+        CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
+            .circle_domain()
+            .half_coset,
+    );
+
+    // Setup protocol.
+    let prover_channel = &mut Blake2sChannel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CudaBackend, Blake2sMerkleChannel>::new(config, &twiddles);
+
+    // Preprocessed trace
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals([]);
+    tree_builder.commit(prover_channel);
+
+    // Trace.
+    let trace = generate_cuda_trace::<N>(log_n_instances);
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+
+    // Prove constraints.
+    let component = WideFibonacciComponent::new(
+        &mut TraceLocationAllocator::default(),
+        WideFibonacciEval::<N> {
+            eval_id: 1,
+            log_n_rows: log_n_instances,
+        },
+        SecureField::zero(),
+    );
+
+    let proof = prove::<CudaBackend, Blake2sMerkleChannel>(
+        &[&component],
+        prover_channel,
+        commitment_scheme,
+    ).unwrap();
+
+    (component, proof)
+}
+
+pub fn simd_prove_wide_fibonacci<const N: usize>(
+    log_n_instances: u32,
+    config: PcsConfig,
+) -> (WideFibonacciComponent<N>, StarkProof<Blake2sMerkleHasher>) {
+    use crate::core::backend::simd::m31::LOG_N_LANES;
+
+    let inputs = if log_n_instances < LOG_N_LANES {
+        let n_instances = 1 << log_n_instances;
+        vec![FibInput {
+            a: PackedBaseField::from_array(std::array::from_fn(|j| {
+                if j < n_instances {
+                    BaseField::one()
+                } else {
+                    BaseField::zero()
+                }
+            })),
+            b: PackedBaseField::from_array(std::array::from_fn(|j| {
+                if j < n_instances {
+                    BaseField::from_u32_unchecked(j as u32)
+                } else {
+                    BaseField::zero()
+                }
+            })),
+        }]
+    } else {
+        (0..(1 << (log_n_instances - LOG_N_LANES)))
+            .map(|i| FibInput {
+                a: PackedBaseField::one(),
+                b: PackedBaseField::from_array(std::array::from_fn(|j| {
+                    BaseField::from_u32_unchecked((i * 16 + j) as u32)
+                })),
+            })
+            .collect_vec()
+    };
+
+    // Precompute twiddles.
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
+            .circle_domain()
+            .half_coset,
+    );
+
+    // Setup protocol.
+    let prover_channel = &mut Blake2sChannel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sMerkleChannel>::new(config, &twiddles);
+
+    // Preprocessed trace
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals([]);
+    tree_builder.commit(prover_channel);
+
+    // Trace.
+    let trace = generate_trace::<N>(log_n_instances, &inputs);
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+
+    // Prove constraints.
+    let component = WideFibonacciComponent::new(
+        &mut TraceLocationAllocator::default(),
+        WideFibonacciEval::<N> {
+            eval_id: 1,
+            log_n_rows: log_n_instances,
+        },
+        SecureField::zero(),
+    );
+
+    let proof = prove::<SimdBackend, Blake2sMerkleChannel>(
+        &[&component],
+        prover_channel,
+        commitment_scheme,
+    ).unwrap();
+
+    (component, proof)
 }
 
 #[cfg(test)]
@@ -132,7 +319,10 @@ mod tests {
     }
 
     fn fibonacci_constraint_evaluator<const N: u32>(eval: AssertEvaluator<'_>) {
-        WideFibonacciEval::<FIB_SEQUENCE_LENGTH> { log_n_rows: N }.evaluate(eval);
+        WideFibonacciEval::<FIB_SEQUENCE_LENGTH> {
+            eval_id: 1,
+            log_n_rows: N
+        }.evaluate(eval);
     }
 
     #[test]
@@ -170,9 +360,15 @@ mod tests {
         );
     }
 
+
     #[test_log::test]
-    fn test_wide_fib_prove_with_blake() {
-        for log_n_instances in 2..=6 {
+    fn test_wide_fib_prove_with_blake_simd() {
+        use crate::examples::utils::get_env_var;
+        let min_log = get_env_var("MIN_LOG", 8u32);
+        let max_log = get_env_var("MAX_LOG", 23u32);
+        use tracing::info;
+
+        for log_n_instances in min_log..=max_log {
             let config = PcsConfig::default();
             // Precompute twiddles.
             let twiddles = SimdBackend::precompute_twiddles(
@@ -192,7 +388,9 @@ mod tests {
             tree_builder.commit(prover_channel);
 
             // Trace.
+            let start = std::time::Instant::now();
             let trace = generate_test_trace(log_n_instances);
+            println!("SIMD trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
             let mut tree_builder = commitment_scheme.tree_builder();
             tree_builder.extend_evals(trace);
             tree_builder.commit(prover_channel);
@@ -201,17 +399,20 @@ mod tests {
             let component = WideFibonacciComponent::new(
                 &mut TraceLocationAllocator::default(),
                 WideFibonacciEval::<FIB_SEQUENCE_LENGTH> {
+                    eval_id: 1,
                     log_n_rows: log_n_instances,
                 },
                 SecureField::zero(),
             );
 
+            let start = std::time::Instant::now();
             let proof = prove::<SimdBackend, Blake2sMerkleChannel>(
                 &[&component],
                 prover_channel,
                 commitment_scheme,
             )
             .unwrap();
+            println!("SIMD Wib_fib proof generation for FIB_SEQUENCE_LENGTH:{}, log_n_instances:{:?} took {:?} ms", FIB_SEQUENCE_LENGTH, log_n_instances, start.elapsed().as_millis());
 
             // Verify.
             let verifier_channel = &mut Blake2sChannel::default();
@@ -259,6 +460,7 @@ mod tests {
         let component = WideFibonacciComponent::new(
             &mut TraceLocationAllocator::default(),
             WideFibonacciEval::<FIB_SEQUENCE_LENGTH> {
+                eval_id: 1,
                 log_n_rows: LOG_N_INSTANCES,
             },
             SecureField::zero(),
@@ -280,5 +482,78 @@ mod tests {
         commitment_scheme.commit(proof.commitments[0], &sizes[0], verifier_channel);
         commitment_scheme.commit(proof.commitments[1], &sizes[1], verifier_channel);
         verify(&[&component], verifier_channel, commitment_scheme, proof).unwrap();
+    }
+
+
+    #[test_log::test]
+    fn test_wide_fib_prove_with_blake_cuda() {
+        use crate::core::backend::cuda::CudaBackend;
+        use crate::examples::utils::get_env_var;
+        use crate::examples::wide_fibonacci::generate_cuda_trace;
+        use ark_std::start_timer;
+        use ark_std::end_timer;
+        let min_log = get_env_var("MIN_LOG", 8u32);
+        let max_log = get_env_var("MAX_LOG", 23u32);
+        use tracing::info;
+
+        for log_n_instances in min_log..=max_log {
+            let config = PcsConfig::default();
+            // Precompute twiddles.
+            let twiddles = CudaBackend::precompute_twiddles(
+                CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
+                    .circle_domain()
+                    .half_coset,
+            );
+
+            // Setup protocol.
+            let prover_channel = &mut Blake2sChannel::default();
+            let mut commitment_scheme =
+                CommitmentSchemeProver::<CudaBackend, Blake2sMerkleChannel>::new(config, &twiddles);
+
+            // Preprocessed trace
+            let mut tree_builder = commitment_scheme.tree_builder();
+            tree_builder.extend_evals([]);
+            tree_builder.commit(prover_channel);
+
+            // Trace.
+            let start = std::time::Instant::now();
+            let trace = generate_cuda_trace::<FIB_SEQUENCE_LENGTH>(log_n_instances);
+            println!("CUDA trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+
+            let mut tree_builder = commitment_scheme.tree_builder();
+            tree_builder.extend_evals(trace);
+            tree_builder.commit(prover_channel);
+
+            // Prove constraints.
+            let component = WideFibonacciComponent::new(
+                &mut TraceLocationAllocator::default(),
+                WideFibonacciEval::<FIB_SEQUENCE_LENGTH> {
+                    eval_id: 1,
+                    log_n_rows: log_n_instances,
+                },
+                SecureField::zero(),
+            );
+            info!("Wide Fibonacci component info:\n{}", component);
+
+            let start = std::time::Instant::now();
+            let proof = prove::<CudaBackend, Blake2sMerkleChannel>(
+                &[&component],
+                prover_channel,
+                commitment_scheme,
+            )
+            .unwrap();
+            println!("CUDA Wib_fib proof generation for FIB_SEQUENCE_LENGTH:{}, log_n_instances:{:?} took {:?} ms", FIB_SEQUENCE_LENGTH, log_n_instances, start.elapsed().as_millis());
+
+            // Verify.
+            let verifier_channel = &mut Blake2sChannel::default();
+            let commitment_scheme =
+                &mut CommitmentSchemeVerifier::<Blake2sMerkleChannel>::new(config);
+
+            // Retrieve the expected column sizes in each commitment interaction, from the AIR.
+            let sizes = component.trace_log_degree_bounds();
+            commitment_scheme.commit(proof.commitments[0], &sizes[0], verifier_channel);
+            commitment_scheme.commit(proof.commitments[1], &sizes[1], verifier_channel);
+            verify(&[&component], verifier_channel, commitment_scheme, proof).unwrap();
+        }
     }
 }

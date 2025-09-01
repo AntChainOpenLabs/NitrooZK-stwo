@@ -8,19 +8,22 @@ use itertools::Itertools;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 use tracing::{span, Level};
+use num_traits::One;
 
 use super::cpu_domain::CpuDomainEvaluator;
+use super::simd_domain::SimdDomainEvaluator;
 use super::preprocessed_columns::PreProcessedColumnId;
 use super::{
-    EvalAtRow, InfoEvaluator, PointEvaluator, SimdDomainEvaluator, PREPROCESSED_TRACE_IDX,
+    EvalAtRow, InfoEvaluator, PointEvaluator, PREPROCESSED_TRACE_IDX,
 };
 use crate::core::air::accumulation::{DomainEvaluationAccumulator, PointEvaluationAccumulator};
 use crate::core::air::{Component, ComponentProver, Trace};
 use crate::core::backend::cpu::bit_reverse;
-use crate::core::backend::simd::column::VeryPackedSecureColumnByCoords;
-use crate::core::backend::simd::m31::LOG_N_LANES;
-use crate::core::backend::simd::very_packed_m31::{VeryPackedBaseField, LOG_N_VERY_PACKED_ELEMS};
+use crate::core::backend::simd::column::{BaseColumn, VeryPackedSecureColumnByCoords};
+use crate::core::backend::simd::m31::{LOG_N_LANES, N_LANES};
+use crate::core::backend::simd::very_packed_m31::{VeryPackedBaseField, VeryPackedSecureField, LOG_N_VERY_PACKED_ELEMS, N_VERY_PACKED_ELEMS};
 use crate::core::backend::simd::SimdBackend;
+use crate::core::backend::CpuBackend;
 use crate::core::circle::CirclePoint;
 use crate::core::constraints::coset_vanishing;
 use crate::core::fields::m31::BaseField;
@@ -28,7 +31,7 @@ use crate::core::fields::qm31::SecureField;
 use crate::core::fields::secure_column::SecureColumnByCoords;
 use crate::core::fields::FieldExpOps;
 use crate::core::pcs::{TreeSubspan, TreeVec};
-use crate::core::poly::circle::{CanonicCoset, CircleEvaluation, PolyOps};
+use crate::core::poly::circle::{CanonicCoset, CircleEvaluation, PolyOps, CircleDomain};
 use crate::core::poly::BitReversedOrder;
 use crate::core::ColumnVec;
 
@@ -312,7 +315,7 @@ impl<E: FrameworkEval + Sync> ComponentProver<SimdBackend> for FrameworkComponen
         let trace: TreeVec<
             Vec<Cow<'_, CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>>,
         > = if need_to_extend {
-            let _span = span!(Level::INFO, "Constraint Extension").entered();
+            let _span = span!(Level::INFO, "Extension").entered();
             let twiddles = SimdBackend::precompute_twiddles(eval_domain.half_coset);
             component_polys
                 .as_cols_ref()
@@ -333,12 +336,7 @@ impl<E: FrameworkEval + Sync> ComponentProver<SimdBackend> for FrameworkComponen
             evaluation_accumulator.columns([(eval_domain.log_size(), self.n_constraints())]);
         accum.random_coeff_powers.reverse();
 
-        let _span = span!(
-            Level::INFO,
-            "Constraint point-wise eval",
-            class = "ConstraintEval"
-        )
-        .entered();
+        let _span = span!(Level::INFO, "Constraint point-wise eval").entered();
 
         if trace_domain.log_size() < LOG_N_LANES + LOG_N_VERY_PACKED_ELEMS {
             // Fall back to CPU if the trace is too small.
@@ -419,6 +417,155 @@ impl<E: FrameworkEval + Sync> ComponentProver<SimdBackend> for FrameworkComponen
         });
     }
 }
+
+use crate::core::backend::Column;
+use ark_std::start_timer;
+use ark_std::end_timer;
+
+impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponent<E> {
+    fn evaluate_constraint_quotients_on_domain(
+        &self,
+        trace: &Trace<'_, CudaBackend>,
+        evaluation_accumulator: &mut DomainEvaluationAccumulator<CudaBackend>,
+    ) {
+        if self.n_constraints() == 0 {
+            return;
+        }
+        let _span = span!(Level::INFO, "evaluate_constraint_quotients_on_domain").entered();
+
+        let span = span!(Level::INFO, "prepare").entered();
+
+        let eval_domain = CanonicCoset::new(self.max_constraint_log_degree_bound()).circle_domain();
+        let eval_log_size = self.eval.log_size();
+        let trace_domain = CanonicCoset::new(eval_log_size);
+
+        let mut component_polys = trace.polys.sub_tree(&self.trace_locations);
+        span.exit();
+
+        let span = span!(Level::INFO, "component_evals generate").entered();
+        component_polys[PREPROCESSED_TRACE_IDX] = self
+            .preprocessed_column_indices
+            .iter()
+            .map(|idx| &trace.polys[PREPROCESSED_TRACE_IDX][*idx])
+            .collect();
+        span.exit();
+
+        let span = span!(Level::INFO, "component_evals generate").entered();
+        let mut component_evals = trace.evals.sub_tree(&self.trace_locations);
+        component_evals[PREPROCESSED_TRACE_IDX] = self
+            .preprocessed_column_indices
+            .iter()
+            .map(|idx| &trace.evals[PREPROCESSED_TRACE_IDX][*idx])
+            .collect();
+        span.exit();
+
+        let span = span!(Level::INFO, "Check need_to_extend").entered();
+        let need_to_extend = component_evals
+            .iter()
+            .flatten()
+            .any(|c| c.domain != eval_domain);
+        span.exit();
+
+        let span = span!(Level::INFO, "Check & Extension").entered();
+        #[cfg(not(feature = "parallel"))]
+        let trace: TreeVec<
+            Vec<Cow<'_, CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>>>,
+        > = if need_to_extend {
+            let _span = span!(Level::INFO, "Extension").entered();
+            let twiddles = CudaBackend::precompute_twiddles(eval_domain.half_coset);
+            component_polys
+                .as_cols_ref()
+                .map_cols(|col| {
+                    Cow::Owned(col.evaluate_with_twiddles(eval_domain, &twiddles))
+                })
+        } else {
+            component_evals.clone().map_cols(|c| Cow::Borrowed(*c))
+        };
+
+        #[cfg(feature = "parallel")]
+        let trace: TreeVec<
+            Vec<Cow<'_, CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>>>,
+        > = if need_to_extend {
+            let _span = span!(Level::INFO, "Extension").entered();
+            let twiddles = CudaBackend::precompute_twiddles(eval_domain.half_coset);
+            component_polys
+                .map_cols_par(|col| {
+                    Cow::Owned(col.evaluate_with_twiddles(eval_domain, &twiddles))
+                })
+        } else {
+            component_evals.clone().map_cols(|c| Cow::Borrowed(*c))
+        };
+        span.exit();
+
+        // Denom inverses.
+        let span = span!(Level::INFO, "Denom inverses generate").entered();
+        let log_expand = eval_domain.log_size() - trace_domain.log_size();
+        let mut denom_inv = (0..1 << log_expand)
+            .map(|i| coset_vanishing(trace_domain.coset(), eval_domain.at(i)).inverse())
+            .collect_vec();
+        bit_reverse(&mut denom_inv);
+
+        let gpu_denom_inv = BaseFieldVec::from_vec(denom_inv);
+        span.exit();
+
+        let span = span!(Level::INFO, "Accumulator").entered();
+        // Accumulator.
+        let [mut accum] =
+            evaluation_accumulator.columns([(eval_domain.log_size(), self.n_constraints())]);
+        accum.random_coeff_powers.reverse();
+        let random_coeff_powers = SecureFieldVec::from_vec(accum.random_coeff_powers);
+
+        let trace0_evaluations_vec = trace[0]
+            .iter()
+            .map(|column_evaluations| column_evaluations.device_ptr)
+            .collect_vec();
+        let trace1_evaluations_vec = trace[1]
+            .iter()
+            .map(|column_evaluations| column_evaluations.device_ptr)
+            .collect_vec();
+
+        let mut trace2_evaluations_vec = vec![];
+        if trace.len() != 2 {
+            trace2_evaluations_vec = trace[2]
+                .iter()
+                .map(|column_evaluations| column_evaluations.device_ptr)
+                .collect_vec();
+        }
+        span.exit();
+
+        let span = span!(Level::INFO, "GPU evaluate_constraint_quotients_on_domain").entered();
+        unsafe {
+            let eval_ptr = &self.eval as *const _ as *mut std::os::raw::c_void;
+
+            bindings::evaluate_constraint_quotients_on_domain(
+                accum.col.columns[0].device_ptr,
+                accum.col.columns[1].device_ptr,
+                accum.col.columns[2].device_ptr,
+                accum.col.columns[3].device_ptr,
+                trace0_evaluations_vec.as_ptr(),
+                trace0_evaluations_vec.len() as u32,
+                trace1_evaluations_vec.as_ptr(),
+                trace1_evaluations_vec.len() as u32,
+                trace2_evaluations_vec.as_ptr(),
+                trace2_evaluations_vec.len() as u32,
+                random_coeff_powers.device_ptr,
+                gpu_denom_inv.device_ptr,
+                trace_domain.log_size() as u32,
+                eval_domain.log_size() as u32,
+                self.n_constraints() as u32,
+                eval_ptr,
+                CudaSecureField::from(self.claimed_sum / BaseField::from_u32_unchecked(1 << eval_log_size)),
+            );
+        };
+        span.exit();
+        return;
+    }
+}
+
+use crate::core::backend::cuda::CudaBackend;
+use crate::stwo_cuda::base_field_vec::BaseFieldVec;
+use crate::stwo_cuda::secure_field_vec::SecureFieldVec;
+use crate::stwo_cuda::bindings::{self, CudaSecureField};
 
 impl<E: FrameworkEval> Deref for FrameworkComponent<E> {
     type Target = E;

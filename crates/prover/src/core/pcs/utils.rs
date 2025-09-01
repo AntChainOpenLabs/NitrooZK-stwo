@@ -7,6 +7,11 @@ use serde::{Deserialize, Serialize};
 use super::TreeSubspan;
 use crate::core::ColumnVec;
 
+#[cfg(feature = "parallel")]
+use rayon::iter::IntoParallelIterator;
+#[cfg(feature = "parallel")]
+use rayon::iter::ParallelIterator;
+
 /// A container that holds an element for each commitment tree.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TreeVec<T>(pub Vec<T>);
@@ -73,6 +78,26 @@ impl<T> TreeVec<ColumnVec<T>> {
             self.0
                 .into_iter()
                 .map(|column| column.into_iter().map(&mut f).collect())
+                .collect(),
+        )
+    }
+
+    #[cfg(feature = "parallel")]
+    pub fn map_cols_par<U, F>(self, f: F) -> TreeVec<ColumnVec<U>>
+    where
+        F: Fn(T) -> U + Sync + Send,
+        T: Send,
+        U: Send,
+    {
+        TreeVec(
+            self.0
+                .into_par_iter()
+                .map(|column| {
+                    column
+                        .into_par_iter()
+                        .map(&f)
+                        .collect()
+                })
                 .collect(),
         )
     }

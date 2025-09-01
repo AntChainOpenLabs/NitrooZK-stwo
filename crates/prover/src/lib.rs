@@ -1,4 +1,7 @@
 #![allow(incomplete_features)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 #![cfg_attr(
     all(target_arch = "x86_64", target_feature = "avx512f"),
     feature(stdarch_x86_avx512)
@@ -20,6 +23,7 @@ pub mod examples;
 
 // TODO(Ohad): find a better way to test poseidon and depracate `math.rs`.
 pub mod math;
+pub mod stwo_cuda;
 
 #[cfg(feature = "tracing")]
 pub mod tracing;

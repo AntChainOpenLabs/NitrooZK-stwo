@@ -2,6 +2,7 @@
 mod assert;
 mod component;
 mod cpu_domain;
+mod cuda_domain;
 pub mod expr;
 mod info;
 pub mod logup;

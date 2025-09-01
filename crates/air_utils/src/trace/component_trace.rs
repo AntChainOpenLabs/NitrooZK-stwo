@@ -1,11 +1,14 @@
 use bytemuck::Zeroable;
 use itertools::Itertools;
+use stwo_prover::core::backend::cuda::CudaBackend;
 use stwo_prover::core::backend::simd::column::BaseColumn;
 use stwo_prover::core::backend::simd::m31::{PackedM31, LOG_N_LANES, N_LANES};
 use stwo_prover::core::backend::simd::SimdBackend;
+use stwo_prover::core::backend::Column;
 use stwo_prover::core::fields::m31::M31;
 use stwo_prover::core::poly::circle::{CanonicCoset, CircleEvaluation};
 use stwo_prover::core::poly::BitReversedOrder;
+use stwo_prover::stwo_cuda::base_field_vec::BaseFieldVec;
 
 use super::row_iterator::{ParRowIterMut, RowIterMut};
 
@@ -121,12 +124,12 @@ impl<const N: usize> ComponentTrace<N> {
         )
     }
 
-    pub fn to_evals(self) -> [CircleEvaluation<SimdBackend, M31, BitReversedOrder>; N] {
+    pub fn to_evals(self) -> [CircleEvaluation<CudaBackend, M31, BitReversedOrder>; N] {
         let domain = CanonicCoset::new(self.log_size).circle_domain();
         self.data.map(|column| {
-            CircleEvaluation::<SimdBackend, M31, BitReversedOrder>::new(
+            CircleEvaluation::<CudaBackend, M31, BitReversedOrder>::new(
                 domain,
-                BaseColumn::from_simd(column),
+                BaseFieldVec::from_vec(BaseColumn::from_simd(column).to_cpu()),
             )
         })
     }

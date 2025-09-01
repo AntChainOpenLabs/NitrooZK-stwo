@@ -4,8 +4,6 @@ use std::ops::{Add, AddAssign, Mul, Sub};
 
 use itertools::Itertools;
 use num_traits::One;
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 use tracing::{info, span, Level};
 
 use crate::constraint_framework::logup::LogupTraceGenerator;
@@ -17,7 +15,7 @@ use crate::core::backend::simd::column::BaseColumn;
 use crate::core::backend::simd::m31::{PackedBaseField, LOG_N_LANES};
 use crate::core::backend::simd::qm31::PackedSecureField;
 use crate::core::backend::simd::SimdBackend;
-use crate::core::backend::{Col, Column};
+use crate::core::backend::{Col, Column, CpuBackend};
 use crate::core::channel::Blake2sChannel;
 use crate::core::fields::m31::BaseField;
 use crate::core::fields::qm31::SecureField;
@@ -29,7 +27,11 @@ use crate::core::prover::{prove, StarkProof};
 use crate::core::vcs::blake2_merkle::{Blake2sMerkleChannel, Blake2sMerkleHasher};
 use crate::core::ColumnVec;
 
-const N_LOG_INSTANCES_PER_ROW: usize = 3;
+use crate::stwo_cuda::bindings;
+use crate::core::backend::cuda::CudaBackend;
+use crate::stwo_cuda::base_field_vec::BaseFieldVec;
+
+const N_LOG_INSTANCES_PER_ROW: usize = 0;
 const N_INSTANCES_PER_ROW: usize = 1 << N_LOG_INSTANCES_PER_ROW;
 const N_STATE: usize = 16;
 const N_PARTIAL_ROUNDS: usize = 14;
@@ -49,7 +51,9 @@ pub type PoseidonComponent = FrameworkComponent<PoseidonEval>;
 relation!(PoseidonElements, N_STATE);
 
 #[derive(Clone)]
+#[repr(C)]
 pub struct PoseidonEval {
+    pub eval_id: u32,
     pub log_n_rows: u32,
     pub lookup_elements: PoseidonElements,
     pub claimed_sum: SecureField,
@@ -300,11 +304,13 @@ pub fn gen_interaction_trace(
     SecureField,
 ) {
     let _span = span!(Level::INFO, "Generate interaction trace").entered();
-    let mut logup_gen = unsafe { LogupTraceGenerator::uninitialized(log_size) };
+    let mut logup_gen = LogupTraceGenerator::new(log_size);
 
     #[allow(clippy::needless_range_loop)]
     for rep_i in 0..N_INSTANCES_PER_ROW {
-        let frac_at_row = |vec_row: usize| {
+        let mut col_gen = logup_gen.new_col();
+        for vec_row in 0..(1 << (log_size - LOG_N_LANES)) {
+            // Batch the 2 lookups together.
             let denom0: PackedSecureField = lookup_elements.combine(
                 &lookup_data.initial_state[rep_i]
                     .each_ref()
@@ -315,15 +321,10 @@ pub fn gen_interaction_trace(
                     .each_ref()
                     .map(|s| s.data[vec_row]),
             );
-            (denom1 - denom0, denom0 * denom1)
-        };
-        let range = 0..1 << (log_size - LOG_N_LANES);
-
-        #[cfg(not(feature = "parallel"))]
-        logup_gen.col_from_iter(range.map(frac_at_row));
-
-        #[cfg(feature = "parallel")]
-        logup_gen.col_from_par_iter(range.into_par_iter().map(frac_at_row));
+            // (1 / denom1) - (1 / denom1) = (denom1 - denom0) / (denom0 * denom1).
+            col_gen.write_frac(vec_row, denom1 - denom0, denom0 * denom1);
+        }
+        col_gen.finalize_col();
     }
 
     logup_gen.finalize_last()
@@ -360,7 +361,9 @@ pub fn prove_poseidon(
 
     // Trace.
     let span = span!(Level::INFO, "Trace").entered();
+    let start = std::time::Instant::now();
     let (trace, lookup_data) = gen_trace(log_n_rows);
+    println!("trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(trace);
     tree_builder.commit(channel);
@@ -368,10 +371,13 @@ pub fn prove_poseidon(
 
     // Draw lookup elements.
     let lookup_elements = PoseidonElements::draw(channel);
+    // println!("cpu lookup_elements: {:?}", lookup_elements);
 
     // Interaction trace.
     let span = span!(Level::INFO, "Interaction").entered();
+    let start = std::time::Instant::now();
     let (trace, claimed_sum) = gen_interaction_trace(log_n_rows, lookup_data, &lookup_elements);
+    println!("interaction trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(trace);
     tree_builder.commit(channel);
@@ -381,6 +387,7 @@ pub fn prove_poseidon(
     let component = PoseidonComponent::new(
         &mut TraceLocationAllocator::default(),
         PoseidonEval {
+            eval_id: 2,
             log_n_rows,
             lookup_elements,
             claimed_sum,
@@ -388,7 +395,197 @@ pub fn prove_poseidon(
         claimed_sum,
     );
     info!("Poseidon component info:\n{}", component);
+    let start = std::time::Instant::now();
     let proof = prove(&[&component], channel, commitment_scheme).unwrap();
+    println!("Poseidon proof generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+
+    (component, proof)
+}
+
+pub struct CudaLookupData {
+    initial_state: [[BaseFieldVec; N_STATE]; N_INSTANCES_PER_ROW],
+    final_state: [[BaseFieldVec; N_STATE]; N_INSTANCES_PER_ROW],
+}
+
+pub fn gen_cuda_interaction_trace(
+    log_size: u32,
+    lookup_data: CudaLookupData,
+    lookup_elements: &PoseidonElements,
+)  -> (
+    ColumnVec<CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>>,
+    SecureField,
+) {
+    let cuda_claimed_sum = BaseFieldVec::new_uninitialized(4);
+    let lookup_init_vec = lookup_data.initial_state
+        .iter()
+        .flat_map(|row| row.iter().map(|base_vec| base_vec.device_ptr))
+        .collect_vec();
+
+    let lookup_final_vec = lookup_data.final_state
+        .iter()
+        .flat_map(|row| row.iter().map(|base_vec| base_vec.device_ptr))
+        .collect_vec();
+
+    let interaction_trace = (0.. 4 * N_INSTANCES_PER_ROW)
+        .map(|_| Col::<CudaBackend, BaseField>::zeros(1 << log_size))
+        .collect_vec();
+
+    let interaction_trace_vec = interaction_trace
+        .iter()
+        .map(|column_evaluations| column_evaluations.device_ptr)
+        .collect_vec();
+
+    unsafe {
+        let lookup_elements_ptr = lookup_elements as *const _ as *mut std::os::raw::c_void;
+            bindings::generate_poseidon_interaction_traces(
+            lookup_elements_ptr,
+            lookup_init_vec.as_ptr(),
+            lookup_final_vec.as_ptr(),
+            log_size,
+            interaction_trace_vec.as_ptr(),
+            cuda_claimed_sum.device_ptr,
+        );
+    }
+
+    // interaction_trace.clone().into_iter().enumerate().for_each(|(i, column_evaluations)| {
+    //     println!("trace:[{}], {:?}", i, column_evaluations.to_cpu());
+    // });
+
+    let claimed_sum_vec = cuda_claimed_sum.to_cpu();
+    let claimed_sum =  SecureField::from_m31_array([claimed_sum_vec[0], claimed_sum_vec[1], claimed_sum_vec[2], claimed_sum_vec[3]]);
+
+    let domain = CanonicCoset::new(log_size).circle_domain();
+    let trace = interaction_trace
+        .into_iter()
+        .map(|eval| CircleEvaluation::new(domain, eval))
+        .collect();
+    (trace, claimed_sum)
+}
+
+pub fn gen_cuda_trace(
+    log_size: u32,
+) -> (
+    ColumnVec<CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>>,
+    CudaLookupData,
+) {
+    let _span = span!(Level::INFO, "Cuda Trace Generation").entered();
+    assert!(log_size >= LOG_N_LANES);
+    let trace = (0..N_COLUMNS)
+        .map(|_| Col::<CudaBackend, BaseField>::zeros(1 << log_size))
+        .collect_vec();
+    let lookup_data = CudaLookupData {
+        initial_state: std::array::from_fn(|_| {
+            std::array::from_fn(|_| BaseFieldVec::zeros(1 << log_size))
+        }),
+        final_state: std::array::from_fn(|_| {
+            std::array::from_fn(|_| BaseFieldVec::zeros(1 << log_size))
+        }),
+    };
+
+    let traces_vec = trace
+        .iter()
+        .map(|column_evaluations| column_evaluations.device_ptr)
+        .collect_vec();
+
+    let lookup_init_vec = lookup_data.initial_state
+        .iter()
+        .flat_map(|row| row.iter().map(|base_vec| base_vec.device_ptr))
+        .collect_vec();
+
+    let lookup_final_vec = lookup_data.final_state
+        .iter()
+        .flat_map(|row| row.iter().map(|base_vec| base_vec.device_ptr))
+        .collect_vec();
+
+    unsafe {
+        bindings::generate_poseidon_traces(
+            traces_vec.as_ptr(),
+            lookup_init_vec.as_ptr(),
+            lookup_final_vec.as_ptr(),
+            log_size as u32,
+        );
+    }
+
+    let domain = CanonicCoset::new(log_size).circle_domain();
+    let trace = trace
+        .into_iter()
+        .map(|eval| CircleEvaluation::new(domain, eval))
+        .collect();
+    (trace, lookup_data)
+}
+
+pub fn cuda_prove_poseidon(
+    log_n_instances: u32,
+    config: PcsConfig,
+) -> (PoseidonComponent, StarkProof<Blake2sMerkleHasher>) {
+    assert!(log_n_instances >= N_LOG_INSTANCES_PER_ROW as u32);
+    let log_n_rows = log_n_instances - N_LOG_INSTANCES_PER_ROW as u32;
+
+    // Precompute twiddles.
+    let span = span!(Level::INFO, "Precompute twiddles").entered();
+    let twiddles = CudaBackend::precompute_twiddles(
+        CanonicCoset::new(log_n_rows + LOG_EXPAND + config.fri_config.log_blowup_factor)
+            .circle_domain()
+            .half_coset,
+    );
+    span.exit();
+    // Setup protocol.
+    let prover_channel = &mut Blake2sChannel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CudaBackend, Blake2sMerkleChannel>::new(config, &twiddles);
+
+    // Preprocessed trace.
+    let span = span!(Level::INFO, "Constant").entered();
+    let mut tree_builder = commitment_scheme.tree_builder();
+    let constant_trace = vec![];
+    tree_builder.extend_evals(constant_trace);
+    tree_builder.commit(prover_channel);
+    span.exit();
+
+    // Trace.
+    let span = span!(Level::INFO, "Trace").entered();
+    let start = std::time::Instant::now();
+    let (trace, lookup_data) = gen_cuda_trace(log_n_rows);
+    println!("cuda trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+    span.exit();
+
+    // Draw lookup elements.
+    let lookup_elements = PoseidonElements::draw(prover_channel);
+
+    // Interaction trace.
+    let span = span!(Level::INFO, "Interaction").entered();
+    let start = std::time::Instant::now();
+    let (trace, claimed_sum) = gen_cuda_interaction_trace(log_n_rows, lookup_data, &lookup_elements);
+    // println!("cuda claimed_sum: {:?}", claimed_sum);
+    println!("cuda interaction trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+    span.exit();
+
+    // Prove constraints.
+    let component = PoseidonComponent::new(
+        &mut TraceLocationAllocator::default(),
+        PoseidonEval {
+            eval_id: 2,
+            log_n_rows,
+            lookup_elements,
+            claimed_sum,
+        },
+        claimed_sum,
+    );
+
+    let start = std::time::Instant::now();
+    let proof: StarkProof<Blake2sMerkleHasher> =  prove(&[&component], prover_channel, commitment_scheme).unwrap();
+    println!(
+        "cuda proving for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
 
     (component, proof)
 }
@@ -410,8 +607,7 @@ mod tests {
     use crate::core::prover::verify;
     use crate::core::vcs::blake2_merkle::Blake2sMerkleChannel;
     use crate::examples::poseidon::{
-        apply_internal_round_matrix, apply_m4, eval_poseidon_constraints, gen_interaction_trace,
-        gen_trace, prove_poseidon, PoseidonElements,
+        apply_internal_round_matrix, apply_m4, eval_poseidon_constraints, gen_interaction_trace, gen_trace, prove_poseidon, PoseidonElements
     };
     use crate::math::matrix::{RowMajorMatrix, SquareMatrix};
 
@@ -496,68 +692,122 @@ mod tests {
         //   test_simd_poseidon_prove -- --nocapture
 
         // Get from environment variable:
-        let log_n_instances = env::var("LOG_N_INSTANCES")
-            .unwrap_or_else(|_| "10".to_string())
-            .parse::<u32>()
-            .unwrap();
-        let config = PcsConfig {
-            pow_bits: 10,
-            fri_config: FriConfig::new(5, 1, 64),
-        };
+        let min_log = get_env_var("MIN_LOG", 4u32);
+        let max_log = get_env_var("MAX_LOG", 25u32);
+        for log_n_instances in min_log..=max_log {
+            let config = PcsConfig {
+                pow_bits: 10,
+                fri_config: FriConfig::new(5, 1, 64),
+            };
+            // let config = PcsConfig::default();
 
-        // Prove.
-        let (component, proof) = prove_poseidon(log_n_instances, config);
+            // Prove.
+            let (component, proof) = prove_poseidon(log_n_instances, config);
 
-        // Verify.
-        // TODO: Create Air instance independently.
-        let channel = &mut Blake2sChannel::default();
-        let commitment_scheme =
-            &mut CommitmentSchemeVerifier::<Blake2sMerkleChannel>::new(proof.config);
+            // Verify.
+            // TODO: Create Air instance independently.
+            let channel = &mut Blake2sChannel::default();
+            let commitment_scheme =
+                &mut CommitmentSchemeVerifier::<Blake2sMerkleChannel>::new(proof.config);
 
-        // Decommit.
-        // Retrieve the expected column sizes in each commitment interaction, from the AIR.
-        let sizes = component.trace_log_degree_bounds();
+            // Decommit.
+            // Retrieve the expected column sizes in each commitment interaction, from the AIR.
+            let sizes = component.trace_log_degree_bounds();
 
-        // Preprocessed columns.
-        commitment_scheme.commit(proof.commitments[0], &sizes[0], channel);
-        // Trace columns.
-        commitment_scheme.commit(proof.commitments[1], &sizes[1], channel);
-        // Draw lookup element.
-        let lookup_elements = PoseidonElements::draw(channel);
-        assert_eq!(lookup_elements, component.lookup_elements);
-        // Interaction columns.
-        commitment_scheme.commit(proof.commitments[2], &sizes[2], channel);
+            // Preprocessed columns.
+            commitment_scheme.commit(proof.commitments[0], &sizes[0], channel);
+            // Trace columns.
+            commitment_scheme.commit(proof.commitments[1], &sizes[1], channel);
+            // Draw lookup element.
+            let lookup_elements = PoseidonElements::draw(channel);
+            assert_eq!(lookup_elements, component.lookup_elements);
+            // Interaction columns.
+            commitment_scheme.commit(proof.commitments[2], &sizes[2], channel);
 
-        verify(&[&component], channel, commitment_scheme, proof).unwrap();
+            verify(&[&component], channel, commitment_scheme, proof).unwrap();
+        }
     }
 
-    #[cfg(feature = "tracing")]
-    #[test]
-    fn trace_simd_poseidon_prove() {
-        use tracing_subscriber::layer::SubscriberExt;
-        use tracing_subscriber::Registry;
+    use crate::examples::poseidon::cuda_prove_poseidon;
+    use crate::examples::utils::get_env_var;
+    #[test_log::test]
+    fn test_poseidon_prove_with_blake_cuda() {
+        let min_log = get_env_var("MIN_LOG", 4u32);
+        let max_log = get_env_var("MAX_LOG", 25u32);
 
-        use crate::tracing::SpanAccumulator;
+        for log_n_instances in min_log..=max_log {
+            // let config = PcsConfig::default();
+            let config = PcsConfig {
+                pow_bits: 10,
+                fri_config: FriConfig::new(5, 1, 64),
+            };
 
-        let collector = SpanAccumulator::default();
-        let layer = collector.clone();
-        let subscriber = Registry::default().with(layer);
-        let _guard = tracing::subscriber::set_default(subscriber);
+            let (component, proof) = cuda_prove_poseidon(log_n_instances, config);
 
-        let log_n_instances = env::var("LOG_N_INSTANCES")
-            .unwrap_or_else(|_| "10".to_string())
-            .parse::<u32>()
-            .unwrap();
-        let config = PcsConfig {
-            pow_bits: 10,
-            fri_config: FriConfig::new(5, 1, 64),
-        };
+            // Verify.
+            let channel = &mut Blake2sChannel::default();
+            let commitment_scheme =
+                &mut CommitmentSchemeVerifier::<Blake2sMerkleChannel>::new(proof.config);
 
-        // Prove.
-        let _ = prove_poseidon(log_n_instances, config);
+            // Decommit.
+            // Retrieve the expected column sizes in each commitment interaction, from the AIR.
+            let sizes = component.trace_log_degree_bounds();
 
-        let csv = collector.export_csv();
+            // Preprocessed columns.
+            commitment_scheme.commit(proof.commitments[0], &sizes[0], channel);
+            // Trace columns.
+            commitment_scheme.commit(proof.commitments[1], &sizes[1], channel);
+            // Draw lookup element.
+            let lookup_elements = PoseidonElements::draw(channel);
+            assert_eq!(lookup_elements, component.lookup_elements);
+            // Interaction columns.
+            commitment_scheme.commit(proof.commitments[2], &sizes[2], channel);
 
-        println!("{}", csv);
+            verify(&[&component], channel, commitment_scheme, proof).unwrap();
+        }
     }
+
+    // #[test_log::test]
+    // fn test_poseidon_prove_with_blake_cuda_new() {
+    //     let min_log = get_env_var("MIN_LOG", 4u32);
+    //     let max_log = get_env_var("MAX_LOG", 25u32);
+
+    //     // Initialize memory pool without preallocation for large computations
+    //     crate::stwo_cuda::mem_pool::init_memory_pool(0);
+
+    //     for log_n_instances in min_log..=max_log {
+    //         // let config = PcsConfig::default();
+    //         let config = PcsConfig {
+    //             pow_bits: 10,
+    //             fri_config: FriConfig::new(5, 1, 64),
+    //         };
+
+    //         let (component, proof) = cuda_prove_poseidon_new(log_n_instances, config);
+
+    //         // Verify.
+    //         let channel = &mut Blake2sChannel::default();
+    //         let commitment_scheme =
+    //             &mut CommitmentSchemeVerifier::<Blake2sMerkleChannel>::new(proof.config);
+
+    //         // Decommit.
+    //         // Retrieve the expected column sizes in each commitment interaction, from the AIR.
+    //         let sizes = component.trace_log_degree_bounds();
+
+    //         // Preprocessed columns.
+    //         commitment_scheme.commit(proof.commitments[0], &sizes[0], channel);
+    //         // Trace columns.
+    //         commitment_scheme.commit(proof.commitments[1], &sizes[1], channel);
+    //         // Draw lookup element.
+    //         let lookup_elements = PoseidonElements::draw(channel);
+    //         assert_eq!(lookup_elements, component.lookup_elements);
+    //         // Interaction columns.
+    //         commitment_scheme.commit(proof.commitments[2], &sizes[2], channel);
+
+    //         verify(&[&component], channel, commitment_scheme, proof).unwrap();
+    //     }
+
+    //     // Clear memory pool at the end
+    //     crate::stwo_cuda::mem_pool::pool_clear();
+    // }
+
 }

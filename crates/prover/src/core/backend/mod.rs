@@ -15,6 +15,7 @@ use super::vcs::ops::MerkleOps;
 
 pub mod cpu;
 pub mod simd;
+pub mod cuda;
 
 pub trait Backend:
     Copy
