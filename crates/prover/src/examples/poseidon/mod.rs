@@ -17,6 +17,8 @@ use crate::core::backend::simd::qm31::PackedSecureField;
 use crate::core::backend::simd::SimdBackend;
 use crate::core::backend::{Col, Column, CpuBackend};
 use crate::core::channel::Blake2sChannel;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::core::channel::Poseidon252Channel;
 use crate::core::fields::m31::BaseField;
 use crate::core::fields::qm31::SecureField;
 use crate::core::fields::FieldExpOps;
@@ -25,6 +27,8 @@ use crate::core::poly::circle::{CanonicCoset, CircleEvaluation, PolyOps};
 use crate::core::poly::BitReversedOrder;
 use crate::core::prover::{prove, StarkProof};
 use crate::core::vcs::blake2_merkle::{Blake2sMerkleChannel, Blake2sMerkleHasher};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::core::vcs::poseidon252_merkle::{Poseidon252MerkleChannel, Poseidon252MerkleHasher};
 use crate::core::ColumnVec;
 
 use crate::stwo_cuda::bindings;
@@ -363,7 +367,11 @@ pub fn prove_poseidon(
     let span = span!(Level::INFO, "Trace").entered();
     let start = std::time::Instant::now();
     let (trace, lookup_data) = gen_trace(log_n_rows);
-    println!("trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+    crate::bench_println!(
+        "trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(trace);
     tree_builder.commit(channel);
@@ -377,7 +385,11 @@ pub fn prove_poseidon(
     let span = span!(Level::INFO, "Interaction").entered();
     let start = std::time::Instant::now();
     let (trace, claimed_sum) = gen_interaction_trace(log_n_rows, lookup_data, &lookup_elements);
-    println!("interaction trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+    crate::bench_println!(
+        "interaction trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(trace);
     tree_builder.commit(channel);
@@ -397,7 +409,96 @@ pub fn prove_poseidon(
     info!("Poseidon component info:\n{}", component);
     let start = std::time::Instant::now();
     let proof = prove(&[&component], channel, commitment_scheme).unwrap();
-    println!("Poseidon proof generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+    crate::bench_println!(
+        "Poseidon proof generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
+
+    (component, proof)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn prove_poseidon_poseidon(
+    log_n_instances: u32,
+    config: PcsConfig,
+) -> (PoseidonComponent, StarkProof<Poseidon252MerkleHasher>) {
+    assert!(log_n_instances >= N_LOG_INSTANCES_PER_ROW as u32);
+    let log_n_rows = log_n_instances - N_LOG_INSTANCES_PER_ROW as u32;
+
+    // Precompute twiddles.
+    let span = span!(Level::INFO, "Precompute twiddles").entered();
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(log_n_rows + LOG_EXPAND + config.fri_config.log_blowup_factor)
+            .circle_domain()
+            .half_coset,
+    );
+    span.exit();
+
+    // Setup protocol with Poseidon commit channel.
+    let channel = &mut Poseidon252Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<_, Poseidon252MerkleChannel>::new(config, &twiddles);
+
+    // Preprocessed trace.
+    let span = span!(Level::INFO, "Constant").entered();
+    let mut tree_builder = commitment_scheme.tree_builder();
+    let constant_trace = vec![];
+    tree_builder.extend_evals(constant_trace);
+    tree_builder.commit(channel);
+    span.exit();
+
+    // Trace.
+    let span = span!(Level::INFO, "Trace").entered();
+    let start = std::time::Instant::now();
+    let (trace, lookup_data) = gen_trace(log_n_rows);
+    crate::bench_println!(
+        "poseidon(simd) trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(channel);
+    span.exit();
+
+    // Draw lookup elements.
+    let lookup_elements = PoseidonElements::draw(channel);
+
+    // Interaction trace.
+    let span = span!(Level::INFO, "Interaction").entered();
+    let start = std::time::Instant::now();
+    let (trace, claimed_sum) = gen_interaction_trace(log_n_rows, lookup_data, &lookup_elements);
+    crate::bench_println!(
+        "poseidon(simd) interaction trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(channel);
+    span.exit();
+
+    // Prove constraints.
+    let component = PoseidonComponent::new(
+        &mut TraceLocationAllocator::default(),
+        PoseidonEval {
+            eval_id: 2,
+            log_n_rows,
+            lookup_elements,
+            claimed_sum,
+        },
+        claimed_sum,
+    );
+
+    let start = std::time::Instant::now();
+    let proof: StarkProof<Poseidon252MerkleHasher> =
+        prove(&[&component], channel, commitment_scheme).unwrap();
+    crate::bench_println!(
+        "poseidon(simd) proving for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
 
     (component, proof)
 }
@@ -546,7 +647,11 @@ pub fn cuda_prove_poseidon(
     let span = span!(Level::INFO, "Trace").entered();
     let start = std::time::Instant::now();
     let (trace, lookup_data) = gen_cuda_trace(log_n_rows);
-    println!("cuda trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+    crate::bench_println!(
+        "cuda trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
 
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(trace);
@@ -561,7 +666,11 @@ pub fn cuda_prove_poseidon(
     let start = std::time::Instant::now();
     let (trace, claimed_sum) = gen_cuda_interaction_trace(log_n_rows, lookup_data, &lookup_elements);
     // println!("cuda claimed_sum: {:?}", claimed_sum);
-    println!("cuda interaction trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
+    crate::bench_println!(
+        "cuda interaction trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(trace);
     tree_builder.commit(prover_channel);
@@ -581,8 +690,93 @@ pub fn cuda_prove_poseidon(
 
     let start = std::time::Instant::now();
     let proof: StarkProof<Blake2sMerkleHasher> =  prove(&[&component], prover_channel, commitment_scheme).unwrap();
-    println!(
+    crate::bench_println!(
         "cuda proving for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
+
+    (component, proof)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn cuda_prove_poseidon_poseidon(
+    log_n_instances: u32,
+    config: PcsConfig,
+) -> (PoseidonComponent, StarkProof<Poseidon252MerkleHasher>) {
+    assert!(log_n_instances >= N_LOG_INSTANCES_PER_ROW as u32);
+    let log_n_rows = log_n_instances - N_LOG_INSTANCES_PER_ROW as u32;
+
+    // Precompute twiddles.
+    let span = span!(Level::INFO, "Precompute twiddles").entered();
+    let twiddles = CudaBackend::precompute_twiddles(
+        CanonicCoset::new(log_n_rows + LOG_EXPAND + config.fri_config.log_blowup_factor)
+            .circle_domain()
+            .half_coset,
+    );
+    span.exit();
+    // Setup protocol with Poseidon commit channel.
+    let prover_channel = &mut Poseidon252Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CudaBackend, Poseidon252MerkleChannel>::new(config, &twiddles);
+
+    // Preprocessed trace.
+    let span = span!(Level::INFO, "Constant").entered();
+    let mut tree_builder = commitment_scheme.tree_builder();
+    let constant_trace = vec![];
+    tree_builder.extend_evals(constant_trace);
+    tree_builder.commit(prover_channel);
+    span.exit();
+
+    // Trace.
+    let span = span!(Level::INFO, "Trace").entered();
+    let start = std::time::Instant::now();
+    let (trace, lookup_data) = gen_cuda_trace(log_n_rows);
+    crate::bench_println!(
+        "poseidon(cuda) trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+    span.exit();
+
+    // Draw lookup elements.
+    let lookup_elements = PoseidonElements::draw(prover_channel);
+
+    // Interaction trace.
+    let span = span!(Level::INFO, "Interaction").entered();
+    let start = std::time::Instant::now();
+    let (trace, claimed_sum) = gen_cuda_interaction_trace(log_n_rows, lookup_data, &lookup_elements);
+    crate::bench_println!(
+        "poseidon(cuda) interaction trace generation for 2^{:?} took {:?} ms",
+        log_n_instances,
+        start.elapsed().as_millis()
+    );
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+    span.exit();
+
+    // Prove constraints.
+    let component = PoseidonComponent::new(
+        &mut TraceLocationAllocator::default(),
+        PoseidonEval {
+            eval_id: 2,
+            log_n_rows,
+            lookup_elements,
+            claimed_sum,
+        },
+        claimed_sum,
+    );
+
+    let start = std::time::Instant::now();
+    let proof: StarkProof<Poseidon252MerkleHasher> =
+        prove(&[&component], prover_channel, commitment_scheme).unwrap();
+    crate::bench_println!(
+        "poseidon(cuda) proving for 2^{:?} took {:?} ms",
         log_n_instances,
         start.elapsed().as_millis()
     );
@@ -600,15 +794,21 @@ mod tests {
     use crate::constraint_framework::assert_constraints_on_polys;
     use crate::core::air::Component;
     use crate::core::channel::Blake2sChannel;
+    #[cfg(not(target_arch = "wasm32"))]
+    use crate::core::channel::Poseidon252Channel;
     use crate::core::fields::m31::BaseField;
     use crate::core::fri::FriConfig;
     use crate::core::pcs::{CommitmentSchemeVerifier, PcsConfig, TreeVec};
     use crate::core::poly::circle::CanonicCoset;
     use crate::core::prover::verify;
     use crate::core::vcs::blake2_merkle::Blake2sMerkleChannel;
+    #[cfg(not(target_arch = "wasm32"))]
+    use crate::core::vcs::poseidon252_merkle::Poseidon252MerkleChannel;
     use crate::examples::poseidon::{
         apply_internal_round_matrix, apply_m4, eval_poseidon_constraints, gen_interaction_trace, gen_trace, prove_poseidon, PoseidonElements
     };
+    #[cfg(not(target_arch = "wasm32"))]
+    use crate::examples::poseidon::{prove_poseidon_poseidon, cuda_prove_poseidon_poseidon};
     use crate::math::matrix::{RowMajorMatrix, SquareMatrix};
 
     #[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
@@ -733,7 +933,7 @@ mod tests {
     #[test_log::test]
     fn test_poseidon_prove_with_blake_cuda() {
         let min_log = get_env_var("MIN_LOG", 4u32);
-        let max_log = get_env_var("MAX_LOG", 25u32);
+        let max_log = get_env_var("MAX_LOG", 23u32);
 
         for log_n_instances in min_log..=max_log {
             // let config = PcsConfig::default();
@@ -767,47 +967,58 @@ mod tests {
         }
     }
 
-    // #[test_log::test]
-    // fn test_poseidon_prove_with_blake_cuda_new() {
-    //     let min_log = get_env_var("MIN_LOG", 4u32);
-    //     let max_log = get_env_var("MAX_LOG", 25u32);
+    #[test_log::test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn test_simd_poseidon_prove_with_poseidon() {
+        let min_log = get_env_var("MIN_LOG", 4u32);
+        let max_log = get_env_var("MAX_LOG", 25u32);
+        for log_n_instances in min_log..=max_log {
+            let config = PcsConfig {
+                pow_bits: 10,
+                fri_config: FriConfig::new(5, 1, 64),
+            };
 
-    //     // Initialize memory pool without preallocation for large computations
-    //     crate::stwo_cuda::mem_pool::init_memory_pool(0);
+            let (component, proof) = prove_poseidon_poseidon(log_n_instances, config);
 
-    //     for log_n_instances in min_log..=max_log {
-    //         // let config = PcsConfig::default();
-    //         let config = PcsConfig {
-    //             pow_bits: 10,
-    //             fri_config: FriConfig::new(5, 1, 64),
-    //         };
+            let channel = &mut Poseidon252Channel::default();
+            let commitment_scheme =
+                &mut CommitmentSchemeVerifier::<Poseidon252MerkleChannel>::new(proof.config);
+            let sizes = component.trace_log_degree_bounds();
+            commitment_scheme.commit(proof.commitments[0], &sizes[0], channel);
+            commitment_scheme.commit(proof.commitments[1], &sizes[1], channel);
+            let lookup_elements = PoseidonElements::draw(channel);
+            assert_eq!(lookup_elements, component.lookup_elements);
+            commitment_scheme.commit(proof.commitments[2], &sizes[2], channel);
+            verify(&[&component], channel, commitment_scheme, proof).unwrap();
+        }
+    }
 
-    //         let (component, proof) = cuda_prove_poseidon_new(log_n_instances, config);
+    #[test_log::test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn test_poseidon_prove_with_poseidon_cuda() {
+        let min_log = get_env_var("MIN_LOG", 4u32);
+        let max_log = get_env_var("MAX_LOG", 23u32);
+        for log_n_instances in min_log..=max_log {
+            let config = PcsConfig {
+                pow_bits: 10,
+                fri_config: FriConfig::new(5, 1, 64),
+            };
 
-    //         // Verify.
-    //         let channel = &mut Blake2sChannel::default();
-    //         let commitment_scheme =
-    //             &mut CommitmentSchemeVerifier::<Blake2sMerkleChannel>::new(proof.config);
+            let (component, proof) = cuda_prove_poseidon_poseidon(log_n_instances, config);
 
-    //         // Decommit.
-    //         // Retrieve the expected column sizes in each commitment interaction, from the AIR.
-    //         let sizes = component.trace_log_degree_bounds();
+            let channel = &mut Poseidon252Channel::default();
+            let commitment_scheme =
+                &mut CommitmentSchemeVerifier::<Poseidon252MerkleChannel>::new(proof.config);
+            let sizes = component.trace_log_degree_bounds();
+            commitment_scheme.commit(proof.commitments[0], &sizes[0], channel);
+            commitment_scheme.commit(proof.commitments[1], &sizes[1], channel);
+            let lookup_elements = PoseidonElements::draw(channel);
+            assert_eq!(lookup_elements, component.lookup_elements);
+            commitment_scheme.commit(proof.commitments[2], &sizes[2], channel);
+            verify(&[&component], channel, commitment_scheme, proof).unwrap();
+        }
+    }
 
-    //         // Preprocessed columns.
-    //         commitment_scheme.commit(proof.commitments[0], &sizes[0], channel);
-    //         // Trace columns.
-    //         commitment_scheme.commit(proof.commitments[1], &sizes[1], channel);
-    //         // Draw lookup element.
-    //         let lookup_elements = PoseidonElements::draw(channel);
-    //         assert_eq!(lookup_elements, component.lookup_elements);
-    //         // Interaction columns.
-    //         commitment_scheme.commit(proof.commitments[2], &sizes[2], channel);
 
-    //         verify(&[&component], channel, commitment_scheme, proof).unwrap();
-    //     }
-
-    //     // Clear memory pool at the end
-    //     crate::stwo_cuda::mem_pool::pool_clear();
-    // }
 
 }

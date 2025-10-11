@@ -23,6 +23,11 @@
 
 #define EXTERN extern "C" [[maybe_unused]]
 
+// Additional inline macros from common_fp256.cuh
+#define HOST_INLINE __host__ __forceinline__
+#define DEVICE_INLINE __device__ __forceinline__
+#define HOST_DEVICE_INLINE __host__ __device__ __forceinline__
+
 #ifndef ASSERT_CUDA_SUCCESS
 static void handle_cuda_error(cudaError_t cuda_error, const char *const file,
                               int const line) {
@@ -195,5 +200,65 @@ extern "C"
 uint32_t** copy_device_pointer_vec_from_host_to_device(uint32_t** host_ptr, uint32_t size);
 
 #define THREAD_COUNT_MAX 1024
+
+// Additional utility functions from common_fp256.cuh
+static constexpr unsigned log2_floor(const unsigned value)
+{
+    unsigned v = value;
+    unsigned result = 0;
+    while (v >>= 1)
+        result++;
+    return result;
+}
+
+static constexpr unsigned log2_ceiling(const unsigned value)
+{
+    return value <= 1 ? 0 : log2_floor(value - 1) + 1;
+}
+
+static DEVICE_INLINE unsigned get_thread_idx()
+{
+    return threadIdx.x + blockIdx.x * blockDim.x;
+}
+
+static HOST_DEVICE_INLINE unsigned log_strict(unsigned a)
+{
+#ifdef __CUDA_ARCH__
+    const unsigned ret = 31 - __clz(a);
+    ASSERT_TRUE(1 << ret == a, "log_strict: input must be power of 2");
+#else
+    const unsigned ret = log2_floor(a);
+    if ((1 << ret) != a) {
+        printf("Error: log_strict requires power of 2, got %u\n", a);
+        exit(1);
+    }
+#endif
+    return ret;
+}
+
+static HOST_DEVICE_INLINE unsigned div_exact(unsigned a, unsigned b)
+{
+    unsigned c = a / b;
+#ifdef __CUDA_ARCH__
+    ASSERT_TRUE(c * b == a, "div_exact: division must be exact");
+#else
+    if (c * b != a) {
+        printf("Error: div_exact requires exact division, %u / %u\n", a, b);
+        exit(1);
+    }
+#endif
+    return c;
+}
+
+static DEVICE_INLINE unsigned get_num_threads()
+{
+    return blockDim.x * gridDim.x;
+}
+
+static HOST_INLINE void set_grid_block_dim(const unsigned length, unsigned &grid_dim, unsigned &block_dim)
+{
+    block_dim = (length < 256) ? length : 256;
+    grid_dim = (length + block_dim - 1) / block_dim;
+}
 
 #endif // UTILS_H

@@ -668,7 +668,8 @@ EXTERN void ntt_n2b_native_batch(m31** value,
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
         ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     }
-    cudaFree(device_values);
+    // Free via project allocator to match allocation path
+    cuda_free_memory(device_values);
 }
 
 EXTERN void ntt_n2b_columns(
@@ -818,5 +819,5 @@ EXTERN void ntt_n2b_columns(
         fprintf(stderr, "n2b config too big\n");
         exit(EXIT_FAILURE);
     }
-    cudaFree(device_values);
+    cuda_free_memory(device_values);
 }

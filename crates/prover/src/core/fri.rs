@@ -178,6 +178,9 @@ impl<'a, B: FriOps + MerkleOps<MC::H>, MC: MerkleChannel> FriProver<'a, B, MC> {
             "column sizes not decreasing"
         );
 
+        // Previously printed column lengths here to debug domain mismatches.
+        // Removed noisy stderr print to keep test/bench logs clean.
+
         let first_layer = Self::commit_first_layer(channel, columns);
         let (inner_layers, last_layer_evaluation) =
             Self::commit_inner_layers(channel, config, columns, twiddles);
@@ -239,6 +242,15 @@ impl<'a, B: FriOps + MerkleOps<MC::H>, MC: MerkleChannel> FriProver<'a, B, MC> {
             folding_alpha,
             twiddles,
         );
+
+        // If there are more circle columns whose folded size already matches the
+        // current line evaluation size (the first inner layer), fold and
+        // accumulate them as well before proceeding to the next layers. This
+        // handles mixed-degree inputs where multiple circle columns fold into
+        // the same first inner layer size.
+        while let Some(column) = columns.next_if(|c| folded_size(c) == layer_evaluation.len()) {
+            B::fold_circle_into_line(&mut layer_evaluation, column, folding_alpha, twiddles);
+        }
 
         while layer_evaluation.len() > config.last_layer_domain_size() {
             let layer = FriInnerLayerProver::new(layer_evaluation);
@@ -526,8 +538,24 @@ impl<MC: MerkleChannel> FriVerifier<MC> {
             previous_folding_alpha = layer.folding_alpha;
         }
 
+        // After processing all inner layers, there may still be first-layer columns whose
+        // fold-to-line degree bound equals the last layer's degree bound. On the prover side
+        // these are folded after the last inner layer (to produce the last-layer evaluation).
+        // Mirror that here by folding any remaining sparse circle evals into the current line
+        // query evals using the previous layer's folding alpha.
+        while let Some((_, column_domain)) = first_layer_columns.next() {
+            let folded_column_evals = first_layer_sparse_evals
+                .next()
+                .unwrap()
+                .fold_circle(previous_folding_alpha, *column_domain);
+            accumulate_line(
+                &mut layer_query_evals,
+                &folded_column_evals,
+                previous_folding_alpha,
+            );
+        }
+
         // Check all values have been consumed.
-        assert!(first_layer_columns.is_empty());
         assert!(first_layer_sparse_evals.is_empty());
 
         Ok((layer_queries, layer_query_evals))

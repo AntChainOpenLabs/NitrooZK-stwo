@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use crate::core::{
     backend::{simd::SimdBackend, Backend, BackendForChannel},
-    channel::Blake2sChannel,
+    channel::{Blake2sChannel, Poseidon252Channel},
     proof_of_work::GrindOps,
     vcs::blake2_merkle::Blake2sMerkleChannel,
+    vcs::poseidon252_merkle::Poseidon252MerkleChannel,
 };
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -17,4 +18,13 @@ impl GrindOps<Blake2sChannel> for CudaBackend {
     }
 }
 
+impl GrindOps<Poseidon252Channel> for CudaBackend {
+    fn grind(channel: &Poseidon252Channel, pow_bits: u32) -> u64 {
+        SimdBackend::grind(channel, pow_bits)
+    }
+}
+
 impl BackendForChannel<Blake2sMerkleChannel> for CudaBackend {}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl BackendForChannel<Poseidon252MerkleChannel> for CudaBackend {}

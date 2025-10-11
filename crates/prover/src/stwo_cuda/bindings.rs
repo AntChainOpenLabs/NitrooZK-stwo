@@ -1,5 +1,6 @@
 use std::ffi::c_void;
 use crate::core::vcs::blake2_hash::Blake2sHash;
+use starknet_ff::FieldElement as FieldElement252;
 use crate::core::{
     circle::CirclePoint,
     fields::{m31::BaseField, qm31::SecureField},
@@ -317,42 +318,6 @@ extern "C" {
         cumsum_shift: CudaSecureField,
     );
 
-    pub fn evaluate_constraint_quotients_on_domain_new(
-        quotients_0: *const u32,
-        quotients_1: *const u32,
-        quotients_2: *const u32,
-        quotients_3: *const u32,
-        denominator_inverses: *const u32,
-        constraints_vec: *const u32,
-        random_coeff_powers_vec: *const u32,
-        constraints_coeff_pair_col_num: u32,
-        constraints_coeff_pair_row_num: u32,
-        trace_domain_log_size: u32,
-    );
-
-    /// New SIMD-aware constraint evaluation binding that processes VeryPackedSecureField data directly on GPU
-    /// 
-    /// Parameters:
-    /// - quotients_0/1/2/3: Output quaternion components of quotient polynomial (4 * total_domain_size * u32)
-    /// - denominator_inverses: Precomputed denominator inverses (domain_expansion_factor * u32) 
-    /// - simd_constraints_vec: Packed constraint data (vec_rows * constraints_num * 4 * 32 * u32)
-    /// - simd_random_coeff_powers_vec: Random coefficient powers (constraints_num * 4 * u32)
-    /// - constraints_num: Number of constraints per evaluation point
-    /// - vec_rows_num: Number of SIMD vector rows (each represents 32 actual rows)
-    /// - trace_domain_log_size: Log size of trace domain for denominator indexing
-    pub fn evaluate_constraint_quotients_on_domain_new_simd(
-        quotients_0: *const u32,
-        quotients_1: *const u32,
-        quotients_2: *const u32,
-        quotients_3: *const u32,
-        denominator_inverses: *const u32,
-        simd_constraints_vec: *const u32,
-        simd_random_coeff_powers_vec: *const u32,
-        constraints_num: u32,
-        vec_rows_num: u32,
-        trace_domain_log_size: u32,
-    );
-
     pub fn ntt_n2b_native_batch(
         value: *mut *mut u32,
         log_n: u32,
@@ -386,7 +351,63 @@ extern "C" {
     //     device_bit_rev_circle_domain_evals:  *const u32,
     //     len: u32,
     // );
+
+    // Poseidon252 CUDA acceleration functions
+    // Note: FieldElement252 is represented as 32 bytes (8 x u32)
+    // Note: Poseidon252Hash is 32-byte struct, equivalent to [u8; 32]
+    pub fn cuda_malloc_poseidon252_hash(size: usize) -> *mut [u8; 32];
+
+    pub fn cuda_alloc_zeroes_poseidon252_hash(size: usize) -> *mut [u8; 32];
+
+    pub fn copy_poseidon252_hash_vec_from_host_to_device(
+        from: *const [u8; 32],
+        size: usize,
+    ) -> *mut [u8; 32];
+
+    pub fn copy_poseidon252_hash_vec_from_device_to_host(
+        from: *const [u8; 32],
+        to: *mut [u8; 32],
+        size: usize,
+    );
+
+    pub fn copy_poseidon252_hash_vec_from_device_to_device(
+        from: *const [u8; 32],
+        dst: *mut [u8; 32],
+        size: usize,
+    );
+
+    pub fn cuda_get_poseidon252_hash(
+        device_ptr: *const [u8; 32],
+        host_ptr: *mut [u8; 32],
+        index: usize,
+    );
+
+    pub fn cuda_set_poseidon252_hash(
+        device_ptr: *mut [u8; 32],
+        index: usize,
+        value: *const [u8; 32],
+    );
+
+    // Hybrid Poseidon252 Merkle functions that use GPU for data processing
+    // and CPU for verified hashing
+    // GPU-only aliases matching Blake2s interface
+    pub fn poseidon252_commit_on_first_layer(
+        size: usize,
+        amount_of_columns: usize,
+        columns: *const *const u32,
+        result: *mut [u8; 32],
+    );
+
+    pub fn poseidon252_commit_on_layer_with_previous(
+        size: usize,
+        amount_of_columns: usize,
+        columns: *const *const u32,
+        previous_layer: *const [u8; 32],
+        result: *mut [u8; 32],
+    );
+
 }
+
 
 // Export memory pool functions for CUDA code to call
 // DEPRECATED: These functions are no longer needed as CUDA now uses its built-in memory pool

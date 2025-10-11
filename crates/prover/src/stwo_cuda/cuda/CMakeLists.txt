@@ -29,6 +29,7 @@ add_library(
         accumulate.cu
         fields.cu
         blake2s.cu
+        poseidon252_starknet.cu
         quotients.cu
         gkr.cu
         mle.cu

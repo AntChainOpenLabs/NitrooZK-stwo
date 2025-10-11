@@ -71,8 +71,11 @@ impl CudaMemPool {
             }
         }
         
-        println!("Memory pool initialized for log_size={}, allocated {} MB", 
-                 log_size, *total_allocated / 1024 / 1024);
+        crate::bench_println!(
+            "Memory pool initialized for log_size={}, allocated {} MB",
+            log_size,
+            *total_allocated / 1024 / 1024
+        );
     }
 
     pub fn allocate(&self, size: usize) -> *const u32 {
@@ -175,7 +178,10 @@ impl CudaMemPool {
         }
         pool.clear();
         
-        println!("Memory pool cleared, freed {} MB", *total_allocated / 1024 / 1024);
+        crate::bench_println!(
+            "Memory pool cleared, freed {} MB",
+            *total_allocated / 1024 / 1024
+        );
         *total_allocated = 0;
     }
 

@@ -198,7 +198,7 @@ __host__ __device__ void print_qm31(const qm31 data, const char *description) {
 
 __host__ __device__ void dump_m31_array_generic(const m31 *array, size_t size, const char *description) {
     if (array == NULL || description == NULL) {
-        printf("invalid input。\n");
+        printf("invalid input.\n");
         return;
     }
 

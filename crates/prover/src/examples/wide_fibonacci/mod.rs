@@ -254,6 +254,128 @@ pub fn simd_prove_wide_fibonacci<const N: usize>(
     (component, proof)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub fn simd_prove_wide_fibonacci_poseidon<const N: usize>(
+    log_n_instances: u32,
+    config: PcsConfig,
+) -> (WideFibonacciComponent<N>, StarkProof<crate::core::vcs::poseidon252_merkle::Poseidon252MerkleHasher>) {
+    use crate::core::channel::Poseidon252Channel;
+    use crate::core::vcs::poseidon252_merkle::Poseidon252MerkleChannel;
+
+    let inputs = if log_n_instances < LOG_N_LANES {
+        let n_instances = 1 << log_n_instances;
+        vec![FibInput {
+            a: PackedBaseField::from_array(std::array::from_fn(|j| {
+                if j < n_instances { BaseField::one() } else { BaseField::zero() }
+            })),
+            b: PackedBaseField::from_array(std::array::from_fn(|j| {
+                if j < n_instances { BaseField::from_u32_unchecked(j as u32) } else { BaseField::zero() }
+            })),
+        }]
+    } else {
+        (0..(1 << (log_n_instances - LOG_N_LANES)))
+            .map(|i| FibInput {
+                a: PackedBaseField::one(),
+                b: PackedBaseField::from_array(std::array::from_fn(|j| {
+                    BaseField::from_u32_unchecked((i * 16 + j) as u32)
+                })),
+            })
+            .collect_vec()
+    };
+
+    // Precompute twiddles.
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
+            .circle_domain()
+            .half_coset,
+    );
+
+    // Setup protocol.
+    let prover_channel = &mut Poseidon252Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Poseidon252MerkleChannel>::new(config, &twiddles);
+
+    // Preprocessed trace
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals([]);
+    tree_builder.commit(prover_channel);
+
+    // Trace.
+    let trace = generate_trace::<N>(log_n_instances, &inputs);
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+
+    // Prove constraints.
+    let component = WideFibonacciComponent::new(
+        &mut TraceLocationAllocator::default(),
+        WideFibonacciEval::<N> {
+            eval_id: 1,
+            log_n_rows: log_n_instances,
+        },
+        SecureField::zero(),
+    );
+
+    let proof = prove::<SimdBackend, Poseidon252MerkleChannel>(
+        &[&component],
+        prover_channel,
+        commitment_scheme,
+    ).unwrap();
+
+    (component, proof)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn cuda_prove_wide_fibonacci_poseidon<const N: usize>(
+    log_n_instances: u32,
+    config: PcsConfig,
+) -> (WideFibonacciComponent<N>, StarkProof<crate::core::vcs::poseidon252_merkle::Poseidon252MerkleHasher>) {
+    use crate::core::backend::cuda::CudaBackend;
+    use crate::core::channel::Poseidon252Channel;
+    use crate::core::vcs::poseidon252_merkle::Poseidon252MerkleChannel;
+
+    // Precompute twiddles.
+    let twiddles = CudaBackend::precompute_twiddles(
+        CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
+            .circle_domain()
+            .half_coset,
+    );
+
+    // Setup protocol.
+    let prover_channel = &mut Poseidon252Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CudaBackend, Poseidon252MerkleChannel>::new(config, &twiddles);
+
+    // Preprocessed trace
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals([]);
+    tree_builder.commit(prover_channel);
+
+    // Trace.
+    let trace = generate_cuda_trace::<N>(log_n_instances);
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(prover_channel);
+
+    // Prove constraints.
+    let component = WideFibonacciComponent::new(
+        &mut TraceLocationAllocator::default(),
+        WideFibonacciEval::<N> {
+            eval_id: 1,
+            log_n_rows: log_n_instances,
+        },
+        SecureField::zero(),
+    );
+
+    let proof = prove::<CudaBackend, Poseidon252MerkleChannel>(
+        &[&component],
+        prover_channel,
+        commitment_scheme,
+    ).unwrap();
+
+    (component, proof)
+}
+
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
@@ -364,55 +486,22 @@ mod tests {
     #[test_log::test]
     fn test_wide_fib_prove_with_blake_simd() {
         use crate::examples::utils::get_env_var;
+        use std::time::Instant;
         let min_log = get_env_var("MIN_LOG", 8u32);
         let max_log = get_env_var("MAX_LOG", 23u32);
-        use tracing::info;
 
         for log_n_instances in min_log..=max_log {
             let config = PcsConfig::default();
-            // Precompute twiddles.
-            let twiddles = SimdBackend::precompute_twiddles(
-                CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
-                    .circle_domain()
-                    .half_coset,
+            let start = Instant::now();
+            let (component, proof) = super::simd_prove_wide_fibonacci::<FIB_SEQUENCE_LENGTH>(
+                log_n_instances,
+                config,
             );
-
-            // Setup protocol.
-            let prover_channel = &mut Blake2sChannel::default();
-            let mut commitment_scheme =
-                CommitmentSchemeProver::<SimdBackend, Blake2sMerkleChannel>::new(config, &twiddles);
-
-            // Preprocessed trace
-            let mut tree_builder = commitment_scheme.tree_builder();
-            tree_builder.extend_evals([]);
-            tree_builder.commit(prover_channel);
-
-            // Trace.
-            let start = std::time::Instant::now();
-            let trace = generate_test_trace(log_n_instances);
-            println!("SIMD trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
-            let mut tree_builder = commitment_scheme.tree_builder();
-            tree_builder.extend_evals(trace);
-            tree_builder.commit(prover_channel);
-
-            // Prove constraints.
-            let component = WideFibonacciComponent::new(
-                &mut TraceLocationAllocator::default(),
-                WideFibonacciEval::<FIB_SEQUENCE_LENGTH> {
-                    eval_id: 1,
-                    log_n_rows: log_n_instances,
-                },
-                SecureField::zero(),
+            println!(
+                "wide-fibonacci(simd, blake2s) proving for 2^{} took {} ms",
+                log_n_instances,
+                start.elapsed().as_millis()
             );
-
-            let start = std::time::Instant::now();
-            let proof = prove::<SimdBackend, Blake2sMerkleChannel>(
-                &[&component],
-                prover_channel,
-                commitment_scheme,
-            )
-            .unwrap();
-            println!("SIMD Wib_fib proof generation for FIB_SEQUENCE_LENGTH:{}, log_n_instances:{:?} took {:?} ms", FIB_SEQUENCE_LENGTH, log_n_instances, start.elapsed().as_millis());
 
             // Verify.
             let verifier_channel = &mut Blake2sChannel::default();
@@ -429,120 +518,96 @@ mod tests {
 
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
-    fn test_wide_fib_prove_with_poseidon() {
-        const LOG_N_INSTANCES: u32 = 6;
-        let config = PcsConfig::default();
-        // Precompute twiddles.
-        let twiddles = SimdBackend::precompute_twiddles(
-            CanonicCoset::new(LOG_N_INSTANCES + 1 + config.fri_config.log_blowup_factor)
-                .circle_domain()
-                .half_coset,
-        );
-
-        // Setup protocol.
-        let prover_channel = &mut Poseidon252Channel::default();
-        let mut commitment_scheme =
-            CommitmentSchemeProver::<SimdBackend, Poseidon252MerkleChannel>::new(config, &twiddles);
-
-        // TODO(ilya): remove the following once preproccessed columns are not mandatory.
-        // Preprocessed trace
-        let mut tree_builder = commitment_scheme.tree_builder();
-        tree_builder.extend_evals([]);
-        tree_builder.commit(prover_channel);
-
-        // Trace.
-        let trace = generate_test_trace(LOG_N_INSTANCES);
-        let mut tree_builder = commitment_scheme.tree_builder();
-        tree_builder.extend_evals(trace);
-        tree_builder.commit(prover_channel);
-
-        // Prove constraints.
-        let component = WideFibonacciComponent::new(
-            &mut TraceLocationAllocator::default(),
-            WideFibonacciEval::<FIB_SEQUENCE_LENGTH> {
-                eval_id: 1,
-                log_n_rows: LOG_N_INSTANCES,
-            },
-            SecureField::zero(),
-        );
-        let proof = prove::<SimdBackend, Poseidon252MerkleChannel>(
-            &[&component],
-            prover_channel,
-            commitment_scheme,
-        )
-        .unwrap();
-
-        // Verify.
-        let verifier_channel = &mut Poseidon252Channel::default();
-        let commitment_scheme =
-            &mut CommitmentSchemeVerifier::<Poseidon252MerkleChannel>::new(proof.config);
-
-        // Retrieve the expected column sizes in each commitment interaction, from the AIR.
-        let sizes = component.trace_log_degree_bounds();
-        commitment_scheme.commit(proof.commitments[0], &sizes[0], verifier_channel);
-        commitment_scheme.commit(proof.commitments[1], &sizes[1], verifier_channel);
-        verify(&[&component], verifier_channel, commitment_scheme, proof).unwrap();
-    }
-
-
-    #[test_log::test]
-    fn test_wide_fib_prove_with_blake_cuda() {
-        use crate::core::backend::cuda::CudaBackend;
+    fn test_wide_fib_prove_with_poseidon_simd() {
         use crate::examples::utils::get_env_var;
-        use crate::examples::wide_fibonacci::generate_cuda_trace;
-        use ark_std::start_timer;
-        use ark_std::end_timer;
+        use std::time::Instant;
         let min_log = get_env_var("MIN_LOG", 8u32);
         let max_log = get_env_var("MAX_LOG", 23u32);
         use tracing::info;
 
         for log_n_instances in min_log..=max_log {
             let config = PcsConfig::default();
-            // Precompute twiddles.
-            let twiddles = CudaBackend::precompute_twiddles(
-                CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
-                    .circle_domain()
-                    .half_coset,
+            let start = Instant::now();
+            let (component, proof) = super::simd_prove_wide_fibonacci_poseidon::<FIB_SEQUENCE_LENGTH>(
+                log_n_instances,
+                config,
+            );
+            println!(
+                "wide-fibonacci(simd, poseidon) proving for 2^{} took {} ms",
+                log_n_instances,
+                start.elapsed().as_millis()
             );
 
-            // Setup protocol.
-            let prover_channel = &mut Blake2sChannel::default();
-            let mut commitment_scheme =
-                CommitmentSchemeProver::<CudaBackend, Blake2sMerkleChannel>::new(config, &twiddles);
+            // Verify using Poseidon channel and merkle.
+            let verifier_channel = &mut Poseidon252Channel::default();
+            let commitment_scheme =
+                &mut CommitmentSchemeVerifier::<Poseidon252MerkleChannel>::new(proof.config);
 
-            // Preprocessed trace
-            let mut tree_builder = commitment_scheme.tree_builder();
-            tree_builder.extend_evals([]);
-            tree_builder.commit(prover_channel);
+            // Retrieve the expected column sizes in each commitment interaction, from the AIR.
+            let sizes = component.trace_log_degree_bounds();
+            commitment_scheme.commit(proof.commitments[0], &sizes[0], verifier_channel);
+            commitment_scheme.commit(proof.commitments[1], &sizes[1], verifier_channel);
+            verify(&[&component], verifier_channel, commitment_scheme, proof).unwrap();
+        }
+    }
 
-            // Trace.
-            let start = std::time::Instant::now();
-            let trace = generate_cuda_trace::<FIB_SEQUENCE_LENGTH>(log_n_instances);
-            println!("CUDA trace generation for 2^{:?} took {:?} ms", log_n_instances, start.elapsed().as_millis());
 
-            let mut tree_builder = commitment_scheme.tree_builder();
-            tree_builder.extend_evals(trace);
-            tree_builder.commit(prover_channel);
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn test_wide_fib_prove_with_poseidon_cuda() {
+        use crate::core::backend::cuda::CudaBackend;
+        use crate::examples::utils::get_env_var;
+        use std::time::Instant;
+        let min_log = get_env_var("MIN_LOG", 8u32);
+        let max_log = get_env_var("MAX_LOG", 23u32);
+        use tracing::info;
 
-            // Prove constraints.
-            let component = WideFibonacciComponent::new(
-                &mut TraceLocationAllocator::default(),
-                WideFibonacciEval::<FIB_SEQUENCE_LENGTH> {
-                    eval_id: 1,
-                    log_n_rows: log_n_instances,
-                },
-                SecureField::zero(),
+        for log_n_instances in min_log..=max_log {
+            let config = PcsConfig::default();
+            let start = Instant::now();
+            let (component, proof) = super::cuda_prove_wide_fibonacci_poseidon::<FIB_SEQUENCE_LENGTH>(
+                log_n_instances,
+                config,
             );
-            info!("Wide Fibonacci component info:\n{}", component);
+            println!(
+                "wide-fibonacci(cuda, poseidon) proving for 2^{} took {} ms",
+                log_n_instances,
+                start.elapsed().as_millis()
+            );
 
-            let start = std::time::Instant::now();
-            let proof = prove::<CudaBackend, Blake2sMerkleChannel>(
-                &[&component],
-                prover_channel,
-                commitment_scheme,
-            )
-            .unwrap();
-            println!("CUDA Wib_fib proof generation for FIB_SEQUENCE_LENGTH:{}, log_n_instances:{:?} took {:?} ms", FIB_SEQUENCE_LENGTH, log_n_instances, start.elapsed().as_millis());
+            // Verify using Poseidon channel and merkle.
+            let verifier_channel = &mut Poseidon252Channel::default();
+            let commitment_scheme =
+                &mut CommitmentSchemeVerifier::<Poseidon252MerkleChannel>::new(proof.config);
+
+            // Retrieve the expected column sizes in each commitment interaction, from the AIR.
+            let sizes = component.trace_log_degree_bounds();
+            commitment_scheme.commit(proof.commitments[0], &sizes[0], verifier_channel);
+            commitment_scheme.commit(proof.commitments[1], &sizes[1], verifier_channel);
+            verify(&[&component], verifier_channel, commitment_scheme, proof).unwrap();
+        }
+    }
+
+
+    #[test_log::test]
+    fn test_wide_fib_prove_with_blake_cuda() {
+        use crate::examples::utils::get_env_var;
+        use std::time::Instant;
+        let min_log = get_env_var("MIN_LOG", 8u32);
+        let max_log = get_env_var("MAX_LOG", 23u32);
+
+        for log_n_instances in min_log..=max_log {
+            let config = PcsConfig::default();
+            let start = Instant::now();
+            let (component, proof) = super::cuda_prove_wide_fibonacci::<FIB_SEQUENCE_LENGTH>(
+                log_n_instances,
+                config,
+            );
+            println!(
+                "wide-fibonacci(cuda, blake2s) proving for 2^{} took {} ms",
+                log_n_instances,
+                start.elapsed().as_millis()
+            );
 
             // Verify.
             let verifier_channel = &mut Blake2sChannel::default();

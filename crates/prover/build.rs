@@ -1,4 +1,3 @@
-// use cudart_sys::{cuda_lib_path, cuda_path};
 use std::path::PathBuf;
 fn main() {
     #[cfg(target_os = "macos")]

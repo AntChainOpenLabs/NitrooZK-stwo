@@ -51,9 +51,21 @@ void inclusive_prefix_sum(
 
     void* d_temp_storage = NULL;
     size_t temp_storage_bytes = 0;
-    ASSERT_CUDA_SUCCESS(cub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, (M31 *)eval_tmp, (M31 *)device_bit_rev_circle_domain_evals, cub::Sum(), len));
-    ASSERT_CUDA_SUCCESS(cudaMalloc(&d_temp_storage, temp_storage_bytes));
-    ASSERT_CUDA_SUCCESS(cub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, (M31 *)eval_tmp, (M31 *)device_bit_rev_circle_domain_evals, cub::Sum(), len));
+    // CUDA 13.0/CUB removed cub::Sum functor; use InclusiveSum specialization instead
+    ASSERT_CUDA_SUCCESS(cub::DeviceScan::InclusiveSum(
+        d_temp_storage,
+        temp_storage_bytes,
+        (M31 *)eval_tmp,
+        (M31 *)device_bit_rev_circle_domain_evals,
+        len));
+    // Use custom allocator to avoid raw cudaMalloc usage
+    d_temp_storage = cuda_malloc<uint8_t>(static_cast<unsigned int>(temp_storage_bytes));
+    ASSERT_CUDA_SUCCESS(cub::DeviceScan::InclusiveSum(
+        d_temp_storage,
+        temp_storage_bytes,
+        (M31 *)eval_tmp,
+        (M31 *)device_bit_rev_circle_domain_evals,
+        len));
 
     total_threads = len;
     block_dim = total_threads < THREAD_COUNT_MAX ? total_threads : THREAD_COUNT_MAX;

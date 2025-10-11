@@ -1,38 +1,39 @@
 use std::ffi::c_void;
+use starknet_ff::FieldElement as FieldElement252;
 
 use crate::core::backend::ColumnOps;
-use crate::core::vcs::blake2_hash::Blake2sHash;
-use crate::core::vcs::blake2_merkle::Blake2sMerkleHasher;
+use crate::core::vcs::poseidon252_merkle::Poseidon252MerkleHasher;
 use crate::core::vcs::ops::MerkleOps;
 
-use crate::stwo_cuda::{bindings, base_field_vec::BaseFieldVec, blake_2s_hash_vec::Blake2sHashVec};
+use crate::stwo_cuda::{bindings, base_field_vec::BaseFieldVec, poseidon252::Poseidon252HashVec};
 use crate::core::backend::cuda::CudaBackend;
 
-impl ColumnOps<Blake2sHash> for CudaBackend {
-    type Column = Blake2sHashVec;
+impl ColumnOps<FieldElement252> for CudaBackend {
+    type Column = Poseidon252HashVec;
 
     fn bit_reverse_column(_column: &mut Self::Column) {
         unimplemented!()
     }
 }
 
-impl MerkleOps<Blake2sMerkleHasher> for CudaBackend {
+impl MerkleOps<Poseidon252MerkleHasher> for CudaBackend {
     fn commit_on_layer(
         log_size: u32,
-        prev_layer: Option<&Blake2sHashVec>,
+        prev_layer: Option<&Poseidon252HashVec>,
         columns: &[&BaseFieldVec],
-    ) -> Blake2sHashVec {
+    ) -> Poseidon252HashVec {
+
         let size = 1 << log_size;
         let number_of_columns = columns.len();
 
-        let result: Blake2sHashVec = Blake2sHashVec::new_uninitialized(size);
+        let result: Poseidon252HashVec = Poseidon252HashVec::new_uninitialized(size);
         unsafe {
-            Self::commit_on_layer_using_gpu(
+            Self::poseidon252_commit_on_layer_using_gpu(
                 size,
                 number_of_columns,
                 columns,
                 prev_layer,
-                result.device_ptr,
+                result.device_ptr(),
             );
         }
 
@@ -41,16 +42,15 @@ impl MerkleOps<Blake2sMerkleHasher> for CudaBackend {
 }
 
 impl CudaBackend {
-    unsafe fn commit_on_layer_using_gpu(
+    unsafe fn poseidon252_commit_on_layer_using_gpu(
         size: usize,
         number_of_columns: usize,
         columns: &[&BaseFieldVec],
-        prev_layer: Option<&Blake2sHashVec>,
-        result_pointer: *const Blake2sHash,
+        prev_layer: Option<&Poseidon252HashVec>,
+        result_pointer: *const [u8; 32],
     ) {
         let device_column_pointers_vector: Vec<*const u32> =
             columns.iter().map(|column| column.device_ptr).collect();
-
         let device_column_pointers: *const *const u32 =
             bindings::copy_device_pointer_vec_from_host_to_device(
                 device_column_pointers_vector.as_ptr(),
@@ -58,95 +58,90 @@ impl CudaBackend {
             );
 
         if let Some(previous_layer) = prev_layer {
-            // println!("commit_on_layer_with_previous");
-            bindings::commit_on_layer_with_previous(
+            bindings::poseidon252_commit_on_layer_with_previous(
                 size,
                 number_of_columns,
                 device_column_pointers,
-                previous_layer.device_ptr,
-                result_pointer as *mut Blake2sHash,
+                previous_layer.device_ptr(),
+                result_pointer as *mut [u8; 32],
             );
         } else {
-            // println!("commit_on_first_layer");
-            bindings::commit_on_first_layer(
+            bindings::poseidon252_commit_on_first_layer(
                 size,
                 number_of_columns,
                 device_column_pointers,
-                result_pointer as *mut Blake2sHash,
+                result_pointer as *mut [u8; 32],
             );
         }
         bindings::cuda_free_memory(device_column_pointers as *const c_void);
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use crate::core::backend::{Column, CpuBackend};
     use crate::core::fields::m31::{BaseField, M31};
-    use crate::core::vcs::blake2_merkle::Blake2sMerkleHasher;
+    use crate::core::vcs::poseidon252_merkle::Poseidon252MerkleHasher;
     use crate::core::vcs::ops::MerkleOps;
 
-    use crate::stwo_cuda::base_field_vec::BaseFieldVec;
-    use crate::stwo_cuda::blake_2s_hash_vec::Blake2sHashVec;
     use crate::core::backend::cuda::CudaBackend;
+    use crate::stwo_cuda::base_field_vec::BaseFieldVec;
+    use crate::stwo_cuda::poseidon252::Poseidon252HashVec;
 
     #[test]
     fn test_commit_on_first_layer_with_many_columns_compared_with_cpu() {
-        let log_size = 16;
+        let log_size = 8;
         let size = 1 << log_size;
 
-        let cpu_columns_vector: Vec<Vec<BaseField>> = columns_test_vector(100, size);
+        let cpu_columns_vector: Vec<Vec<BaseField>> = columns_test_vector(16, size);
         let gpu_columns_vector: Vec<BaseFieldVec> = gpu_columns_from(&cpu_columns_vector);
 
-        let expected_result = <CpuBackend as MerkleOps<Blake2sMerkleHasher>>::commit_on_layer(
+        let expected_result = <CpuBackend as MerkleOps<Poseidon252MerkleHasher>>::commit_on_layer(
             log_size,
             None,
             &cpu_columns_vector.iter().collect::<Vec<_>>(),
         );
-        let result: Blake2sHashVec = <CudaBackend as MerkleOps<Blake2sMerkleHasher>>::commit_on_layer(
+        let result: Poseidon252HashVec = <CudaBackend as MerkleOps<Poseidon252MerkleHasher>>::commit_on_layer(
             log_size,
             None,
             &gpu_columns_vector.iter().collect::<Vec<_>>(),
         );
 
-        // println!("CUDA Result: {:?}", result.to_cpu());
         assert_eq!(result.to_cpu(), expected_result);
     }
 
     #[test]
     fn test_commit_on_layer_with_previous_layer_compared_with_cpu() {
-        let current_layer_log_size = 10;
+        let current_layer_log_size = 7;
         let current_layer_size = 1 << current_layer_log_size;
         let previous_layer_log_size = current_layer_log_size + 1;
         let previous_layer_size = 1 << previous_layer_log_size;
 
         // First layer
-
-        let cpu_columns_vector: Vec<Vec<BaseField>> = columns_test_vector(35, previous_layer_size);
+        let cpu_columns_vector: Vec<Vec<BaseField>> = columns_test_vector(12, previous_layer_size);
         let gpu_columns_vector: Vec<BaseFieldVec> = gpu_columns_from(&cpu_columns_vector);
 
-        let cpu_previous_layer = <CpuBackend as MerkleOps<Blake2sMerkleHasher>>::commit_on_layer(
+        let cpu_previous_layer = <CpuBackend as MerkleOps<Poseidon252MerkleHasher>>::commit_on_layer(
             previous_layer_log_size,
             None,
             &cpu_columns_vector.iter().collect::<Vec<_>>(),
         );
-        let gpu_previous_layer: Blake2sHashVec = <CudaBackend as MerkleOps<Blake2sMerkleHasher>>::commit_on_layer(
+        let gpu_previous_layer: Poseidon252HashVec = <CudaBackend as MerkleOps<Poseidon252MerkleHasher>>::commit_on_layer(
             previous_layer_log_size,
             None,
             &gpu_columns_vector.iter().collect::<Vec<_>>(),
         );
 
         // Current layer
-
-        let cpu_columns_vector: Vec<Vec<BaseField>> = columns_test_vector(16, current_layer_size);
+        let cpu_columns_vector: Vec<Vec<BaseField>> = columns_test_vector(10, current_layer_size);
         let gpu_columns_vector: Vec<BaseFieldVec> = gpu_columns_from(&cpu_columns_vector);
 
-        let expected_result = <CpuBackend as MerkleOps<Blake2sMerkleHasher>>::commit_on_layer(
+        let expected_result = <CpuBackend as MerkleOps<Poseidon252MerkleHasher>>::commit_on_layer(
             current_layer_log_size,
             Some(&cpu_previous_layer),
             &cpu_columns_vector.iter().collect::<Vec<_>>(),
         );
-        let result: Blake2sHashVec = <CudaBackend as MerkleOps<Blake2sMerkleHasher>>::commit_on_layer(
+        let result: Poseidon252HashVec = <CudaBackend as MerkleOps<Poseidon252MerkleHasher>>::commit_on_layer(
             current_layer_log_size,
             Some(&gpu_previous_layer),
             &gpu_columns_vector.iter().collect::<Vec<_>>(),
@@ -176,3 +171,4 @@ mod tests {
             .collect()
     }
 }
+

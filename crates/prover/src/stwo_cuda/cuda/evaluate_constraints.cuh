@@ -12,28 +12,6 @@ struct CommonEval {
 };
 
 extern "C"
-void evaluate_constraint_quotients_on_domain_new(
-    m31 *quotients_0, m31 *quotients_1, m31 *quotients_2, m31 *quotients_3,
-    m31 *denominator_inverses,
-    m31 *constraints_vec,
-    m31 *random_coeff_powers_vec,
-    unsigned int constraints_coeff_pair_col_num,
-    unsigned int constraints_coeff_pair_row_num,
-    unsigned int trace_domain_log_size
-);
-
-extern "C"
-void evaluate_constraint_quotients_on_domain_new_simd(
-    m31 *quotients_0, m31 *quotients_1, m31 *quotients_2, m31 *quotients_3,
-    m31 *denominator_inverses,
-    m31 *simd_constraints_vec,
-    m31 *simd_random_coeff_powers_vec,
-    unsigned int constraints_num,
-    unsigned int vec_rows_num,
-    unsigned int trace_domain_log_size
-);
-
-extern "C"
 void evaluate_constraint_quotients_on_domain(
     m31 *quotients_0, m31 *quotients_1, m31 *quotients_2, m31 *quotients_3,
     m31 **trace0_evaluations,

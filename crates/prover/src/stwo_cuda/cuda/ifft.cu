@@ -979,5 +979,6 @@ EXTERN void ntt_b2n_column(
         throw std::runtime_error("b2n log_n too big");
     }
 
-    cudaFree(device_values);
+    // Free via project allocator to match allocation path
+    cuda_free_memory(device_values);
 }

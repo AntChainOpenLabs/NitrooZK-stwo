@@ -41,7 +41,7 @@ impl MerkleHasher for Poseidon252MerkleHasher {
     }
 }
 
-fn construct_felt252_from_m31s(word: &[M31; 8]) -> FieldElement252 {
+pub fn construct_felt252_from_m31s(word: &[M31; 8]) -> FieldElement252 {
     // Felt = Felt << 31 + limb.
     let append_m31 = |felt: &mut [u128; 2], limb: M31| {
         *felt = [

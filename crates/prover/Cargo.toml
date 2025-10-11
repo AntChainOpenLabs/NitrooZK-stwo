@@ -98,11 +98,19 @@ name = "merkle"
 
 [[bench]]
 harness = false
-name = "poseidon"
+name = "poseidon_blake2s"
 
 [[bench]]
 harness = false
-name = "poseidon_cuda"
+name = "poseidon_cuda_blake2s"
+
+[[bench]]
+harness = false
+name = "poseidon_poseidon"
+
+[[bench]]
+harness = false
+name = "poseidon_cuda_poseidon"
 
 [[bench]]
 harness = false
@@ -118,8 +126,16 @@ name = "pcs"
 
 [[bench]]
 harness = false
-name = "wide_fibonacci"
+name = "wide_fibonacci_blake2s"
 
 [[bench]]
 harness = false
-name = "wide_fibonacci_cuda"
+name = "wide_fibonacci_cuda_blake2s"
+
+[[bench]]
+harness = false
+name = "wide_fibonacci_poseidon"
+
+[[bench]]
+harness = false
+name = "wide_fibonacci_cuda_poseidon"
