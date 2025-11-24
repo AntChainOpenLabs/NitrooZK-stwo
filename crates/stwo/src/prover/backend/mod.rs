@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 pub use cpu::CpuBackend;
+pub use cuda::CudaBackend;
 
 use crate::core::channel::MerkleChannel;
 use crate::core::fields::m31::BaseField;
@@ -10,9 +11,11 @@ use crate::prover::fri::FriOps;
 use crate::prover::lookups::gkr_prover::GkrOps;
 use crate::prover::poly::circle::PolyOps;
 use crate::prover::vcs::ops::MerkleOps;
-use crate::prover::{AccumulationOps, QuotientOps};
+use crate::prover::AccumulationOps;
+use crate::prover::QuotientOps;
 
 pub mod cpu;
+pub mod cuda;
 pub mod simd;
 
 pub trait Backend:
@@ -61,4 +64,10 @@ pub trait Column<T>: Clone + Debug + FromIterator<T> {
     fn at(&self, index: usize) -> T;
     /// Sets the element at the given index.
     fn set(&mut self, index: usize, value: T);
+
+    /// Batch retrieval of elements at given indices (default implementation).
+    /// Override this for optimized batch access (e.g., GPU memory transfers).
+    fn batch_at(&self, indices: &[usize]) -> Vec<T> {
+        indices.iter().map(|&i| self.at(i)).collect()
+    }
 }

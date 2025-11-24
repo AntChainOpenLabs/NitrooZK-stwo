@@ -48,7 +48,119 @@ Run `poseidon_benchmark.sh` to run a single-threaded poseidon2 hash proof benchm
 
 Further benchmarks can be run using `cargo bench`.
 
+Note: to keep benchmark output clean from optional `println!` noise, set `STWO_QUIET=1` when running benchmarks, for example: `STWO_QUIET=1 cargo bench ...`.
+
 Visual representation of benchmarks can be found [here](https://starkware-libs.github.io/stwo/dev/bench/index.html).
+
+### GPU Performance
+
+#### Reference Machine
+
+- 1 * `NVIDIA GeForce RTX 4090`
+- CPU: `AMD EPYC 9224 with 16 cores`
+- Memory: `94GB`
+- CUDA Toolkit: `13.0.1_580.82.07`
+
+#### <h4 style="color: pink;">Wide-Fibonacci Test</h4>
+
+- Blake2s commit channel
+  - Tests (Prove)
+    - SIMD: `RUSTFLAGS="-C target-cpu=native -C opt-level=3" MIN_LOG=16 MAX_LOG=24 RUST_LOG=info RAYON_NUM_THREADS=16 cargo test test_wide_fib_prove_with_blake_simd --release --features parallel -- --nocapture`
+    - GPU:  `MIN_LOG=16 MAX_LOG=23 RAYON_NUM_THREADS=16 cargo test --release test_wide_fib_prove_with_blake_cuda --features parallel -- --nocapture`
+  - Benchmarks (Throughput)
+    - SIMD: `STWO_QUIET=1 LOG_N_INSTANCES=23 RUSTFLAGS="-C target-cpu=native -C opt-level=3" RAYON_NUM_THREADS=16 cargo bench --bench wide_fibonacci_blake2s --features parallel -- --nocapture`
+    - GPU:  `STWO_QUIET=1 LOG_N_INSTANCES=23 RAYON_NUM_THREADS=16 cargo bench --bench wide_fibonacci_cuda_blake2s --features parallel -- --nocapture`
+<!-- AUTO:WIDE_BLAKE2S:START -->
+| Log(Size) | Prove SIMD ms | Prove GPU ms | Speedup | Thr SIMD (Kelem/s) | Thr GPU (Kelem/s) | Thr Speedup |
+|-----------|----------------|--------------|---------|---------------------|-------------------|-------------|
+| 16        | 199            | 222          | 0.90x   | 429                 | 2131              | 4.96x       |
+| 17        | 267            | 34           | 7.85x   | 478                 | 3844              | 8.05x       |
+| 18        | 450            | 47           | 9.57x   | 671                 | 6672              | 9.94x       |
+| 19        | 757            | 57           | 13.28x  | 909                 | 10123             | 11.14x      |
+| 20        | 1390           | 87           | 15.98x  | 973                 | 12638             | 12.99x      |
+| 21        | 2670           | 139          | 19.21x  | 1127                | 15007             | 13.32x      |
+| 22        | 5166           | 254          | 20.34x  | 870                 | 16435             | 18.89x      |
+| 23        | 11014          | 488          | 22.57x  | 783                 | 17898             | 22.86x      |
+<!-- AUTO:WIDE_BLAKE2S:END -->
+
+- Poseidon commit channel
+  - Tests (Prove)
+    - SIMD: `RUSTFLAGS="-C target-cpu=native -C opt-level=3" MIN_LOG=16 MAX_LOG=24 RUST_LOG=info RAYON_NUM_THREADS=16 cargo test test_wide_fib_prove_with_poseidon_simd --release --features parallel -- --nocapture`
+    - GPU:  `MIN_LOG=16 MAX_LOG=23 RAYON_NUM_THREADS=16 cargo test --release test_wide_fib_prove_with_poseidon_cuda --features parallel -- --nocapture`
+  - Benchmarks (Throughput)
+    - SIMD: `STWO_QUIET=1 LOG_N_INSTANCES=23 RUSTFLAGS="-C target-cpu=native -C opt-level=3" RAYON_NUM_THREADS=16 cargo bench --bench wide_fibonacci_poseidon --features parallel -- --nocapture`
+    - GPU:  `STWO_QUIET=1 LOG_N_INSTANCES=23 RAYON_NUM_THREADS=16 cargo bench --bench wide_fibonacci_cuda_poseidon --features parallel -- --nocapture`
+
+
+
+<!-- AUTO:WIDE_POSEIDON:START -->
+| Log(Size) | Prove SIMD ms | Prove GPU ms | Speedup | Thr SIMD (Kelem/s) | Thr GPU (Kelem/s) | Thr Speedup |
+|-----------|----------------|--------------|---------|---------------------|-------------------|-------------|
+| 16        | 2566           | 278          | 9.23x   | 34                  | 798               | 23.73x      |
+| 17        | 4919           | 105          | 46.85x  | 34                  | 1301              | 37.75x      |
+| 18        | 9745           | 133          | 73.27x  | 35                  | 1939              | 54.65x      |
+| 19        | 19146          | 196          | 97.68x  | 36                  | 2642              | 74.27x      |
+| 20        | 38325          | 321          | 119.39x | 36                  | 3282              | 91.78x      |
+| 21        | 76322          | 558          | 136.78x | 35                  | 3695              | 104.18x     |
+| 22        | 152660         | 1037         | 147.21x | 36                  | 3975              | 111.35x     |
+| 23        | 305667         | 2010         | 152.07x | 36                  | 4124              | 116.10x     |
+<!-- AUTO:WIDE_POSEIDON:END -->
+
+
+
+#### <h4 style="color: pink;">Poseidon Test</h4>
+- Blake2s commit channel
+  - Tests (Prove)
+    - SIMD: `RUSTFLAGS="-C target-cpu=native -C opt-level=3" MIN_LOG=16 MAX_LOG=23 RUST_LOG=info RAYON_NUM_THREADS=16 cargo test test_simd_poseidon_prove --release --features parallel -- --nocapture`
+    - GPU:  `MIN_LOG=16 MAX_LOG=22 RAYON_NUM_THREADS=16 cargo test --release test_poseidon_prove_with_blake_cuda --features parallel -- --nocapture`
+  - Benchmarks (Throughput)
+    - SIMD: `STWO_QUIET=1 LOG_N_INSTANCES=22 RUSTFLAGS="-C target-cpu=native -C opt-level=3" RAYON_NUM_THREADS=16 cargo bench --bench poseidon_blake2s --features parallel -- --nocapture`
+    - GPU:  `STWO_QUIET=1 LOG_N_INSTANCES=22 RAYON_NUM_THREADS=16 cargo bench --bench poseidon_cuda_blake2s --features parallel -- --nocapture`
+<!-- AUTO:POSEIDON_BLAKE2S:START -->
+| Log(Size) | Prove SIMD ms | Prove GPU ms | Speedup | Thr SIMD (Kelem/s) | Thr GPU (Kelem/s) | Thr Speedup |
+|-----------|----------------|--------------|---------|---------------------|-------------------|-------------|
+| 16        | 3545           | 198          | 17.90x  | 207                 | 1280              | 6.19x       |
+| 17        | 6653           | 221          | 30.10x  | 250                 | 2179              | 8.73x       |
+| 18        | 13355          | 231          | 57.81x  | 288                 | 3497              | 12.12x      |
+| 19        | 26097          | 272          | 95.94x  | 363                 | 4962              | 13.66x      |
+| 20        | 51518          | 312          | 165.12x | 457                 | 6312              | 13.82x      |
+| 21        | 103045         | 403          | 255.69x | 331                 | 7186              | 21.71x      |
+| 22        | 206096         | 579          | 355.95x | 309                 | 7763              | 25.12x      |
+| 23        | 422364         | N/A          | N/A     | N/A                 | N/A               | N/A         |
+<!-- AUTO:POSEIDON_BLAKE2S:END -->
+
+- Poseidon commit channel
+  - Tests (Prove)
+    - SIMD: `RUSTFLAGS="-C target-cpu=native -C opt-level=3" MIN_LOG=16 MAX_LOG=23 RUST_LOG=info RAYON_NUM_THREADS=16 cargo test test_simd_poseidon_prove_with_poseidon --release --features parallel -- --nocapture`
+    - GPU:  `MIN_LOG=16 MAX_LOG=22 RAYON_NUM_THREADS=16 cargo test --release test_poseidon_prove_with_poseidon_cuda --features parallel -- --nocapture`
+  - Benchmarks (Throughput)
+    - SIMD: `STWO_QUIET=1 LOG_N_INSTANCES=22 RUSTFLAGS="-C target-cpu=native -C opt-level=3" RAYON_NUM_THREADS=16 cargo bench --bench poseidon_poseidon --features parallel -- --nocapture`
+    - GPU:  `STWO_QUIET=1 LOG_N_INSTANCES=22 RAYON_NUM_THREADS=16 cargo bench --bench poseidon_cuda_poseidon --features parallel -- --nocapture`
+
+<!-- AUTO:POSEIDON_POSEIDON:START -->
+| Log(Size) | Prove SIMD ms | Prove GPU ms | Speedup | Thr SIMD (Kelem/s) | Thr GPU (Kelem/s) | Thr Speedup |
+|-----------|----------------|--------------|---------|---------------------|-------------------|-------------|
+| 16        | 3341           | 245          | 13.64x  | 17                  | 542               | 31.27x      |
+| 17        | 6613           | 290          | 22.80x  | 18                  | 845               | 47.19x      |
+| 18        | 13384          | 348          | 38.46x  | 18                  | 1208              | 66.46x      |
+| 19        | 26085          | 436          | 59.83x  | 18                  | 1543              | 84.68x      |
+| 20        | 51397          | 598          | 85.95x  | 18                  | 1803              | 98.11x      |
+| 21        | 103973         | 964          | 107.86x | 18                  | 1957              | 107.54x     |
+| 22        | 207684         | 1623         | 127.96x | 18                  | 2060              | 112.94x     |
+| 23        | 411598         | N/A          | N/A     | N/A                 | N/A               | N/A         |
+<!-- AUTO:POSEIDON_POSEIDON:END -->
+
+### Notes On Recent Changes
+
+- Added Poseidon commit channel variants for both Wide-Fibonacci and Poseidon examples (SIMD and CUDA), and corresponding benches/tests.
+- Renamed previous Blake2s-channel benches to `*_blake2s` to distinguish from `*_poseidon` benches.
+- Tests now reuse shared example prove functions across SIMD/CUDA and Blake2s/Poseidon channels, reducing duplication.
+
+
+## 🥳 Acknowledgements
+
+- [stwo-gpu](https://github.com/NethermindEth/stwo-gpu) : The m31 field arithmetic and extended field operations, FRI operations and quotient accumulator are inspired by stwo-gpu.
+- [era-bellman-cuda](https://github.com/matter-labs/era-bellman-cuda) : Low-level field arithmetic code was referenced when implementing Poseidon252 hash computations.
 
 ## 📜 License
 

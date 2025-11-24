@@ -5,8 +5,11 @@ use stwo::core::poly::circle::CanonicCoset;
 use stwo::prover::backend::simd::column::BaseColumn;
 use stwo::prover::backend::simd::m31::{PackedM31, LOG_N_LANES, N_LANES};
 use stwo::prover::backend::simd::SimdBackend;
+use stwo::prover::backend::Column;
 use stwo::prover::poly::circle::CircleEvaluation;
 use stwo::prover::poly::BitReversedOrder;
+use stwo::stwo_cuda::base_field_vec::BaseFieldVec;
+use stwo::prover::backend::cuda::CudaBackend;
 
 use super::row_iterator::{ParRowIterMut, RowIterMut};
 
@@ -140,6 +143,84 @@ impl<const N: usize> ComponentTrace<N> {
             .each_ref()
             .map(|column| column[packed_row].to_array()[idx_in_simd_vector])
     }
+}
+
+#[derive(Debug)]
+pub struct CudaComponentTrace<const N: usize> {
+    /// Columns are assumed to be of the same length.
+    pub data: [BaseFieldVec; N],
+
+    /// Log number of non-packed rows in each column.
+    pub log_size: u32,
+}
+
+impl<const N: usize> CudaComponentTrace<N> {
+    /// Creates a new `ComponentTrace` with all values initialized to zero.
+    /// The number of rows in each column is `2^log_size`.
+    ///
+    /// # Panics
+    ///
+    /// if log_size < 4.
+    pub fn zeroed(log_size: u32) -> Self {
+        let data = [(); N].map(|_| BaseFieldVec::zeros(1 << log_size));
+        Self { data, log_size }
+    }
+
+    /// Creates a new `ComponentTrace` with all values uninitialized.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the column is populated before being used.
+    /// The number of rows in each column is `2^log_size`.
+    ///
+    /// # Panics
+    ///
+    /// if `log_size` < 4.
+    #[allow(clippy::uninit_vec)]
+    pub unsafe fn uninitialized(log_size: u32) -> Self {
+        let data = [(); N].map(|_| BaseFieldVec::new_uninitialized(1 << log_size));
+        Self { data, log_size }
+    }
+
+    pub fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    pub fn to_evals(self) -> [CircleEvaluation<CudaBackend, M31, BitReversedOrder>; N] {
+        let domain = CanonicCoset::new(self.log_size).circle_domain();
+        self.data.map(|column|
+            CircleEvaluation::<CudaBackend, M31, BitReversedOrder>::new(domain, column),
+        )
+    }
+    pub fn to_host(&self) -> ComponentTrace<N> {
+        let data = self.data.clone().map(|ref col| {
+            let host_vec = col.to_vec(); // Vec<BaseField>
+            let m31_vec: Vec<M31> = host_vec.into_iter().map(|bf| bf.into()).collect();
+            let mut packed_col = Vec::with_capacity((m31_vec.len() + N_LANES - 1) / N_LANES);
+            for chunk in m31_vec.chunks(N_LANES) {
+                let mut arr = [M31(0); N_LANES];
+                for (j, &v) in chunk.iter().enumerate() {
+                    arr[j] = v;
+                }
+                packed_col.push(PackedM31::from_array(arr));
+            }
+            packed_col
+        });
+
+        ComponentTrace {
+            data,
+            log_size: self.log_size,
+        }
+    }
+
+    // pub fn row_at(&self, row: usize) -> [M31; N] {
+    //     assert!(row < 1 << self.log_size);
+    //     let packed_row = row / N_LANES;
+    //     let idx_in_simd_vector = row % N_LANES;
+    //     self.data
+    //         .each_ref()
+    //         .map(|column| column[packed_row].to_array()[idx_in_simd_vector])
+    // }
 }
 
 #[cfg(test)]

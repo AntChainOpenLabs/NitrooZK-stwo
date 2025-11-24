@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::core::fields::m31::BaseField;
-use crate::core::vcs::MerkleHasher;
+pub use crate::core::vcs::MerkleHasher;
 use crate::prover::backend::{Col, ColumnOps};
 
 /// Trait for performing Merkle operations on a commitment scheme.

@@ -3,6 +3,7 @@
 
 /// ! This module contains helpers to express and use constraints for components.
 mod component;
+mod cuda_domain;
 
 #[cfg(feature = "prover")]
 pub mod expr;
@@ -18,15 +19,16 @@ use core::fmt::Debug;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub};
 
 pub use component::{FrameworkComponent, FrameworkEval, TraceLocationAllocator};
+pub use cuda_domain::CudaDomainEvaluator;
 pub use info::InfoEvaluator;
 use num_traits::{One, Zero};
 pub use point::PointEvaluator;
 use preprocessed_columns::PreProcessedColumnId;
 #[cfg(all(feature = "prover", feature = "std"))]
 pub use prover::{
-    assert_constraints_on_polys, assert_constraints_on_trace, relation_tracker, AssertEvaluator,
-    CpuDomainEvaluator, FractionWriter, LogupColGenerator, LogupTraceGenerator,
-    SimdDomainEvaluator,
+    assert_constraints_on_polys, assert_constraints_on_polys_cuda, assert_constraints_on_trace,
+    relation_tracker, AssertEvaluator, CpuDomainEvaluator, FractionWriter, LogupColGenerator,
+    LogupTraceGenerator, SimdDomainEvaluator,
 };
 use std_shims::Vec;
 use stwo::core::fields::m31::BaseField;
@@ -344,4 +346,16 @@ macro_rules! qm31 {
     ($m0:expr, $m1:expr, $m2:expr, $m3:expr) => {{
         stwo::core::fields::qm31::QM31::from_u32_unchecked($m0, $m1, $m2, $m3)
     }};
+}
+
+pub fn fnv1a_eval_id_gen(s: &str) -> u32 {
+    const FNV_OFFSET_BASIS: u32 = 0x811C9DC5;
+    const FNV_PRIME: u32 = 0x01000193;
+
+    let mut hash = FNV_OFFSET_BASIS;
+    for byte in s.as_bytes() {
+        hash ^= u32::from(*byte);
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    hash
 }

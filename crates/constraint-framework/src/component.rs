@@ -111,11 +111,11 @@ pub trait FrameworkEval {
 }
 
 pub struct FrameworkComponent<C: FrameworkEval> {
-    pub(super) eval: C,
+    pub eval: C,
     pub(super) trace_locations: TreeVec<TreeSubspan>,
     pub(super) preprocessed_column_indices: Vec<usize>,
     pub(super) claimed_sum: SecureField,
-    info: InfoEvaluator,
+    pub info: InfoEvaluator,
 }
 
 impl<E: FrameworkEval> FrameworkComponent<E> {
