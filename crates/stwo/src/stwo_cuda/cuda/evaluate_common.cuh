@@ -81,9 +81,9 @@ __global__ void generic_constraint_post_kernel(
     for (unsigned i = 0; i < last_batch; ++i) {
         const Fraction cur_frac = Fraction::sum(&intermediate_fractions[2 * i + row * logup_counts], 2);
 
-        qm31 cur_cumsum_arr[1] = { { {0, 0}, {0, 0} } };
-        int offsets[1] = { 0 };
-        evaluator.next_extension_interaction_mask(logup_interaction, offsets, 2, cur_cumsum_arr);
+        qm31 cur_cumsum_arr[2] = { { {0, 0}, {0, 0} }, { {0, 0}, {0, 0} } };
+        int offsets[2] = { 0, 0 };
+        evaluator.next_extension_interaction_mask(logup_interaction, offsets, 1, cur_cumsum_arr);
 
         const qm31 cur_cumsum = cur_cumsum_arr[0];
         const qm31 diff = sub(cur_cumsum, prev_col_cumsum);
@@ -112,6 +112,7 @@ __global__ void generic_constraint_post_kernel(
     }
 
     numerators[row] = evaluator.row_res;
+
 }
 
 #endif // GENERIC_KERNELS_CUH

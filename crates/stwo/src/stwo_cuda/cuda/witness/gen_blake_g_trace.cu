@@ -547,7 +547,6 @@ void generate_blake_g_traces(
 
     uint32_t **device_blake_g_input = clone_to_device<uint32_t *>(blake_g_input, 6);
 
-    printf("generating blake_g_trace\n");
 
     timer global_timer;
     global_timer.start("generate blake_g base trace");

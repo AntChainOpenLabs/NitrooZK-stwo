@@ -166,7 +166,6 @@ impl Uint32Vec {
     }
 
     pub fn increase_at(&self, address: u32) {
-        // println!("do increase_at device_ptr{:?} at {}", self.device_ptr, address);
         unsafe {
             bindings::cuda_increase_at(self.device_ptr as *const c_void, address)
         }

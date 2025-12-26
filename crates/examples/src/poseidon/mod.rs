@@ -377,7 +377,6 @@ pub fn prove_poseidon(
 
     // Draw lookup elements.
     let lookup_elements = PoseidonElements::draw(channel);
-    // println!("cpu lookup_elements: {:?}", lookup_elements);
 
     // Interaction trace.
     let span = span!(Level::INFO, "Interaction").entered();
@@ -547,7 +546,6 @@ pub fn gen_cuda_interaction_trace(
     }
 
     // interaction_trace.clone().into_iter().enumerate().for_each(|(i, column_evaluations)| {
-    //     println!("trace:[{}], {:?}", i, column_evaluations.to_cpu());
     // });
 
     let claimed_sum_vec = cuda_claimed_sum.to_cpu();
@@ -663,7 +661,6 @@ pub fn cuda_prove_poseidon(
     let span = span!(Level::INFO, "Interaction").entered();
     let start = std::time::Instant::now();
     let (trace, claimed_sum) = gen_cuda_interaction_trace(log_n_rows, lookup_data, &lookup_elements);
-    // println!("cuda claimed_sum: {:?}", claimed_sum);
     stwo::bench_println!(
         "cuda interaction trace generation for 2^{:?} took {:?} ms",
         log_n_instances,

@@ -14,8 +14,11 @@ __global__ void eval_at_point_first_pass(m31 *g_coeffs, qm31 *temp, qm31 *factor
         coeffs_size = 512;
     }
 
-    extern __shared__ m31 s_coeffs[];
-    extern __shared__ qm31 s_level[];
+    // Fix: Use single shared memory array with manual offset calculation
+    // to avoid overlapping memory regions
+    extern __shared__ char shared_mem[];
+    m31* s_coeffs = (m31*)shared_mem;
+    qm31* s_level = (qm31*)(shared_mem + 512 * sizeof(m31));
 
     s_coeffs[idx] = g_coeffs[2 * blockIdx.x * blockDim.x + idx];
     s_coeffs[idx + blockDim.x] = g_coeffs[2 * blockIdx.x * blockDim.x + idx + blockDim.x];
@@ -38,17 +41,21 @@ __global__ void eval_at_point_first_pass(m31 *g_coeffs, qm31 *temp, qm31 *factor
     factor_idx -= 1;
     level_size >>= 1;
 
+    // Fix: Move __syncthreads() outside conditional block
+    // All threads must execute __syncthreads() unconditionally
     while (level_size > 0) {
+        __syncthreads();
+        qm31 a, b;
         if (idx < level_size) {
-            __syncthreads();
-            qm31 a = s_level[2 * idx];
-            qm31 b = s_level[2 * idx + 1];
-            __syncthreads();
+            a = s_level[2 * idx];
+            b = s_level[2 * idx + 1];
+        }
+        __syncthreads();
+        if (idx < level_size) {
             s_level[idx] = add(a, mul(b, factors[factor_idx]));
         }
         factor_idx -= 1;
         level_size >>= 1;
-
     }
 
     if (idx == 0) {
@@ -79,12 +86,17 @@ void eval_at_point_second_pass(qm31 *temp, qm31 *factors, int level_size, int fa
 
     int factor_idx = factor_offset;
 
+    // Fix: Move __syncthreads() outside conditional block
+    // All threads must execute __syncthreads() unconditionally
     while (level_size > 0) {
+        __syncthreads();
+        qm31 a, b;
         if (idx < level_size) {
-            __syncthreads();
-            qm31 a = s_level[2 * idx];
-            qm31 b = s_level[2 * idx + 1];
-            __syncthreads();
+            a = s_level[2 * idx];
+            b = s_level[2 * idx + 1];
+        }
+        __syncthreads();
+        if (idx < level_size) {
             s_level[idx] = add(a, mul(b, factors[factor_idx]));
         }
         factor_idx -= 1;
@@ -147,6 +159,7 @@ qm31 eval_at_point(m31 *coeffs, int coeffs_size, qm31 point_x, qm31 point_y) {
     qm31 result = qm31{cm31{0, 0}, cm31{0, 1}};
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_mem_copy_device_to_host<qm31>(temp, &result, 1);
 

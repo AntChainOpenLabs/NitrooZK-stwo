@@ -47,6 +47,7 @@ void inclusive_prefix_sum(
     );
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     void* d_temp_storage = NULL;
     size_t temp_storage_bytes = 0;
@@ -76,6 +77,7 @@ void inclusive_prefix_sum(
     );
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     bit_reverse_base_field(eval_tmp, len);
 

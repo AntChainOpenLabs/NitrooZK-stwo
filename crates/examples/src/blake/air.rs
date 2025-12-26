@@ -532,7 +532,7 @@ mod tests {
     fn test_simd_blake_prove() {
         // Note: To see time measurement, run test with
         //   LOG_N_INSTANCES=16 RUST_LOG_SPAN_EVENTS=enter,close RUST_LOG=info RUSTFLAGS="
-        //   -C target-cpu=native -C target-feature=+avx512f" cargo test --release
+        //   -C target-cpu=native -C target-feature=+avx512f" cargo test
         //   test_simd_blake_prove -- --nocapture --ignored
 
         // Get from environment variable:

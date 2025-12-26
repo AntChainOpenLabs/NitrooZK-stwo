@@ -13,7 +13,7 @@ DEVICE_FORCEINLINE void evaluate_mem_verify_equal(
     m31 mem_verify_equal_input_limb_1,
     m31 id_col0,
     MemoryAddressToId memory_address_to_id_lookup_elements,
-    struct CudaAssertEvaluator *cuda_evaluator
+    auto *cuda_evaluator
 ) {
     // First relation
     m31 values_0[2] = {

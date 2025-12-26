@@ -217,7 +217,6 @@ void generate_assert_eq_opcode_imm_traces(
     m31 **device_assert_eq_opcode_imm_input = clone_to_device<m31 *>(assert_eq_opcode_imm_input, 3);
     unsigned **device_memory_id_to_big_transpose_big_value_ptr = clone_to_device<m31 *>(memory_id_to_big_transpose_big_value_ptr, 8);
 
-    printf("generating assert_eq_opcode_imm_trace\n");
 
     timer global_timer;
     global_timer.start("generate assert_eq_opcode_imm base trace");

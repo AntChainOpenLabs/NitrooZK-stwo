@@ -214,6 +214,7 @@ void commit_on_first_layer(
         size, number_of_columns, device_columns, result);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 void commit_on_layer_with_previous(
     uint32_t size,
@@ -226,4 +227,5 @@ void commit_on_layer_with_previous(
         size, number_of_columns, device_columns, previous_layer, result);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }

@@ -9,6 +9,7 @@
 #include "constraints/evaluate_verify_blake_word.cuh"
 
 
+template<typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_create_blake_output(
     const m31 create_blake_output_input_limb_0,
     const m31 create_blake_output_input_limb_1,
@@ -78,8 +79,8 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
 
     TripleXor32 triple_xor_32_lookup_elements,
     // CUDA evaluator
-    CudaAssertEvaluator* cuda_evaluator,
-    // output（16个 limb）
+    EvaluatorT* cuda_evaluator,
+    // output (16 limbs)
     m31* out_limbs // [16]
 ) {
     // 1

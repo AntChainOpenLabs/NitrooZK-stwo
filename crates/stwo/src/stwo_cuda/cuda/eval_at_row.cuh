@@ -127,8 +127,21 @@ typedef struct CudaAssertEvaluator {
     ) {
         Fraction fraction = Fraction(entry.multiplicity, entry.relation.combine(entry.values, N));
         this->logup.fractions[this->logup_fraction_index + this->row * logup_fraction_counts_per_eval] = fraction;
-        // if (row == 1)
-        //     printf("row:%d, Adding fraction %d :{ numerator: (%d + %di) + (%d + %di)u, denominator: (%d + %di) + (%d + %di)u }\n", this->row%P, this->logup_fraction_index, fraction.numerator.a.a, fraction.numerator.a.b, fraction.numerator.b.a, fraction.numerator.b.b, fraction.denominator.a.a, fraction.denominator.a.b, fraction.denominator.b.a, fraction.denominator.b.b);
+        // Check for zero denominator (invalid fraction)
+        bool denom_is_zero = (fraction.denominator.a.a == 0) &&
+                             (fraction.denominator.a.b == 0) &&
+                             (fraction.denominator.b.a == 0) &&
+                             (fraction.denominator.b.b == 0);
+        if (denom_is_zero) {
+            printf("CUDA_ASSERT_FRAC ERROR: zero denominator at row=%u, fraction_index=%u\n",
+                this->row, this->logup_fraction_index);
+            printf("  num=[%u, %u, %u, %u] den=[%u, %u, %u, %u]\n",
+                fraction.numerator.a.a, fraction.numerator.a.b,
+                fraction.numerator.b.a, fraction.numerator.b.b,
+                fraction.denominator.a.a, fraction.denominator.a.b,
+                fraction.denominator.b.a, fraction.denominator.b.b);
+            assert(false && "Zero denominator in CUDA fraction");
+        }
         this->logup_fraction_index = this->logup_fraction_index + 1;
     }
 
@@ -152,9 +165,6 @@ typedef struct CudaAssertEvaluator {
                 unsigned coset_index = circle_domain_index_to_coset_index(bit_reverse(this->row, log_size), log_size);
                 unsigned next_coset_index = (coset_index + off)%(domain_size);
                 unsigned next_index = bit_reverse(coset_index_to_circle_domain_index(next_coset_index, log_size), log_size);
-                // if (this->row ==1) {
-                //     printf("row:%d, off:%d, coset_index:%d, next_coset_index:%d, next_index:%d\n", this->row, off, coset_index, next_coset_index, next_index);
-                // }
                 result[i] = this->trace_evaluations[current_col_index][next_index];
             }
         }
@@ -182,10 +192,9 @@ typedef struct CudaAssertEvaluator {
             printf("\033[1;31mASSERT ERROR: cuda thread:%d, constraint_index:%d, expect constraint:0, but actual: %d\033[0m\n", this->row, this->constraint_index, constraint);
             assert(false);
         } else {
-            // printf("row:%d, constraint_index:%d, constraint: %d\n", this->row, this->constraint_index, constraint);
         }
+        // Debug: Uncomment to print constraint values for row 0
         // if (row == 0)
-        //     printf("row:%d, constraint_index:%d, constraint: %d\n", this->row, this->constraint_index, constraint);
         (this->constraint_index)++;
     }
 
@@ -204,7 +213,6 @@ typedef struct CudaAssertEvaluator {
             assert(false);
         } else {
             // if (row == 0)
-            //     printf("row:%d, constraint_index:%d, constraint ext: (%d, %d, %d, %d)\n", this->row, this->constraint_index, constraint.a.a, constraint.a.b, constraint.b.a, constraint.b.b);
         }
         (this->constraint_index)++;
     }
@@ -287,9 +295,8 @@ typedef struct CudaEvaluator {
         RelationEntry<N> entry
     ) {
         Fraction fraction = Fraction(entry.multiplicity, entry.relation.combine(entry.values, N));
-        this->logup.fractions[this->logup_fraction_index + this->row * logup_fraction_counts_per_eval] = fraction;
-        // if (row == 1)
-        //     printf("row:%d, Adding fraction %d :{ numerator: (%d + %di) + (%d + %di)u, denominator: (%d + %di) + (%d + %di)u }\n", this->row%P, this->logup_fraction_index, fraction.numerator.a.a, fraction.numerator.a.b, fraction.numerator.b.a, fraction.numerator.b.b, fraction.denominator.a.a, fraction.denominator.a.b, fraction.denominator.b.a, fraction.denominator.b.b);
+        unsigned idx = this->logup_fraction_index + this->row * logup_fraction_counts_per_eval;
+        this->logup.fractions[idx] = fraction;
         this->logup_fraction_index = this->logup_fraction_index + 1;
     }
 

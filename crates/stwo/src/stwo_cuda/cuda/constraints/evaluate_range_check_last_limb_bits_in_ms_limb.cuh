@@ -7,9 +7,10 @@
 #include "eval_at_row.cuh"
 #include "relations.cuh"
 
+template<typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_range_check_last_limb_bits_in_ms_limb_6(
     m31 range_check_last_limb_bits_in_ms_limb_6_input,
-    CudaAssertEvaluator *cuda_evaluator,
+    EvaluatorT *cuda_evaluator,
     RangeCheck_6 range_check_6_lookup_elements
 ) {
     m31 values[1] = {range_check_last_limb_bits_in_ms_limb_6_input};
@@ -22,10 +23,11 @@ DEVICE_FORCEINLINE void evaluate_range_check_last_limb_bits_in_ms_limb_6(
 }
 
 
+template<typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_range_check_last_limb_bits_in_ms_limb_2(
     m31 range_check_last_limb_bits_in_ms_limb_2_input,
     m31 msb_col0,
-    CudaAssertEvaluator *cuda_evaluator
+    EvaluatorT *cuda_evaluator
 ) {
     m31 M31_1 = m31(1);
     m31 M31_2 = m31(2);

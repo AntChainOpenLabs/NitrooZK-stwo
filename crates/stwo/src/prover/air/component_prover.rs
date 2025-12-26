@@ -57,8 +57,8 @@ impl<B: Backend> ComponentProvers<'_, B> {
             self.components().composition_log_degree_bound(),
             total_constraints,
         );
-        for component in &self.components {
-            component.evaluate_constraint_quotients_on_domain(trace, &mut accumulator)
+        for component in self.components.iter() {
+            component.evaluate_constraint_quotients_on_domain(trace, &mut accumulator);
         }
         accumulator.finalize()
     }

@@ -107,6 +107,16 @@ DEVICE_FORCEINLINE unsigned int coset_index_to_circle_domain_index(
   }
 }
 
+// Helper function to implement Rust's rem_euclid behavior for signed integers
+// rem_euclid always returns a non-negative result for positive modulus
+DEVICE_FORCEINLINE int rem_euclid(int a, int m) {
+    int result = a % m;
+    if (result < 0) {
+        result += m;
+    }
+    return result;
+}
+
 DEVICE_FORCEINLINE unsigned int offset_bit_reversed_circle_domain_index(
     unsigned int i,
     unsigned int domain_log_size,
@@ -114,16 +124,25 @@ DEVICE_FORCEINLINE unsigned int offset_bit_reversed_circle_domain_index(
     int offset
 ) {
     unsigned int prev_index = bit_reverse(i, eval_log_size);
-    unsigned int half_size = 1 << (eval_log_size - 1);
+    int half_size = 1 << (eval_log_size - 1);
     int step_size = offset * (1 << (eval_log_size - domain_log_size - 1));
 
-    if (prev_index < half_size) {
-        prev_index = (prev_index + step_size) % half_size;
+    unsigned int result_index;
+    if (prev_index < (unsigned int)half_size) {
+        // prev_index + step_size can be negative when step_size is negative
+        result_index = rem_euclid((int)prev_index + step_size, half_size);
     } else {
-        prev_index = ((prev_index - step_size) % half_size) + half_size;
+        // (prev_index - step_size) can be negative when step_size is positive
+        // Rust: ((prev_index as isize - step_size).rem_euclid(half_size as isize) as usize) + half_size
+        result_index = rem_euclid((int)prev_index - step_size, half_size) + half_size;
     }
 
-    return bit_reverse(prev_index, eval_log_size);
+    // Debug: Print first occurrence with offset != 0
+    // if (i == 0 && offset != 0)
+    //     printf("offset_bit_reversed: i=%u, domain=%u, eval=%u, offset=%d => prev=%u, step=%d, result=%u, final=%u\n",
+    //         i, domain_log_size, eval_log_size, offset, prev_index, step_size, result_index, bit_reverse(result_index, eval_log_size));
+
+    return bit_reverse(result_index, eval_log_size);
 }
 
 

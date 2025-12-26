@@ -82,18 +82,44 @@ impl EvalAtRow for AssertEvaluator<'_> {
         // Cast to SecureField.
         // The constraint should be zero at the given row, since we are evaluating on the trace
         // domain.
+
+        let constraint_val = Self::EF::from(constraint);
+
+        // // DEBUG: Uncomment to print constraint details for row 0
+        // if self.row == 0 && self.constraint_counter <= 20 {
+        //     println!(
+        //         "=== DEBUG CPU: Row {}, Constraint #{} === constraint_val: {:?}",
+        //         self.row,
+        //         self.constraint_counter,
+        //         constraint_val
+        //     );
+        // }
+
         assert_eq!(
-            Self::EF::from(constraint),
+            constraint_val,
             SecureField::zero(),
             "row: #{}, constraint #{}",
             self.row,
             self.constraint_counter
         );
+
         self.constraint_counter += 1;
     }
 
     fn combine_ef(values: [Self::F; SECURE_EXTENSION_DEGREE]) -> Self::EF {
         SecureField::from_m31_array(values)
+    }
+
+    fn add_to_relation<R: crate::Relation<Self::F, Self::EF>>(
+        &mut self,
+        entry: crate::RelationEntry<'_, Self::F, Self::EF, R>,
+    ) {
+        let frac = Fraction::new(
+            entry.multiplicity.clone(),
+            entry.relation.combine(entry.values),
+        );
+
+        self.write_logup_frac(frac);
     }
 
     crate::logup_proxy!();

@@ -9,6 +9,7 @@
 #include "evaluate_read_blake_word.cuh"
 #include "evaluate_xor_rot_32R8.cuh"
 
+template<typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
     // 4 input limbs
     const m31 create_blake_round_input_input_limb_0,
@@ -70,7 +71,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
     const m31 xor_col51,
     const m31 xor_col52,
     const m31 xor_col53,
-    // 输出
+    // output
     m31* out_limbs, // [32]
 
     // Lookup tables
@@ -79,9 +80,9 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
     MemoryIdToBig memory_id_to_big_lookup_elements,
     VerifyBitwiseXor_8 verify_bitwise_xor_8_lookup_elements,
     // evaluator
-    CudaAssertEvaluator* cuda_evaluator
+    EvaluatorT* cuda_evaluator
 ) {
-    // 常量
+    // const
     const m31 M31_1 = m31(1);
     const m31 M31_127 = m31(127);
     const m31 M31_14 = m31(14);
@@ -231,7 +232,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         cuda_evaluator
     );
 
-    // 输出
+    // output
     out_limbs[0] = low_16_bits_col0;
     out_limbs[1] = high_16_bits_col1;
     out_limbs[2] = low_16_bits_col6;

@@ -937,7 +937,6 @@ extern "C" void evaluate_blake_round(
         batching[i] = i / 2;
     }
     unsigned last_batch = batching[logup_counts - 1];
-    printf("logup_counts:%d, last batch: %d\n", logup_counts, last_batch);
 
     if (use_assert_evaluator) {
         generic_constraint_post_kernel<CudaAssertEvaluator><<<num_blocks, block_dim>>>(

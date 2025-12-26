@@ -18,6 +18,7 @@ void fix_first_variable_base_field(m31 *evals, int evals_size, qm31 assignment, 
     fix_first_variable_kernel<<<num_blocks, block_size>>>(evals, evals_size, assignment, output_evals);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
 void fix_first_variable_secure_field(qm31 *evals, int evals_size, qm31 assignment, qm31* output_evals) {
@@ -26,4 +27,5 @@ void fix_first_variable_secure_field(qm31 *evals, int evals_size, qm31 assignmen
     fix_first_variable_kernel<<<num_blocks, block_size>>>(evals, evals_size, assignment, output_evals);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }

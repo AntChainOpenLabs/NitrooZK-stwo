@@ -512,7 +512,6 @@ mod tests {
     // fn test_interpolate_3() {
 
     //     for log_size in 4..30 {
-    //         println!("log_size:{}", log_size);
 
     //         let size = 1 << log_size;
 
@@ -548,7 +547,6 @@ mod tests {
     // #[allow(unused_variables)]
     // fn test_evaluate() {
     //     for log_size in 13..26 {
-    //         println!("log_size:{}", log_size);
 
     //         let size = 1 << log_size;
 

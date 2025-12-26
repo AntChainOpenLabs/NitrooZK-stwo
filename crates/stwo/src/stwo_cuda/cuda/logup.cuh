@@ -20,7 +20,8 @@ struct LookupElementsBasic {
 
     HOST_DEVICE_FORCEINLINE static LookupElementsBasic<N> dummy() {
         LookupElementsBasic<N> elements;
-        elements.z = qm31{{1, 0}, {0, 0}};
+        // Match Rust: z = SecureField::from_u32_unchecked(1, 2, 3, 4)
+        elements.z = qm31{{1, 2}, {3, 4}};
         elements.alpha = qm31{{1, 0}, {0, 0}};
         for (int i = 0; i < N; ++i) {
             elements.alpha_powers[i] = qm31{{1, 0}, {0, 0}};

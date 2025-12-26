@@ -154,6 +154,14 @@ __global__ void batch_inverse_secure_field_kernel(qm31 *from, qm31 *dst, int siz
     batch_inverse(from, dst, size, log_size, s_from_qm31, s_inner_trees_qm31);
 }
 
+// Simple element-by-element inverse kernel for small sizes
+__global__ void batch_inverse_secure_field_simple_kernel(qm31 *from, qm31 *dst, int size) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if(index < size) {
+        dst[index] = inv(from[index]);
+    }
+}
+
 void batch_inverse_base_field(m31 *from, m31 *dst, int size) {
     int log_size = log_2(size);
     int block_size = 256;
@@ -164,10 +172,24 @@ void batch_inverse_base_field(m31 *from, m31 *dst, int size) {
     batch_inverse_base_field_kernel<<<num_blocks, block_size, shared_memory_bytes>>>(from, dst, size, log_size);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
 void batch_inverse_secure_field(qm31 *from, qm31 *dst, int size) {
     int log_size = log_2(size);
+
+    // For small sizes (log_size < 6), use simple element-by-element inverse
+    // The Montgomery's trick tree-based algorithm requires at least 64 elements to work correctly
+    if(log_size < 6) {
+        int block_size = size < 256 ? size : 256;
+        int num_blocks = (size + block_size - 1) / block_size;
+        batch_inverse_secure_field_simple_kernel<<<num_blocks, block_size>>>(from, dst, size);
+        ASSERT_CUDA_SUCCESS(cudaGetLastError());
+        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+        ASSERT_CUDA_SUCCESS(cudaGetLastError());
+        return;
+    }
+
     int block_size = 512;
     int half_size = size >> 1;
     int num_blocks = (half_size + block_size - 1) / block_size;
@@ -176,4 +198,5 @@ void batch_inverse_secure_field(qm31 *from, qm31 *dst, int size) {
     batch_inverse_secure_field_kernel<<<num_blocks, block_size, shared_memory_bytes>>>(from, dst, size, log_size);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }

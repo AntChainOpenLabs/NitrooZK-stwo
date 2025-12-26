@@ -338,7 +338,6 @@ void generate_add_ap_opcode_traces(
     m31 **device_opcodes_input = clone_to_device<m31 *>(opcodes_input, 3);
     unsigned **device_memory_id_to_big_transposed_big_values = clone_to_device<m31 *>(memory_id_to_big_transposed_big_values, 8);
 
-    printf("generating add_ap_opcode_trace\n");
 
     timer global_timer;
     global_timer.start("generate add_ap_opcode base trace");

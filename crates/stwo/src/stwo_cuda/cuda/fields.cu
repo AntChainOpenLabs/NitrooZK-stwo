@@ -17,7 +17,11 @@ __host__ __device__ m31 sub(m31 a, m31 b) {
 }
 
 __host__ __device__ m31 neg(m31 a) {
-    return P - a;
+    // P - 0 = P, but P should be normalized to 0 in M31
+    // Without this check, neg(0) returns P which causes incorrect
+    // results when used in mul() since mul() doesn't expect P as input
+    m31 result = P - a;
+    return result == P ? 0 : result;
 }
 
 __host__ __device__ m31 eq_m31(m31 a, m31 b) {

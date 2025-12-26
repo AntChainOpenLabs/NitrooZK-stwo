@@ -4,14 +4,18 @@
 #include "logup.cuh"
 #include "utils.cuh"
 
+
+typedef LookupElementsBasic<20> BlakeG;
+typedef LookupElementsBasic<35> BlakeRound;
+typedef LookupElementsBasic<17> BlakeRoundSigma;
 typedef LookupElementsBasic<20> Cube252;
 typedef LookupElementsBasic<2> MemoryAddressToId;
 typedef LookupElementsBasic<29> MemoryIdToBig;
 typedef LookupElementsBasic<3> Opcodes;
 typedef LookupElementsBasic<73> PartialEcMul;
 typedef LookupElementsBasic<57> PedersenPointsTable;
-typedef LookupElementsBasic<32> PoseidonFullRoundChain;
 typedef LookupElementsBasic<42> Poseidon3PartialRoundsChain;
+typedef LookupElementsBasic<32> PoseidonFullRoundChain;
 typedef LookupElementsBasic<31> PoseidonRoundKeys;
 typedef LookupElementsBasic<1> RangeCheck_6;
 typedef LookupElementsBasic<1> RangeCheck_8;
@@ -51,9 +55,6 @@ typedef LookupElementsBasic<3> VerifyBitwiseXor_8;
 typedef LookupElementsBasic<3> VerifyBitwiseXor_8_B;
 typedef LookupElementsBasic<3> VerifyBitwiseXor_9;
 typedef LookupElementsBasic<3> VerifyBitwiseXor_12;
-typedef LookupElementsBasic<20> BlakeG;
 typedef LookupElementsBasic<8> TripleXor32;
-typedef LookupElementsBasic<35> BlakeRound;
-typedef LookupElementsBasic<17> BlakeRoundSigma;
 
 #endif // RELATIONS_H

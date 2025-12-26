@@ -58,7 +58,6 @@ impl CudaBackend {
             );
 
         if let Some(previous_layer) = prev_layer {
-            // println!("commit_on_layer_with_previous");
             bindings::commit_on_layer_with_previous(
                 size,
                 number_of_columns,
@@ -67,7 +66,6 @@ impl CudaBackend {
                 result_pointer as *mut Blake2sHash,
             );
         } else {
-            // println!("commit_on_first_layer");
             bindings::commit_on_first_layer(
                 size,
                 number_of_columns,
@@ -109,7 +107,6 @@ mod tests {
             &gpu_columns_vector.iter().collect::<Vec<_>>(),
         );
 
-        // println!("CUDA Result: {:?}", result.to_cpu());
         assert_eq!(result.to_cpu(), expected_result);
     }
 

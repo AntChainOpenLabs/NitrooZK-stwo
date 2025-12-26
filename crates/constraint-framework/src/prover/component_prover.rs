@@ -270,6 +270,7 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
             .iter()
             .map(|column_evaluations| column_evaluations.device_ptr)
             .collect_vec();
+
         let trace1_evaluations_vec = trace[1]
             .iter()
             .map(|column_evaluations| column_evaluations.device_ptr)
@@ -308,8 +309,8 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
                 logup_counts,
                 eval_ptr,
                 CudaSecureField::from(self.claimed_sum / BaseField::from_u32_unchecked(1 << eval_log_size)),
-                false,  // Always accumulate for compatibility,
-                false,
+                true,   // should_accumulate: true for proving
+                false,  // use_assert_evaluator: false for proving
             );
         };
         span.exit();

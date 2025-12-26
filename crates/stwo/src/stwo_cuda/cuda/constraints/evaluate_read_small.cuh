@@ -7,23 +7,20 @@
 #include "eval_at_row.cuh"
 #include "relations.cuh"
 
+// CUDA version CondDecodeSmallSign::evaluate
+template <typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_cond_decode_small_sign(
     const m31 cond_decode_small_sign_input[29],
     m31 msb_col0,
     m31 mid_limbs_set_col1,
-    m31* output_vec, // 2 elements
-    struct CudaAssertEvaluator* cuda_evaluator
+    EvaluatorT *cuda_evaluator
 ) {
-    m31 M31_1 = {1};
+    m31 M31_1 = m31(1);
 
     // msb is a bit.
-    cuda_evaluator->add_constraint(
-        mul(msb_col0, sub(msb_col0, M31_1))
-    );
+    cuda_evaluator->add_constraint(mul(msb_col0, sub(msb_col0, M31_1)));
     // mid_limbs_set is a bit.
-    cuda_evaluator->add_constraint(
-        mul(mid_limbs_set_col1, sub(mid_limbs_set_col1, M31_1))
-    );
+    cuda_evaluator->add_constraint(mul(mid_limbs_set_col1, sub(mid_limbs_set_col1, M31_1)));
     // Cannot have msb equals 0 and mid_limbs_set equals 1.
     cuda_evaluator->add_constraint(
         mul(
@@ -31,12 +28,11 @@ DEVICE_FORCEINLINE void evaluate_cond_decode_small_sign(
             sub(msb_col0, M31_1)
         )
     );
-
-    output_vec[0] = msb_col0;
-    output_vec[1] = mid_limbs_set_col1;
 }
 
-
+// CUDA version ReadSmall::evaluate，translated from
+// cairo-air/src/components/subroutines/read_small.rs
+template <typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_read_small(
     m31 read_small_input,
     m31 id_col0,
@@ -45,45 +41,70 @@ DEVICE_FORCEINLINE void evaluate_read_small(
     m31 value_limb_0_col3,
     m31 value_limb_1_col4,
     m31 value_limb_2_col5,
-    m31* output_vec, // 2 elements
+    m31 remainder_bits_col6,
+    m31 partial_limb_msb_col7,
+    m31 *output_vec, // 2 elements: [decoded_value, id]
     MemoryAddressToId memory_address_to_id_lookup_elements,
     MemoryIdToBig memory_id_to_big_lookup_elements,
-    struct CudaAssertEvaluator* cuda_evaluator
+    EvaluatorT *cuda_evaluator
 ) {
-    m31 M31_0 = {0};
-    m31 M31_1 = {1};
-    m31 M31_134217728 = {134217728};
-    m31 M31_136 = {136};
-    m31 M31_256 = {256};
-    m31 M31_262144 = {262144};
-    m31 M31_511 = {511};
-    m31 M31_512 = {512};
+    m31 M31_0 = m31(0);
+    m31 M31_1 = m31(1);
+    m31 M31_2 = m31(2);
+    m31 M31_134217728 = m31(134217728);
+    m31 M31_136 = m31(136);
+    m31 M31_256 = m31(256);
+    m31 M31_262144 = m31(262144);
+    m31 M31_508 = m31(508);
+    m31 M31_511 = m31(511);
+    m31 M31_512 = m31(512);
+    m31 M31_536870912 = m31(536870912);
 
-    // memory_address_to_id lookup
+    // ReadId::evaluate: memory_address_to_id lookup
     {
-        m31 values[2] = { read_small_input, id_col0 };
-        RelationEntry entry = RelationEntry<2>(
+        m31 values[2] = {read_small_input, id_col0};
+        RelationEntry<2> entry(
             memory_address_to_id_lookup_elements,
-            qm31{{1,0},{0,0}},
+            qm31{{1, 0}, {0, 0}},
             values
         );
         cuda_evaluator->add_to_relation<2>(entry);
     }
 
-    // CondDecodeSmallSign
-    m31 cond_decode_small_sign_input[29];
-    for(int i = 0; i < 28; ++i) cond_decode_small_sign_input[i] = M31_0;
-    cond_decode_small_sign_input[28] = M31_1;
+    // CondDecodeSmallSign::evaluate([1], msb, mid_limbs_set)
+    {
+        m31 cond_decode_small_sign_input[29];
+        for (int i = 0; i < 28; ++i) {
+            cond_decode_small_sign_input[i] = M31_0;
+        }
+        cond_decode_small_sign_input[28] = M31_1;
+        evaluate_cond_decode_small_sign<EvaluatorT>(
+            cond_decode_small_sign_input,
+            msb_col1,
+            mid_limbs_set_col2,
+            cuda_evaluator
+        );
+    }
 
-    m31 cond_decode_small_sign_output[2];
-    evaluate_cond_decode_small_sign(
-        cond_decode_small_sign_input,
-        msb_col1,
-        mid_limbs_set_col2,
-        cond_decode_small_sign_output,
-        cuda_evaluator
-    );
-    // output: cond_decode_small_sign_output[0], cond_decode_small_sign_output[1]
+    // CondRangeCheck2::evaluate([remainder_bits, 1], partial_limb_msb)
+    {
+        // msb is a bit or condition is 0; here condition is always 1.
+        cuda_evaluator->add_constraint(
+            mul(
+                mul(partial_limb_msb_col7, sub(M31_1, partial_limb_msb_col7)),
+                M31_1
+            )
+        );
+        m31 partial_limb_bit_before_msb =
+            sub(remainder_bits_col6, mul(partial_limb_msb_col7, M31_2));
+        cuda_evaluator->add_constraint(
+            mul(
+                mul(partial_limb_bit_before_msb,
+                    sub(M31_1, partial_limb_bit_before_msb)),
+                M31_1
+            )
+        );
+    }
 
     // memory_id_to_big lookup
     {
@@ -92,7 +113,7 @@ DEVICE_FORCEINLINE void evaluate_read_small(
             value_limb_0_col3,
             value_limb_1_col4,
             value_limb_2_col5,
-            mul(mid_limbs_set_col2, M31_511),
+            add(remainder_bits_col6, mul(mid_limbs_set_col2, M31_508)),
             mul(mid_limbs_set_col2, M31_511),
             mul(mid_limbs_set_col2, M31_511),
             mul(mid_limbs_set_col2, M31_511),
@@ -118,28 +139,32 @@ DEVICE_FORCEINLINE void evaluate_read_small(
             M31_0,
             mul(msb_col1, M31_256)
         };
-        RelationEntry entry = RelationEntry<29>(
+        RelationEntry<29> entry(
             memory_id_to_big_lookup_elements,
-            qm31{{1,0},{0,0}},
+            qm31{{1, 0}, {0, 0}},
             values
         );
         cuda_evaluator->add_to_relation<29>(entry);
     }
 
-    // Output
-    output_vec[0] = sub(
+    // Output: decoded value (consistent with CPU version ReadSmall::evaluate return value)
+    output_vec[0] =
         sub(
-            add(
+            sub(
                 add(
-                    value_limb_0_col3,
-                    mul(value_limb_1_col4, M31_512)
+                    add(
+                        value_limb_0_col3,
+                        mul(value_limb_1_col4, M31_512)
+                    ),
+                    add(
+                        mul(value_limb_2_col5, M31_262144),
+                        mul(remainder_bits_col6, M31_134217728)
+                    )
                 ),
-                mul(value_limb_2_col5, M31_262144)
+                msb_col1
             ),
-            msb_col1
-        ),
-        mul(M31_134217728, mid_limbs_set_col2)
-    );
+            mul(M31_536870912, mid_limbs_set_col2)
+        );
     output_vec[1] = id_col0;
 }
 

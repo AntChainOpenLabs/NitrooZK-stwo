@@ -82,7 +82,7 @@ __global__ void generate_add_opcode_small_trace_kernel(
     const uint16_t UInt16_127 = 127;
 
     if (row < trace_size) {
-        // === 输入 ===
+        // === input ===
         m31 input_pc_col0 = add_opcode_small_inputs[0][row];
         traces[0][row] = input_pc_col0;
         m31 input_ap_col1 = add_opcode_small_inputs[1][row];
@@ -307,11 +307,11 @@ __global__ void generate_add_opcode_small_trace_kernel(
         for (int i = 0; i < 17; ++i) {
             lookup_memory_id_to_big_0[0 * 29 + 5 + i][row] = mul(mid_limbs_set_col16, M31_511);
         }
-        lookup_memory_id_to_big_0[0 * 29 + 21][row] = sub(mul(M31_136, msb_col15), mid_limbs_set_col16);
+        lookup_memory_id_to_big_0[0 * 29 + 22][row] = sub(mul(M31_136, msb_col15), mid_limbs_set_col16);
         for (int i = 0; i < 5; ++i) {
-            lookup_memory_id_to_big_0[0 * 29 + 22 + i][row] = M31_0;
+            lookup_memory_id_to_big_0[0 * 29 + 23 + i][row] = M31_0;
         }
-        lookup_memory_id_to_big_0[0 * 29 + 27][row] = mul(msb_col15, M31_256);
+        lookup_memory_id_to_big_0[0 * 29 + 28][row] = mul(msb_col15, M31_256);
 
         // === Read Small for op0 ===
         m31 memory_address_to_id_value_tmp_8d553_17 = {0};
@@ -362,11 +362,11 @@ __global__ void generate_add_opcode_small_trace_kernel(
         for (int i = 0; i < 17; ++i) {
             lookup_memory_id_to_big_1[0 * 29 + 5 + i][row] = mul(mid_limbs_set_col24, M31_511);
         }
-        lookup_memory_id_to_big_1[0 * 29 + 21][row] = sub(mul(M31_136, msb_col23), mid_limbs_set_col24);
+        lookup_memory_id_to_big_1[0 * 29 + 22][row] = sub(mul(M31_136, msb_col23), mid_limbs_set_col24);
         for (int i = 0; i < 5; ++i) {
-            lookup_memory_id_to_big_1[0 * 29 + 22 + i][row] = M31_0;
+            lookup_memory_id_to_big_1[0 * 29 + 23 + i][row] = M31_0;
         }
-        lookup_memory_id_to_big_1[0 * 29 + 27][row] = mul(msb_col23, M31_256);
+        lookup_memory_id_to_big_1[0 * 29 + 28][row] = mul(msb_col23, M31_256);
 
         // === Read Small for op1 ===
         m31 memory_address_to_id_value_tmp_8d553_23 = {0};
@@ -417,11 +417,11 @@ __global__ void generate_add_opcode_small_trace_kernel(
         for (int i = 0; i < 17; ++i) {
             lookup_memory_id_to_big_2[0 * 29 + 5 + i][row] = mul(mid_limbs_set_col32, M31_511);
         }
-        lookup_memory_id_to_big_2[0 * 29 + 21][row] = sub(mul(M31_136, msb_col31), mid_limbs_set_col32);
+        lookup_memory_id_to_big_2[0 * 29 + 22][row] = sub(mul(M31_136, msb_col31), mid_limbs_set_col32);
         for (int i = 0; i < 5; ++i) {
-            lookup_memory_id_to_big_2[0 * 29 + 22 + i][row] = M31_0;
+            lookup_memory_id_to_big_2[0 * 29 + 23 + i][row] = M31_0;
         }
-        lookup_memory_id_to_big_2[0 * 29 + 27][row] = mul(msb_col31, M31_256);
+        lookup_memory_id_to_big_2[0 * 29 + 28][row] = mul(msb_col31, M31_256);
 
         // === lookup_data.opcodes_0/1 ===
         lookup_opcodes_0[0 * 3 + 0][row] = input_pc_col0;
@@ -487,7 +487,6 @@ void generate_add_opcode_small_traces(
     m31 **device_add_opcode_small_input = clone_to_device<m31 *>(add_opcode_small_input, 3);
     unsigned **device_memory_id_to_big_transpose_big_value_ptr = clone_to_device<m31 *>(memory_id_to_big_transpose_big_value_ptr, 8);
 
-    printf("generating add_opcode_small_trace\n");
 
     timer global_timer;
     global_timer.start("generate add_opcode base trace");

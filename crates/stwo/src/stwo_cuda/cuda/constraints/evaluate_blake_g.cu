@@ -54,7 +54,6 @@ __global__ void evaluate_blake_g_pre_kernel(
         // TODO: Tony (Move into L1/L2)
         const m31 M31_0 = { 0 };
         m31 input_limb_0_col0 = cuda_evaluator.next_trace_mask();
-        // printf("row:%d, input_limb_0_col0: %d\n", row, input_limb_0_col0);
         m31 input_limb_1_col1 = cuda_evaluator.next_trace_mask();
         m31 input_limb_2_col2 = cuda_evaluator.next_trace_mask();
         m31 input_limb_3_col3 = cuda_evaluator.next_trace_mask();
@@ -279,7 +278,7 @@ __global__ void evaluate_blake_g_pre_kernel(
 
         RelationEntry entry = RelationEntry<20>(
             eval->blake_g_lookup_elements,
-            (enabler == 0 ? qm31{0} : qm31{(P - enabler), 0 , 0 , 0}),
+            qm31{{neg(enabler), 0}, {0, 0}},
             values
         );
         cuda_evaluator.add_to_relation<20>(entry);
@@ -365,7 +364,6 @@ extern "C" void evaluate_blake_g(
         batching[i] = i / 2;
     }
     unsigned last_batch = batching[logup_counts - 1];
-    printf("last batch: %d\n", last_batch);
 
     if (use_assert_evaluator) {
         generic_constraint_post_kernel<CudaAssertEvaluator><<<num_blocks, block_dim>>>(

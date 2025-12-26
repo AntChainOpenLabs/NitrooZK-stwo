@@ -29,7 +29,6 @@ __global__ void memory_id_to_big_deduce_kernel(
         switch (mv.tag) {
             case MEMORY_VALUE_ID_F252: {
                 out_values[j] = transpose_big_value_ptr[j][mv.value];
-                // printf("MEMORY_VALUE_ID_F252: out_values[j] %u\n", out_values[j]);
                 break;
             }
             case MEMORY_VALUE_ID_SMALL: {
@@ -104,27 +103,29 @@ __global__ void memory_id_to_big_add_inputs_kernel(
 ) {
     unsigned row = blockIdx.x * blockDim.x + threadIdx.x;
     if (row < input_row_sizes) {
-        EncodedMemoryValueId emv;
-        emv.encoded = inputs[0][row];
-        MemoryValueId mv = decode_memory_value_id(&emv);
+        // Process all input columns (e.g., 24 for add_mod_builtin)
+        for (unsigned col = 0; col < input_col_sizes; col++) {
+            EncodedMemoryValueId emv;
+            emv.encoded = inputs[col][row];
+            MemoryValueId mv = decode_memory_value_id(&emv);
 
-        switch (mv.tag) {
-            case MEMORY_VALUE_ID_F252: {
-                atomicAdd(&big_mults[mv.tag], 1);
-                // printf("MEMORY_VALUE_ID_F252: out_values[j] %u\n", out_values[j]);
-                break;
-            }
-            case MEMORY_VALUE_ID_SMALL: {
-                atomicAdd(&small_mults[mv.tag], 1);
-                break;
-            }
-            case MEMORY_VALUE_ID_EMPTY: {
-                printf("Attempted deduce_output on empty memory cell.\\n");
-                return;
-            }
-            default: {
-                printf("Invalid MemoryValueId tag: %d\\n", mv.tag);
-                return;
+            switch (mv.tag) {
+                case MEMORY_VALUE_ID_F252: {
+                    atomicAdd(&big_mults[mv.tag], 1);
+                    break;
+                }
+                case MEMORY_VALUE_ID_SMALL: {
+                    atomicAdd(&small_mults[mv.tag], 1);
+                    break;
+                }
+                case MEMORY_VALUE_ID_EMPTY: {
+                    // 0 indicates padding row, skip silently
+                    break;
+                }
+                default: {
+                    printf("Invalid MemoryValueId tag: %d\\n", mv.tag);
+                    break;
+                }
             }
         }
     }

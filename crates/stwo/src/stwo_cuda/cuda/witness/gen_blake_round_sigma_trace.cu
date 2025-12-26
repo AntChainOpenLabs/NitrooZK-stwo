@@ -243,11 +243,8 @@ void initialize_blake_round_sigma_constants() {
     memcpy(blake_round_sigma_consts[1], sigmas, 16 * 16 * sizeof(m31));
 
     // for (int i = 0; i < 17; ++i) {
-    //     printf("row:%d: ", i);
     //     for (int j = 0; j < 16; ++j) {
-    //         printf("%d, ", blake_round_sigma_consts[i][j]);
     //     }
-    //     printf("\n");
     // }
 
     cudaError_t err;

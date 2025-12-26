@@ -72,11 +72,12 @@ pub fn prove<B: BackendForChannel<MC>, MC: MerkleChannel>(
 
     // Evaluate composition polynomial at OODS point and check that it matches the trace OODS
     // values. This is a sanity check.
-    if proof.extract_composition_oods_eval().unwrap()
-        != component_provers
+    let committed_oods = proof.extract_composition_oods_eval().unwrap();
+    let recomputed_oods = component_provers
             .components()
-            .eval_composition_polynomial_at_point(oods_point, &proof.sampled_values, random_coeff)
-    {
+            .eval_composition_polynomial_at_point(oods_point, &proof.sampled_values, random_coeff);
+
+    if committed_oods != recomputed_oods {
         return Err(ProvingError::ConstraintsNotSatisfied);
     }
 

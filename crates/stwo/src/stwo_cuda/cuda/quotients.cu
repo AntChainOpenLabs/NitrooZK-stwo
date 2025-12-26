@@ -2,8 +2,6 @@
 #include <cstdio>
 
 
-
-
 typedef struct {
     secure_field_point point;
     uint32_t *columns;
@@ -160,7 +158,7 @@ __global__ void accumulate_quotients_in_gpu(
                 qm31 b = line_coeffs[3 * j + 1];
                 qm31 c = line_coeffs[3 * j + 2];
 
-                int column_index = sample_batches[i].columns[j];
+                int column_index = sample_batch.columns[j];
                 qm31 linear_term = add(mul_by_scalar(a, domain_point.y), b);
                 qm31 value = mul_by_scalar(c, columns[column_index][row]);
 

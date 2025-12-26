@@ -4,7 +4,7 @@ fn main() {
     std::process::exit(0);
     let dst = cmake::Config::new("src/stwo_cuda/cuda")
         .profile("Release")
-        .build_arg("--jobs=8")
+        .build_arg("--jobs=16")
         .build();
     println!("cargo:rustc-link-search=native={}", dst.display());
     println!("cargo:rustc-link-lib=static=stwo_cuda");

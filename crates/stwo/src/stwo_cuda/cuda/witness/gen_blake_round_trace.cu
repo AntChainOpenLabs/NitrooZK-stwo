@@ -115,7 +115,6 @@ __global__ void generate_blake_round_trace_kernel(
     const uint16_t UInt16_2 = 2;
     const uint16_t UInt16_7 = 7;
     const uint16_t UInt16_9 = 9;
-    // printf("blake_round_trace_kernel row:%d, line:%d\n", row, __LINE__);
 
     if (row < trace_size) {
         m31 input_limb_0_col0 = blake_round_input[0][row];
@@ -257,7 +256,6 @@ __global__ void generate_blake_round_trace_kernel(
         traces[49][row] = blake_round_sigma_output_limb_14_col49;
         m31 blake_round_sigma_output_limb_15_col50 = blake_round_sigma_output_tmp_92ff8_0_15;
         traces[50][row] = blake_round_sigma_output_limb_15_col50;
-    //   printf("row:%d, blake_round_sigma_output_limb_15_col50: %d\n", row, blake_round_sigma_output_limb_15_col50);
 
         lookup_blake_round_sigma_0[0][row]  = input_limb_1_col1;
         lookup_blake_round_sigma_0[1][row]  = blake_round_sigma_output_limb_0_col35;
@@ -1656,7 +1654,6 @@ __global__ void generate_blake_round_trace_kernel(
         m31 blake_g_output_limb_7_col210 = m31{high_as_m31(blake_g_output_tmp_92ff8_152[3])};
         traces[210][row] = blake_g_output_limb_7_col210;
 
-        // printf("row:%d, blake_g_output_limb_7_col210: %d\n", row, traces[210][row]);
         lookup_blake_g_7[0][row] = blake_g_output_limb_0_col171;
         lookup_blake_g_7[1][row] = blake_g_output_limb_1_col172;
         lookup_blake_g_7[2][row] = blake_g_output_limb_2_col149;
@@ -1916,7 +1913,6 @@ void generate_blake_round_traces(
 
     unsigned **device_memory_id_to_big_transpose_big_value_ptr = clone_to_device<m31 *>(memory_id_to_big_transpose_big_value_ptr, 8);
 
-    printf("generating blake_round_trace\n");
 
     timer global_timer;
     global_timer.start("generate blake_round base trace");

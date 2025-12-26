@@ -47,7 +47,6 @@ DEVICE_FORCEINLINE void triple_sum32_evaluate(
     carry_low_tmp_541fa_1 = add(carry_low_tmp_541fa_1, triple_sum_32_input_limb_4);
     carry_low_tmp_541fa_1 = sub(carry_low_tmp_541fa_1, triple_sum32_res_limb_0_col0);
     carry_low_tmp_541fa_1 = mul(carry_low_tmp_541fa_1, M31_32768);
-    // printf("carry_low_tmp_541fa_1 = %d\n", carry_low_tmp_541fa_1);
     cuda_evaluator->add_constraint(mul(mul(sub(carry_low_tmp_541fa_1, M31_1), carry_low_tmp_541fa_1), sub(carry_low_tmp_541fa_1, M31_2)));
 
     m31 carry_high_tmp_541fa_2 = add(triple_sum_32_input_limb_1, triple_sum_32_input_limb_3);

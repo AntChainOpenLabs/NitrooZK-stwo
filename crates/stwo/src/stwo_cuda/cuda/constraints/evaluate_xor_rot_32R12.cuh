@@ -101,7 +101,6 @@ DEVICE_FORCEINLINE void xor_rot_32R12_evaluate(
     );
 
     // if ((threadIdx.x + blockDim.x * blockIdx.x) == 0) {
-    //     printf("xor_rot_32_r_12_input_limb_2:%d, ms_4_bits_col2:%d\n", xor_rot_32_r_12_input_limb_2, ms_4_bits_col2);
     // }
     splite16_low_part_size12_evaluate(
         xor_rot_32_r_12_input_limb_2,
@@ -118,7 +117,6 @@ DEVICE_FORCEINLINE void xor_rot_32R12_evaluate(
     );
 
     // if ((threadIdx.x + blockDim.x * blockIdx.x) == 0) {
-    //     printf("split_16_low_part_size_12_output_tmp_cf62f_1_limb_0:%d, split_16_low_part_size_12_output_tmp_cf62f_5_limb_0:%d, xor_col4:%d\n", split_16_low_part_size_12_output_tmp_cf62f_1_limb_0, split_16_low_part_size_12_output_tmp_cf62f_5_limb_0, xor_col4);
     // }
     bitwise_xor_numbits12_evaluate(
         split_16_low_part_size_12_output_tmp_cf62f_1_limb_0,

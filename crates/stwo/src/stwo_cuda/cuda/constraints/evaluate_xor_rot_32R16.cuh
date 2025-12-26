@@ -118,7 +118,6 @@ DEVICE_FORCEINLINE void xor_rot_32R16_evaluate(
     );
 
     // if ((threadIdx.x + blockDim.x * blockIdx.x) == 0) {
-    //     printf("split_16_low_part_size_8_output_tmp_813a9_1_limb_0:%d, split_16_low_part_size_8_output_tmp_813a9_5_limb_0:%d, xor_col4:%d\n", split_16_low_part_size_8_output_tmp_813a9_1_limb_0, split_16_low_part_size_8_output_tmp_813a9_5_limb_0, xor_col4);
     // }
      bitwise_xor_numbits8_32R16_evaluate(
         split_16_low_part_size_8_output_tmp_813a9_1_limb_0,

@@ -8,6 +8,10 @@
 #include "relations.cuh"
 #include "evaluate_range_check_last_limb_bits_in_ms_limb.cuh"
 
+// NOTE:
+// This file provides the CUDA implementation for ReadPositiveNumBits_* components, for reading signed/unsigned integers from memory.
+// It uses MemoryAddressToId / MemoryIdToBig / RangeCheck relations to record logup constraints.
+
 template <typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_29(
     m31 read_positive_num_bits_29_input,
@@ -85,6 +89,68 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_29(
     output_vec[26] = M31_0;
     output_vec[27] = M31_0;
     output_vec[28] = id_col0;
+}
+
+// 99-bit version: corresponds to CPU-side ReadPositiveNumBits99 + ReadPositiveKnownIdNumBits99.
+// This function directly inlines two child programs:
+// - First: MemoryAddressToId(addr -> id)
+// - Then: MemoryIdToBig(id, 11 limbs, remaining filled with 0), total 29 columns.
+template <typename EvaluatorT>
+DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_99(
+    m31 read_positive_num_bits_99_input,
+    m31 id_col0,
+    m31 value_limb_0_col1,
+    m31 value_limb_1_col2,
+    m31 value_limb_2_col3,
+    m31 value_limb_3_col4,
+    m31 value_limb_4_col5,
+    m31 value_limb_5_col6,
+    m31 value_limb_6_col7,
+    m31 value_limb_7_col8,
+    m31 value_limb_8_col9,
+    m31 value_limb_9_col10,
+    m31 value_limb_10_col11,
+    MemoryAddressToId memory_address_to_id_lookup_elements,
+    MemoryIdToBig memory_id_to_big_lookup_elements,
+    EvaluatorT *cuda_evaluator
+) {
+    // address -> id
+    {
+        m31 values[2] = {read_positive_num_bits_99_input, id_col0};
+        RelationEntry<2> entry(
+            memory_address_to_id_lookup_elements,
+            qm31{{1, 0}, {0, 0}},
+            values
+        );
+        cuda_evaluator->add_to_relation<2>(entry);
+    }
+
+    // id -> big (11 limbs, remaining filled with 0)
+    {
+        m31 zero = 0;
+        m31 values[29] = {
+            id_col0,
+            value_limb_0_col1,
+            value_limb_1_col2,
+            value_limb_2_col3,
+            value_limb_3_col4,
+            value_limb_4_col5,
+            value_limb_5_col6,
+            value_limb_6_col7,
+            value_limb_7_col8,
+            value_limb_8_col9,
+            value_limb_9_col10,
+            value_limb_10_col11,
+            zero, zero, zero, zero, zero, zero, zero, zero,
+            zero, zero, zero, zero, zero, zero, zero, zero
+        };
+        RelationEntry<29> entry(
+            memory_id_to_big_lookup_elements,
+            qm31{{1, 0}, {0, 0}},
+            values
+        );
+        cuda_evaluator->add_to_relation<29>(entry);
+    }
 }
 
 template <typename EvaluatorT>
@@ -253,6 +319,94 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_252(
     output_vec[26] = value_limb_26_col27;
     output_vec[27] = value_limb_27_col28;
     output_vec[28] = id_col0;
+}
+
+template <typename EvaluatorT>
+DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_36(
+    m31 read_positive_num_bits_36_input,
+    m31 id_col0,
+    m31 value_limb_0_col1,
+    m31 value_limb_1_col2,
+    m31 value_limb_2_col3,
+    m31 value_limb_3_col4,
+    MemoryAddressToId memory_address_to_id_lookup_elements,
+    MemoryIdToBig memory_id_to_big_lookup_elements,
+    EvaluatorT *cuda_evaluator
+) {
+    m31 M31_0 = m31(0);
+
+    // (1) address-to-id lookup
+    {
+        m31 values[2] = {read_positive_num_bits_36_input, id_col0};
+        RelationEntry<2> entry(
+            memory_address_to_id_lookup_elements,
+            qm31{m31(1), m31(0)},
+            values
+        );
+        cuda_evaluator->add_to_relation<2>(entry);
+    }
+
+    // (2) id-to-big lookup
+    {
+        m31 values[29] = {
+            id_col0,
+            value_limb_0_col1, value_limb_1_col2, value_limb_2_col3, value_limb_3_col4,
+            M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0,
+            M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0
+        };
+        RelationEntry<29> entry(
+            memory_id_to_big_lookup_elements,
+            qm31{m31(1), m31(0)},
+            values
+        );
+        cuda_evaluator->add_to_relation<29>(entry);
+    }
+}
+
+template <typename EvaluatorT>
+DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_72(
+    m31 read_positive_num_bits_72_input,
+    m31 id_col0,
+    m31 value_limb_0_col1,
+    m31 value_limb_1_col2,
+    m31 value_limb_2_col3,
+    m31 value_limb_3_col4,
+    m31 value_limb_4_col5,
+    m31 value_limb_5_col6,
+    m31 value_limb_6_col7,
+    m31 value_limb_7_col8,
+    MemoryAddressToId memory_address_to_id_lookup_elements,
+    MemoryIdToBig memory_id_to_big_lookup_elements,
+    EvaluatorT *cuda_evaluator
+) {
+    m31 M31_0 = m31(0);
+
+    // (1) address-to-id lookup
+    {
+        m31 values[2] = {read_positive_num_bits_72_input, id_col0};
+        RelationEntry<2> entry(
+            memory_address_to_id_lookup_elements,
+            qm31{m31(1), m31(0)},
+            values
+        );
+        cuda_evaluator->add_to_relation<2>(entry);
+    }
+
+    // (2) id-to-big lookup
+    {
+        m31 values[29] = {
+            id_col0,
+            value_limb_0_col1, value_limb_1_col2, value_limb_2_col3, value_limb_3_col4,
+            value_limb_4_col5, value_limb_5_col6, value_limb_6_col7, value_limb_7_col8,
+            M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0
+        };
+        RelationEntry<29> entry(
+            memory_id_to_big_lookup_elements,
+            qm31{m31(1), m31(0)},
+            values
+        );
+        cuda_evaluator->add_to_relation<29>(entry);
+    }
 }
 
 #endif // EVALUATE_READ_POSITIVE_NUM_BITS_H

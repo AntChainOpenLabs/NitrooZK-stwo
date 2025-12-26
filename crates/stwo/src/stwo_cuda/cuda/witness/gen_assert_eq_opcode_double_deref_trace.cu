@@ -71,7 +71,7 @@ __global__ void generate_assert_eq_opcode_double_deref_trace_kernel(
     const uint16_t UInt16_127 = 127;
 
     if (row < trace_size) {
-        // === 输入 ===
+        // === input ===
         m31 input_pc_col0 = assert_eq_opcode_double_deref_inputs[0][row];
         traces[0][row] = input_pc_col0;
         m31 input_ap_col1 = assert_eq_opcode_double_deref_inputs[1][row];
@@ -318,7 +318,6 @@ void generate_assert_eq_opcode_double_deref_traces(
     m31 **device_assert_eq_opcode_double_deref_input = clone_to_device<m31 *>(assert_eq_opcode_double_deref_input, 3);
     unsigned **device_memory_id_to_big_transpose_big_value_ptr = clone_to_device<m31 *>(memory_id_to_big_transpose_big_value_ptr, 8);
 
-    printf("generating assert_eq_opcode_double_deref_trace\n");
 
     timer global_timer;
     global_timer.start("generate assert_eq_opcode_double_deref base trace");

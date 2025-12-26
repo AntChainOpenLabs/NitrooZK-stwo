@@ -90,7 +90,6 @@ __global__ void generate_add_opcode_trace_kernel(
             input_pc_col0,
             &memory_address_to_id_value_tmp_3fa46_0
         );
-        // printf("row:%d, memory_address_to_id_value_tmp_3fa46_0:%d\n", row, memory_address_to_id_value_tmp_3fa46_0);
         m31 memory_id_to_big_value_tmp_3fa46_1[N_M31_IN_FELT252] = {0};
         memory_id_to_big_state_deduce_output(
             memory_id_to_big_transpose_big_value_ptr,
@@ -98,7 +97,6 @@ __global__ void generate_add_opcode_trace_kernel(
             memory_address_to_id_value_tmp_3fa46_0,
             memory_id_to_big_value_tmp_3fa46_1
         );
-        // if (row == 0) printf("row:%d, line%d\n", row, __LINE__);
         // offset0
         uint16_t offset0_tmp_3fa46_2 =
             ((uint16_t)(memory_id_to_big_value_tmp_3fa46_1[0]))
@@ -406,7 +404,6 @@ void generate_add_opcode_traces(
     m31 **device_add_opcode_input = clone_to_device<m31 *>(add_opcode_input, 3);
     unsigned **device_memory_id_to_big_transpose_big_value_ptr = clone_to_device<m31 *>(memory_id_to_big_transpose_big_value_ptr, 8);
 
-    printf("generating add_opcode_trace\n");
 
     timer global_timer;
     global_timer.start("generate add_opcode base trace");

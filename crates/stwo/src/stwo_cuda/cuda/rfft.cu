@@ -273,6 +273,7 @@ EXTERN void ntt_n2b_nofinal_6_stage_batch(m31** input, m31** output,
         input, output, log_n, num_poly, start_stage, end_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
 }
 
@@ -301,6 +302,7 @@ EXTERN void ntt_n2b_nofinal_8_stage_batch(m31** input, m31** output,
         input, output, log_n, num_poly, start_stage, end_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
 template <unsigned LOG_VALS_PER_THREAD>
@@ -408,6 +410,7 @@ EXTERN void ntt_n2b_final_7_stage_batch(m31** input, m31** output,
         input, output, log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
 EXTERN void ntt_n2b_final_8_stage_batch(m31** input, m31** output,
@@ -429,6 +432,7 @@ EXTERN void ntt_n2b_final_8_stage_batch(m31** input, m31** output,
         input, output, log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
 
@@ -580,6 +584,7 @@ EXTERN void ntt_n2b_final_10_stage_batch(m31** input, m31** output,
         input, output, log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
 EXTERN void ntt_n2b_final_11_stage_batch(m31** input, m31** output,
@@ -599,6 +604,7 @@ EXTERN void ntt_n2b_final_11_stage_batch(m31** input, m31** output,
         input, output,  log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
 
@@ -668,6 +674,7 @@ EXTERN void ntt_n2b_native_batch(m31** value,
         ntt_n2b_stage_batch<<<grid_dim, block_dim, 0>>>(device_values, device_values, log_n, log_n, g_twiddles);
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
         ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+        ASSERT_CUDA_SUCCESS(cudaGetLastError());
     }
     cuda_free_memory(device_values);
 }

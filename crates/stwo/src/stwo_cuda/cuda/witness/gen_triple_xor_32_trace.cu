@@ -255,7 +255,6 @@ void generate_triple_xor_32_traces(
 
     uint32_t **device_triple_xor_32_input = clone_to_device<uint32_t *>(triple_xor_32_input, 3);
 
-    printf("generating triple_xor_32_trace\n");
 
     timer global_timer;
     global_timer.start("generate triple_xor_32 base trace");

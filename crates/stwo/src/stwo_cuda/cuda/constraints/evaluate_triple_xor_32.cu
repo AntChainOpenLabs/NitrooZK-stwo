@@ -156,35 +156,36 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         &cuda_evaluator
     );
 
-    bitwise_xor_numbits8_32R8_evaluate(
+    // Last 4 XORs use verify_bitwise_xor_8_b_lookup_elements (BitwiseXorNumBits8B)
+    bitwise_xor_numbits8_b_32R8_evaluate(
         split_16_low_part_size_8_output_tmp_298db_3_limb_0,
         split_16_low_part_size_8_output_tmp_298db_7_limb_0,
         xor_col16,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->verify_bitwise_xor_8_b_lookup_elements,
         &cuda_evaluator
     );
 
-    bitwise_xor_numbits8_32R8_evaluate(
+    bitwise_xor_numbits8_b_32R8_evaluate(
         xor_col16,
         split_16_low_part_size_8_output_tmp_298db_11_limb_0,
         xor_col17,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->verify_bitwise_xor_8_b_lookup_elements,
         &cuda_evaluator
     );
 
-    bitwise_xor_numbits8_32R8_evaluate(
+    bitwise_xor_numbits8_b_32R8_evaluate(
         ms_8_bits_col7,
         ms_8_bits_col9,
         xor_col18,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->verify_bitwise_xor_8_b_lookup_elements,
         &cuda_evaluator
     );
 
-    bitwise_xor_numbits8_32R8_evaluate(
+    bitwise_xor_numbits8_b_32R8_evaluate(
         xor_col18,
         ms_8_bits_col11,
         xor_col19,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->verify_bitwise_xor_8_b_lookup_elements,
         &cuda_evaluator
     );
 
@@ -207,7 +208,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
 
     RelationEntry entry = RelationEntry<8>(
         eval->triple_xor_32_lookup_elements,
-            (enabler == 0 ? qm31{0} : qm31{(P - enabler), 0 , 0 , 0}),
+            qm31{{neg(enabler), 0}, {0, 0}},
         values);
     cuda_evaluator.add_to_relation<8>(entry);
 
@@ -291,7 +292,6 @@ extern "C" void evaluate_triple_xor_32(
         batching[i] = i / 2;
     }
     unsigned last_batch = batching[logup_counts - 1];
-    printf("last batch: %d\n", last_batch);
 
     if (use_assert_evaluator) {
         generic_constraint_post_kernel<CudaAssertEvaluator><<<num_blocks, block_dim>>>(

@@ -347,8 +347,8 @@ void generate_poseidon_traces(
     }
 
     unsigned trace_size = 1 << trace_log_size;
-    int block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
-    int num_blocks = block_dim < THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;
+    int block_dim = trace_size < POSEISON_THREAD_COUNT_MAX ? trace_size : POSEISON_THREAD_COUNT_MAX;
+    int num_blocks = block_dim < POSEISON_THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;
 
     generate_poseidon_trace_kernel<<<num_blocks, block_dim>>>(
         device_traces,

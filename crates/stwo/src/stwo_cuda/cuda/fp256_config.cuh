@@ -92,18 +92,17 @@ struct ff_config_starknet
     static constexpr uint32_t inv = 0xFFFFFFFF;
     
     // 1 in Montgomery form (R mod p)
-    // R = 2^256 mod p
-    // = 2^256 - (2^251 + 17*2^192 + 1)
-    // = 2^255 + 2^254 + ... + 2^251 - 17*2^192 - 1
+    // R = 2^256 mod p where p = 2^251 + 17*2^192 + 1
+    // R mod p = 0x7fffffffffffdf0ffffffffffffffffffffffffffffffffffffffffffffffe1
     // Pre-computed:
     static constexpr ff_storage<limbs_count> one = {
-        0xffffffff, // limb[0]
+        0xffffffe1, // limb[0]
         0xffffffff, // limb[1]
         0xffffffff, // limb[2]
         0xffffffff, // limb[3]
         0xffffffff, // limb[4]
         0xffffffff, // limb[5]
-        0xffffffef, // limb[6] = -17 mod 2^32
+        0xfffffdf0, // limb[6]
         0x07ffffff  // limb[7]
     };
     

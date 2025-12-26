@@ -46,23 +46,24 @@ __global__ void evaluate_blake_round_sigma_pre_kernel(
         logup_counts
     );
 
-    m31 blakesigma_0 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_1 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_2 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_3 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_4 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_5 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_6 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_7 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_8 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_9 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_10 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_11 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_12 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_13 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_14 = cuda_evaluator0.next_trace_mask();
-    m31 blakesigma_15 = cuda_evaluator0.next_trace_mask();
-    m31 seq = cuda_evaluator0.next_trace_mask();
+    // All preprocessed columns - use get_preprocessed_column() not next_trace_mask()
+    m31 seq = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_0 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_1 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_2 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_3 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_4 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_5 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_6 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_7 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_8 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_9 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_10 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_11 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_12 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_13 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_14 = cuda_evaluator0.get_preprocessed_column();
+    m31 blakesigma_15 = cuda_evaluator0.get_preprocessed_column();
 
     EvaluatorT cuda_evaluator1(
         trace1_evaluations,
@@ -184,7 +185,6 @@ extern "C" void evaluate_blake_round_sigma(
         batching[i] = i / 2;
     }
     unsigned last_batch = batching[logup_counts - 1];
-    printf("last batch: %d\n", last_batch);
 
     if (use_assert_evaluator) {
         generic_constraint_post_kernel<CudaAssertEvaluator><<<num_blocks, block_dim>>>(
