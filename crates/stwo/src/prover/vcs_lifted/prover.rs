@@ -31,7 +31,11 @@ impl<B: MerkleOpsLifted<H>, H: MerkleHasherLifted> MerkleProverLifted<B, H> {
     ///
     /// A new instance of `MerkleProverLifted` with the committed layers.
     pub fn commit(columns: Vec<&Col<B, BaseField>>, lifting_log_size: u32) -> Self {
-        let _span = span!(Level::TRACE, "Merkle", class = "MerkleCommitment").entered();
+        let _span = span!(Level::INFO, "MerkleLifted commit",
+            class = "MerkleCommitment",
+            lifting_log_size = lifting_log_size,
+            n_columns = columns.len(),
+        ).entered();
         if columns.is_empty() {
             return Self {
                 layers: vec![B::build_leaves(&[], lifting_log_size)],
@@ -43,6 +47,7 @@ impl<B: MerkleOpsLifted<H>, H: MerkleHasherLifted> MerkleProverLifted<B, H> {
         let max_log_size = columns.last().unwrap().len().ilog2();
         assert!(lifting_log_size >= max_log_size);
         let mut layers: Vec<Col<B, H::Hash>> = Vec::new();
+
         layers.push(B::build_leaves(columns, lifting_log_size));
 
         (0..lifting_log_size).for_each(|_| {

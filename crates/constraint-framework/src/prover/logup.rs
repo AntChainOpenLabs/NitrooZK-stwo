@@ -178,6 +178,7 @@ impl LogupColGenerator<'_> {
     pub fn finalize_col(mut self) {
         // Column size is a power of 2.
         let chunk_size = std::cmp::min(4, self.gen.denom.data.len());
+
         batch_inverse_packed_qm31(&self.gen.denom.data, &mut self.gen.batch_inverse_buffer);
 
         #[cfg(feature = "parallel")]

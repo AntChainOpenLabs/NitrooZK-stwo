@@ -106,9 +106,37 @@ impl<B: Backend> ComponentProvers<'_, B> {
             self.components().composition_log_degree_bound(),
             total_constraints,
         );
-        for component in &self.components {
-            component.evaluate_constraint_quotients_on_domain(trace, &mut accumulator)
+        for component in self.components.iter() {
+            component.evaluate_constraint_quotients_on_domain(trace, &mut accumulator);
         }
         accumulator.finalize()
     }
+
+    /// Computes the composition polynomial using a provided batch function.
+    /// If the batch function returns None, falls back to the sequential path.
+    pub fn compute_composition_polynomial_with<F>(
+        &self,
+        random_coeff: SecureField,
+        trace: &Trace<'_, B>,
+        batch_fn: F,
+    ) -> SecureCirclePoly<B>
+    where
+        F: FnOnce(
+            &[&dyn ComponentProver<B>],
+            usize,
+            SecureField,
+            &Trace<'_, B>,
+        ) -> Option<SecureCirclePoly<B>>,
+    {
+        if let Some(result) = batch_fn(
+            &self.components,
+            self.n_preprocessed_columns,
+            random_coeff,
+            trace,
+        ) {
+            return result;
+        }
+        self.compute_composition_polynomial(random_coeff, trace)
+    }
 }
+

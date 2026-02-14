@@ -8,6 +8,11 @@ use super::TreeSubspan;
 use crate::core::pcs::PcsConfig;
 use crate::core::ColumnVec;
 
+#[cfg(feature = "parallel")]
+use rayon::iter::IntoParallelIterator;
+#[cfg(feature = "parallel")]
+use rayon::iter::ParallelIterator;
+
 /// A container that holds an element for each commitment tree.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TreeVec<T>(pub Vec<T>);

@@ -53,11 +53,16 @@ serde.workspace = true
 tracing-subscriber.workspace = true
 hashbrown.workspace = true
 stwo-std-shims = { version = "1.0.0", default-features = false }
+ark-std = { version = "0.3.0", features = ["print-trace"] }
 dashmap = "6.1.0"
+
+[build-dependencies]
+cmake = "0.1.50"
 
 [dev-dependencies]
 aligned = "0.4.2"
 test-log = { version = "0.2.15", features = ["trace"] }
+stwo-examples = { path = "../examples" }
 
 [package.metadata.cargo-machete]
 ignored = ["stwo-std-shims"]
@@ -135,10 +140,55 @@ required-features = ["prover"]
 
 [[bench]]
 harness = false
+name = "poseidon"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "poseidon_blake2s"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "poseidon_cuda_blake2s"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "poseidon_cuda_poseidon"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "poseidon_poseidon"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
 name = "prefix_sum"
 required-features = ["prover"]
 
 [[bench]]
 harness = false
 name = "pcs"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "wide_fibonacci_blake2s"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "wide_fibonacci_cuda_blake2s"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "wide_fibonacci_cuda_poseidon"
+required-features = ["prover"]
+
+[[bench]]
+harness = false
+name = "wide_fibonacci_poseidon"
 required-features = ["prover"]

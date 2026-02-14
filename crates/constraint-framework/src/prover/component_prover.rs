@@ -4,6 +4,7 @@ use itertools::Itertools;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 use stwo::core::air::Component;
+use stwo::prover::backend::cuda::CudaBackend;
 use stwo::core::constraints::coset_vanishing;
 use stwo::core::fields::m31::BaseField;
 use stwo::core::fields::qm31::SecureField;
@@ -19,6 +20,8 @@ use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
 use stwo::prover::poly::BitReversedOrder;
 use stwo::prover::secure_column::SecureColumnByCoords;
 use stwo::prover::{ComponentProver, DomainEvaluationAccumulator, Trace};
+use stwo::stwo_cuda::{BaseFieldVec, SecureFieldVec, bindings};
+use stwo::stwo_cuda::bindings::CudaSecureField;
 use tracing::{span, Level};
 
 use super::{CpuDomainEvaluator, SimdDomainEvaluator};
@@ -240,6 +243,131 @@ impl<E: FrameworkEval + Sync> ComponentProver<CpuBackend> for FrameworkComponent
             &accum.random_coeff_powers,
             accum.col,
         );
+    }
+}
+
+impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponent<E> {
+    fn evaluate_constraint_quotients_on_domain(
+        &self,
+        trace: &Trace<'_, CudaBackend>,
+        evaluation_accumulator: &mut DomainEvaluationAccumulator<CudaBackend>,
+    ) {
+        if self.n_constraints() == 0 {
+            return;
+        }
+
+        if self.is_disabled() {
+            evaluation_accumulator.skip_coeffs(self.n_constraints());
+            return;
+        }
+        let _span = span!(Level::INFO, "evaluate_constraint_quotients_on_domain").entered();
+
+        let span = span!(Level::INFO, "prepare").entered();
+
+        let eval_domain = CanonicCoset::new(self.max_constraint_log_degree_bound()).circle_domain();
+        let eval_log_size = self.eval.log_size();
+        let trace_domain = CanonicCoset::new(eval_log_size);
+
+        let mut component_polys = trace.polys.sub_tree(&self.trace_locations);
+        span.exit();
+
+        let span = span!(Level::INFO, "component_polys generate").entered();
+        component_polys[PREPROCESSED_TRACE_IDX] = self
+            .preprocessed_column_indices
+            .iter()
+            .map(|idx| &trace.polys[PREPROCESSED_TRACE_IDX][*idx])
+            .collect();
+        span.exit();
+
+        let span = span!(Level::INFO, "Check need_to_extend").entered();
+        let need_to_extend = component_polys
+            .iter()
+            .flatten()
+            .any(|c| c.evals.domain.log_size() != eval_domain.log_size());
+        span.exit();
+
+        let span = span!(Level::INFO, "Check & Extension").entered();
+        let trace: TreeVec<
+            Vec<Cow<'_, CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>>>,
+        > = if need_to_extend {
+            let _span = span!(Level::INFO, "Extension").entered();
+            let twiddles = CudaBackend::precompute_twiddles(eval_domain.half_coset);
+            component_polys
+                .as_cols_ref()
+                .map_cols(|col| Cow::Owned(col.get_evaluation_on_domain(eval_domain, &twiddles)))
+        } else {
+            component_polys.map_cols(|c| Cow::Borrowed(&c.evals))
+        };
+        span.exit();
+
+        // Denom inverses.
+        let span = span!(Level::INFO, "Denom inverses generate").entered();
+        let log_expand = eval_domain.log_size() - trace_domain.log_size();
+        let mut denom_inv = (0..1 << log_expand)
+            .map(|i| coset_vanishing(trace_domain.coset(), eval_domain.at(i)).inverse())
+            .collect_vec();
+        bit_reverse(&mut denom_inv);
+
+        let gpu_denom_inv = BaseFieldVec::from_vec(denom_inv);
+        span.exit();
+
+        let span = span!(Level::INFO, "Accumulator").entered();
+
+        // Accumulator.
+        let [mut accum] =
+            evaluation_accumulator.columns([(eval_domain.log_size(), self.n_constraints())]);
+        accum.random_coeff_powers.reverse();
+        let random_coeff_powers = SecureFieldVec::from_vec(accum.random_coeff_powers);
+
+        let trace0_evaluations_vec = trace[0]
+            .iter()
+            .map(|column_evaluations| column_evaluations.device_ptr)
+            .collect_vec();
+
+        let trace1_evaluations_vec = trace[1]
+            .iter()
+            .map(|column_evaluations| column_evaluations.device_ptr)
+            .collect_vec();
+
+        let mut trace2_evaluations_vec = vec![];
+        if trace.len() != 2 {
+            trace2_evaluations_vec = trace[2]
+                .iter()
+                .map(|column_evaluations| column_evaluations.device_ptr)
+                .collect_vec();
+        }
+        span.exit();
+
+        let span = span!(Level::INFO, "GPU evaluate_constraint_quotients_on_domain").entered();
+        unsafe {
+            let eval_ptr = &self.eval as *const _ as *mut std::os::raw::c_void;
+            let logup_counts = self.logup_counts().values().sum::<usize>() as u32 / (1 << eval_log_size);
+
+            bindings::evaluate_constraint_quotients_on_domain(
+                accum.col.columns[0].device_ptr,
+                accum.col.columns[1].device_ptr,
+                accum.col.columns[2].device_ptr,
+                accum.col.columns[3].device_ptr,
+                trace0_evaluations_vec.as_ptr(),
+                trace0_evaluations_vec.len() as u32,
+                trace1_evaluations_vec.as_ptr(),
+                trace1_evaluations_vec.len() as u32,
+                trace2_evaluations_vec.as_ptr(),
+                trace2_evaluations_vec.len() as u32,
+                random_coeff_powers.device_ptr,
+                gpu_denom_inv.device_ptr,
+                trace_domain.log_size() as u32,
+                eval_domain.log_size() as u32,
+                self.n_constraints() as u32,
+                logup_counts,
+                eval_ptr,
+                CudaSecureField::from(self.claimed_sum / BaseField::from_u32_unchecked(1 << eval_log_size)),
+                true,   // should_accumulate: true for proving
+                false,  // use_assert_evaluator: false for proving
+            );
+        };
+        span.exit();
+        return;
     }
 }
 

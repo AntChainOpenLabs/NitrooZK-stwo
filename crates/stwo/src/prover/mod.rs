@@ -6,13 +6,13 @@ use crate::core::circle::CirclePoint;
 use crate::core::fields::qm31::{SecureField, SECURE_EXTENSION_DEGREE};
 use crate::core::pcs::utils::get_lifting_log_size;
 use crate::core::proof::{ExtendedStarkProof, StarkProof};
-use crate::core::verifier::PREPROCESSED_TRACE_IDX;
-use crate::prover::backend::BackendForChannel;
+use crate::core::verifier::{COMPOSITION_LOG_SPLIT, PREPROCESSED_TRACE_IDX};
+use crate::prover::backend::{BackendForChannel, Column};
 
 mod air;
 pub use air::component_prover::{ComponentProver, ComponentProvers, Trace};
 pub use air::{AccumulationOps, ColumnAccumulator, DomainEvaluationAccumulator};
-mod pcs;
+pub mod pcs;
 pub use pcs::quotient_ops::QuotientOps;
 pub use pcs::{CommitmentSchemeProver, CommitmentTreeProver, TreeBuilder};
 pub mod backend;

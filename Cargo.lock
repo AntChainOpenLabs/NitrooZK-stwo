@@ -91,7 +91,7 @@ dependencies = [
  "ark-ff-asm",
  "ark-ff-macros",
  "ark-serialize",
- "ark-std",
+ "ark-std 0.4.0",
  "derivative",
  "digest",
  "itertools 0.10.5",
@@ -131,9 +131,20 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb7b85a02b83d2f22f89bd5cac66c9c89474240cb6207cb1efc16d098e822a5"
 dependencies = [
- "ark-std",
+ "ark-std 0.4.0",
  "digest",
  "num-bigint",
+]
+
+[[package]]
+name = "ark-std"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1df2c09229cbc5a028b1d70e00fdb2acee28b1055dfb5ca73eea49c5a25c4e7c"
+dependencies = [
+ "colored",
+ "num-traits",
+ "rand",
 ]
 
 [[package]]
@@ -256,10 +267,11 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
 name = "cc"
-version = "1.2.29"
+version = "1.2.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c1599538de2394445747c8cf7935946e3cc27e9625f889d979bfb2aaf569362"
+checksum = "aebf35691d1bfb0ac386a69bac2fde4dd276fb618cf8bf4f5318fe285e821bb2"
 dependencies = [
+ "find-msvc-tools",
  "shlex",
 ]
 
@@ -322,10 +334,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b94f61472cee1439c0b966b47e3aca9ae07e45d070759512cd390ea2bebc6675"
 
 [[package]]
+name = "cmake"
+version = "0.1.57"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75443c44cd6b379beb8c5b45d85d0773baf31cce901fe7bb252f4eff3008ef7d"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
+
+[[package]]
+name = "colored"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
+dependencies = [
+ "lazy_static",
+ "windows-sys",
+]
 
 [[package]]
 name = "constant_time_eq"
@@ -530,6 +561,12 @@ name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
+
+[[package]]
+name = "find-msvc-tools"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
 
 [[package]]
 name = "fnv"
@@ -1216,18 +1253,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "std-shims"
-version = "1.0.0"
-
-[[package]]
 name = "stwo"
 version = "2.1.0"
 dependencies = [
  "aligned",
+ "ark-std 0.3.0",
  "blake2",
  "blake3",
  "bytemuck",
  "cfg-if",
+ "cmake",
  "criterion",
  "dashmap",
  "educe",
@@ -1242,7 +1277,8 @@ dependencies = [
  "serde",
  "starknet-crypto",
  "starknet-ff",
- "stwo-std-shims",
+ "stwo-examples",
+ "stwo-std-shims 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "test-log",
  "thiserror",
  "tracing",
@@ -1275,13 +1311,14 @@ dependencies = [
 name = "stwo-constraint-framework"
 version = "2.1.0"
 dependencies = [
+ "ark-std 0.3.0",
  "hashbrown 0.15.4",
  "itertools 0.12.1",
  "num-traits",
  "rand",
  "rayon",
  "stwo",
- "stwo-std-shims",
+ "stwo-std-shims 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing",
 ]
 
@@ -1303,6 +1340,10 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "stwo-std-shims"
+version = "1.0.0"
 
 [[package]]
 name = "stwo-std-shims"

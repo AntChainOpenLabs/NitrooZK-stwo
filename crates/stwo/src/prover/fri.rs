@@ -1,7 +1,7 @@
 use hashbrown::HashMap;
 use itertools::Itertools;
 use num_traits::Zero;
-use tracing::instrument;
+use tracing::{instrument, span, Level};
 
 use crate::core::channel::{Channel, MerkleChannel};
 use crate::core::circle::Coset;
@@ -101,6 +101,10 @@ impl<'a, B: FriOps + MerkleOpsLifted<MC::H>, MC: MerkleChannel> FriProver<'a, B,
         column: &'a SecureEvaluation<B, BitReversedOrder>,
         twiddles: &TwiddleTree<B>,
     ) -> Self {
+        let _span = span!(Level::INFO, "FRI commit",
+            class = "FRICommit",
+            column_log_size = column.domain.log_size(),
+        ).entered();
         assert!(column.domain.is_canonic(), "not canonic");
 
         let first_layer = Self::commit_first_layer(channel, column);

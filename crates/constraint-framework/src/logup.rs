@@ -61,6 +61,7 @@ impl<E: EvalAtRow> Drop for LogupAtRow<E> {
 
 /// Interaction elements for the logup protocol.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[repr(C)]
 pub struct LookupElements<const N: usize> {
     pub z: SecureField,
     pub alpha: SecureField,

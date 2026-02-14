@@ -111,8 +111,9 @@ pub trait FrameworkEval {
     fn evaluate<E: EvalAtRow>(&self, eval: E) -> E;
 }
 
+#[repr(C)]
 pub struct FrameworkComponent<C: FrameworkEval> {
-    pub(super) eval: C,
+    pub eval: C,
     pub(super) trace_locations: TreeVec<TreeSubspan>,
     pub(super) preprocessed_column_indices: Vec<usize>,
     pub(super) claimed_sum: SecureField,

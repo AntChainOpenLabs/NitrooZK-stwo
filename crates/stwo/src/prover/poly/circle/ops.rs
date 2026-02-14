@@ -45,6 +45,19 @@ pub trait PolyOps: ColumnOps<BaseField> + ColumnOps<SecureField> + Sized {
         point: CirclePoint<SecureField>,
     ) -> SecureField;
 
+    /// Evaluates multiple same-size polynomials at the same point in a batch.
+    /// Default implementation calls eval_at_point sequentially.
+    /// Backends (e.g. CUDA) can override this for better performance.
+    fn batch_eval_at_point(
+        polys: &[&CircleCoefficients<Self>],
+        point: CirclePoint<SecureField>,
+    ) -> Vec<SecureField> {
+        polys
+            .iter()
+            .map(|poly| Self::eval_at_point(poly, point))
+            .collect()
+    }
+
     /// Computes the weights for Barycentric Lagrange interpolation for point `p` on `coset`.
     /// `p` must not be in the domain.
     /// Used by the [`CircleEvaluation::barycentric_weights()`] function.

@@ -284,4 +284,68 @@ mod tests {
     fn test_pcs_prove_and_verify_simd_with_barycentric() {
         assert!(prove_and_verify_pcs::<SimdBackend, false>().is_ok());
     }
+
+    #[test]
+    fn test_pcs_prove_and_verify_cuda() {
+        use crate::prover::backend::cuda::CudaBackend;
+        assert!(prove_and_verify_pcs::<CudaBackend, true>().is_ok());
+    }
+
+    fn prove_and_verify_pcs_large<
+        B: BackendForChannel<Blake2sMerkleChannel>,
+    >() -> Result<(), VerificationError> {
+        const N_COLS: usize = 170;
+        const LIFTING_LOG_SIZE: u32 = 18;
+
+        let mut channel = Blake2sChannel::default();
+        let config = PcsConfig::default();
+        let twiddles = B::precompute_twiddles(
+            CanonicCoset::new(LIFTING_LOG_SIZE + config.fri_config.log_blowup_factor).half_coset(),
+        );
+        let mut commitment_scheme =
+            CommitmentSchemeProver::<B, Blake2sMerkleChannel>::new(config, &twiddles);
+        commitment_scheme.set_store_polynomials_coefficients();
+
+        let mut rng = SmallRng::seed_from_u64(0);
+        let mut polys: Vec<CircleCoefficients<B>> = (0..N_COLS - 1)
+            .map(|_| {
+                CircleCoefficients::new(
+                    (0..1 << rng.gen_range(4..LIFTING_LOG_SIZE - 1))
+                        .map(M31::from)
+                        .collect(),
+                )
+            })
+            .collect();
+        polys.push(CircleCoefficients::new(
+            (0..1 << LIFTING_LOG_SIZE).map(M31::from).collect(),
+        ));
+        let sizes = polys.iter().map(|poly| poly.log_size()).collect_vec();
+
+        let mut tree_builder = commitment_scheme.tree_builder();
+        tree_builder.extend_polys(polys);
+        tree_builder.commit(&mut channel);
+
+        let mask_structure = (0..N_COLS).map(|_| rng.gen_range(1..=2)).collect_vec();
+        let samples = [
+            SECURE_FIELD_CIRCLE_GEN.mul(rng.gen::<u128>()),
+            SECURE_FIELD_CIRCLE_GEN.mul(rng.gen::<u128>()),
+        ];
+        let sampled_points = vec![(0..N_COLS)
+            .zip(mask_structure.iter())
+            .map(|(_, i)| samples.into_iter().take(*i).collect_vec())
+            .collect_vec()];
+
+        let proof = commitment_scheme.prove_values(TreeVec(sampled_points.clone()), &mut channel);
+
+        let mut channel = Blake2sChannel::default();
+        let mut verifier = CommitmentSchemeVerifier::<Blake2sMerkleChannel>::new(config);
+        verifier.commit(proof.proof.commitments[0], &sizes, &mut channel);
+        verifier.verify_values(TreeVec(sampled_points), proof.proof, &mut channel)
+    }
+
+    #[test]
+    fn test_pcs_prove_and_verify_cuda_large() {
+        use crate::prover::backend::cuda::CudaBackend;
+        assert!(prove_and_verify_pcs_large::<CudaBackend>().is_ok());
+    }
 }

@@ -20,6 +20,4 @@ stwo = { path = "../stwo", version = "2.1.0", default-features = false }
 rand.workspace = true
 hashbrown.workspace = true
 stwo-std-shims = { version = "1.0.0", default-features = false }
-
-[package.metadata.cargo-machete]
-ignored = ["stwo-std-shims"]
+ark-std = { version = "0.3.0", features = ["print-trace"] }

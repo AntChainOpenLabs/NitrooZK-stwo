@@ -21,7 +21,7 @@ use crate::prover::air::component_prover::{Poly, Trace, WeightsHashMap};
 use crate::prover::backend::{BackendForChannel, Col};
 use crate::prover::fri::{FriDecommitResult, FriProver};
 use crate::prover::pcs::quotient_ops::compute_fri_quotients;
-use crate::prover::poly::circle::{CircleCoefficients, CircleEvaluation};
+use crate::prover::poly::circle::{CircleCoefficients, CircleEvaluation, PolyOps};
 use crate::prover::poly::twiddles::TwiddleTree;
 use crate::prover::poly::BitReversedOrder;
 use crate::prover::vcs_lifted::prover::MerkleProverLifted;
@@ -144,7 +144,6 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
         sampled_points: TreeVec<ColumnVec<Vec<CirclePoint<SecureField>>>>,
         channel: &mut MC::C,
     ) -> ExtendedCommitmentSchemeProof<MC::H> {
-        // Evaluate polynomials on open points.
         let span = span!(
             Level::INFO,
             "Evaluate columns out of domain",
@@ -186,6 +185,7 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
             .par_map_cols(eval_at_points);
 
         span.exit();
+
         let sampled_values = samples
             .as_cols_ref()
             .map_cols(|x| x.iter().map(|o| o.value).collect());
@@ -329,13 +329,17 @@ impl<B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentTreeProver<B, MC> {
         );
         span.exit();
 
-        let _span = span!(Level::INFO, "Merkle").entered();
         let max_log_domain_size = polynomials
             .iter()
             .map(|poly| poly.evals.domain.log_size())
             .max()
             .unwrap_or_default();
         let lifting_log_size = lifting_log_size.unwrap_or(max_log_domain_size);
+        let _span = span!(Level::INFO, "Merkle",
+            n_polys = polynomials.len(),
+            max_log_domain_size = max_log_domain_size,
+            lifting_log_size = lifting_log_size,
+        ).entered();
         let tree = MerkleProverLifted::commit(
             polynomials
                 .iter()
