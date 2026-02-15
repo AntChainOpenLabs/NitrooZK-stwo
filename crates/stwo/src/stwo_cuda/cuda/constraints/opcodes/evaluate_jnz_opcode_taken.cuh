@@ -1,8 +1,7 @@
 #ifndef EVALUATE_JNZ_OPCODE_TAKEN_CUH
 #define EVALUATE_JNZ_OPCODE_TAKEN_CUH
 
-#include "fields.cuh"
-#include "relations.cuh"
+#include "constraints/relations.cuh"
 
 // JNZ opcode taken component has 47 trace columns
 // This opcode checks if destination value is non-zero and jumps:
@@ -15,10 +14,7 @@
 struct JnzOpcodeTaken_Eval {
     uint32_t eval_id;
     uint32_t log_size;  // from Claim
-    VerifyInstruction verify_instruction_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    Opcodes opcode_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

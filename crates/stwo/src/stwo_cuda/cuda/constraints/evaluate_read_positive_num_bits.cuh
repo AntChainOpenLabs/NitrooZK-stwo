@@ -22,21 +22,15 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_29(
     m31 value_limb_3_col4,
     m31 partial_limb_msb_col5,
     m31 *output_vec, // len: 29
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     m31 M31_0 = m31(0);
 
     // (1) address-to-id lookup
     {
-        m31 values[2] = {read_positive_num_bits_29_input, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, read_positive_num_bits_29_input, id_col0};
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (2) range check for last limb (2 bits) and msb
@@ -48,16 +42,12 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_29(
 
     // (3) id-to-big lookup
     {
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col1, value_limb_1_col2, value_limb_2_col3, value_limb_3_col4
         };
-        RelationEntry<29> entry(
-            memory_id_to_big_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<29>(entry);
+        cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     output_vec[0]  = value_limb_0_col1;
@@ -110,25 +100,20 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_99(
     m31 value_limb_8_col9,
     m31 value_limb_9_col10,
     m31 value_limb_10_col11,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     // address -> id
     {
-        m31 values[2] = {read_positive_num_bits_99_input, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, read_positive_num_bits_99_input, id_col0};
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // id -> big (11 limbs, remaining filled with 0)
     {
         m31 zero = 0;
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col1,
             value_limb_1_col2,
@@ -144,12 +129,7 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_99(
             zero, zero, zero, zero, zero, zero, zero, zero,
             zero, zero, zero, zero, zero, zero, zero, zero
         };
-        RelationEntry<29> entry(
-            memory_id_to_big_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<29>(entry);
+        cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 }
 
@@ -161,35 +141,25 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_27(
     m31 value_limb_1_col2,
     m31 value_limb_2_col3,
     m31 *output_vec, // len: 29
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     m31 M31_0 = m31(0);
 
     // (1) address-to-id lookup
     {
-        m31 values[2] = {read_positive_num_bits_27_input, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, read_positive_num_bits_27_input, id_col0};
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (2) id-to-big lookup
     {
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col1, value_limb_1_col2, value_limb_2_col3
         };
-        RelationEntry<29> entry(
-            memory_id_to_big_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<29>(entry);
+        cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     output_vec[0]  = value_limb_0_col1;
@@ -256,23 +226,18 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_252(
     m31 value_limb_26_col27,
     m31 value_limb_27_col28,
     m31 *output_vec, // len: 29
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     // (1) address-to-id lookup
     {
-        m31 values[2] = {read_positive_num_bits_252_input, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{1},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, read_positive_num_bits_252_input, id_col0};
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{1}, values);
     }
     // (2) id-to-big lookup
     {
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col1,  value_limb_1_col2,  value_limb_2_col3,  value_limb_3_col4,
             value_limb_4_col5,  value_limb_5_col6,  value_limb_6_col7,  value_limb_7_col8,
@@ -282,12 +247,7 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_252(
             value_limb_20_col21, value_limb_21_col22, value_limb_22_col23, value_limb_23_col24,
             value_limb_24_col25, value_limb_25_col26, value_limb_26_col27, value_limb_27_col28
         };
-        RelationEntry<29> entry(
-            memory_id_to_big_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<29>(entry);
+        cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     output_vec[0]  = value_limb_0_col1;
@@ -329,37 +289,27 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_36(
     m31 value_limb_1_col2,
     m31 value_limb_2_col3,
     m31 value_limb_3_col4,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     m31 M31_0 = m31(0);
 
     // (1) address-to-id lookup
     {
-        m31 values[2] = {read_positive_num_bits_36_input, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, read_positive_num_bits_36_input, id_col0};
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (2) id-to-big lookup
     {
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col1, value_limb_1_col2, value_limb_2_col3, value_limb_3_col4,
             M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0,
             M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0
         };
-        RelationEntry<29> entry(
-            memory_id_to_big_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<29>(entry);
+        cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 }
 
@@ -375,37 +325,27 @@ DEVICE_FORCEINLINE void evaluate_read_positive_num_bits_72(
     m31 value_limb_5_col6,
     m31 value_limb_6_col7,
     m31 value_limb_7_col8,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     m31 M31_0 = m31(0);
 
     // (1) address-to-id lookup
     {
-        m31 values[2] = {read_positive_num_bits_72_input, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, read_positive_num_bits_72_input, id_col0};
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (2) id-to-big lookup
     {
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col1, value_limb_1_col2, value_limb_2_col3, value_limb_3_col4,
             value_limb_4_col5, value_limb_5_col6, value_limb_6_col7, value_limb_7_col8,
             M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0
         };
-        RelationEntry<29> entry(
-            memory_id_to_big_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator->add_to_relation<29>(entry);
+        cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 }
 

@@ -11,15 +11,10 @@ template<typename EvaluatorT>
 DEVICE_FORCEINLINE void evaluate_range_check_last_limb_bits_in_ms_limb_6(
     m31 range_check_last_limb_bits_in_ms_limb_6_input,
     EvaluatorT *cuda_evaluator,
-    RangeCheck_6 range_check_6_lookup_elements
+    const CommonLookupElements& common_lookup_elements
 ) {
-    m31 values[1] = {range_check_last_limb_bits_in_ms_limb_6_input};
-    RelationEntry<1> entry(
-        range_check_6_lookup_elements,
-        qm31{m31(1), m31(0)},
-        values
-    );
-    cuda_evaluator->add_to_relation<1>(entry);
+    m31 values[2] = {RANGE_CHECK_6_RELATION_ID, range_check_last_limb_bits_in_ms_limb_6_input};
+    cuda_evaluator->add_to_relation<2>(common_lookup_elements, qm31{m31(1), m31(0)}, values);
 }
 
 

@@ -15,11 +15,7 @@ struct MulModBuiltin_Claim {
 struct MulModBuiltin_Eval {
     unsigned eval_id;
     MulModBuiltin_Claim Claim;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    RangeCheck_12 range_check_12_lookup_elements;
-    RangeCheck_3_6_6_3 range_check_3_6_6_3_lookup_elements;
-    RangeCheck_18 range_check_18_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

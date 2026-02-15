@@ -1,12 +1,7 @@
 #ifndef EVALUATE_ADD_SMALL_OPCODE_H
 #define EVALUATE_ADD_SMALL_OPCODE_H
 
-
-#include "fields.cuh"
-#include "utils.cuh"
-#include "logup.cuh"
-#include "eval_at_row.cuh"
-#include "relations.cuh"
+#include "constraints/relations.cuh"
 
 struct AddCodeSmall_Claim {
     unsigned log_size;
@@ -15,10 +10,7 @@ struct AddCodeSmall_Claim {
 struct AddCodeSmall_Eval {
     unsigned eval_id;
     AddCodeSmall_Claim Claim;
-    VerifyInstruction verify_instruction_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    Opcodes opcode_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

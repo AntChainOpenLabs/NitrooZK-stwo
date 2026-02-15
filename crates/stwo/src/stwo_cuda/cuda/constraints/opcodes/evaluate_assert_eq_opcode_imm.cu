@@ -71,7 +71,7 @@ __global__ void evaluate_assert_eq_imm_pre_kernel(
         dst_base_fp_col4,
         ap_update_add_1_col5,
         decode_instruction_161c9_output_tmp_bb09e_5,
-        assert_eq_imm_eval->verify_instruction_lookup_elements,
+        assert_eq_imm_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -95,33 +95,35 @@ __global__ void evaluate_assert_eq_imm_pre_kernel(
         mem_verify_equal_inputs[0],
         mem_verify_equal_inputs[1],
         dst_id_col7,
-        assert_eq_imm_eval->memory_address_to_id_lookup_elements,
+        assert_eq_imm_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
     // --- Lookup: opcodes_0 ---
     {
-        m31 values[3] = {input_pc_col0, input_ap_col1, input_fp_col2};
-        RelationEntry<3> entry(
-            assert_eq_imm_eval->opcode_lookup_elements,
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
+            input_pc_col0, input_ap_col1, input_fp_col2
+        };
+        cuda_evaluator.add_to_relation<4>(
+            assert_eq_imm_eval->common_lookup_elements,
             qm31{enabler},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
     // --- Lookup: opcodes_1 ---
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             add(input_pc_col0, M31_2),
             add(input_ap_col1, ap_update_add_1_col5),
             input_fp_col2
         };
-        RelationEntry<3> entry(
-            assert_eq_imm_eval->opcode_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            assert_eq_imm_eval->common_lookup_elements,
             qm31{{neg(enabler), 0}, {0, 0}},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;

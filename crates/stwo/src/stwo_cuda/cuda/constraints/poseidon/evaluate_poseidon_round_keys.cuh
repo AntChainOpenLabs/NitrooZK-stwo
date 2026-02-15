@@ -6,11 +6,11 @@
 #include "relations.cuh"
 
 // Poseidon Round Keys evaluator structure
-// Must match Rust layout: eval_id, claim (empty), poseidon_round_keys_lookup_elements
+// Must match Rust layout: eval_id, claim (empty), common_lookup_elements
 struct PoseidonRoundKeys_Eval {
     unsigned eval_id;
     // Claim struct is empty in Rust
-    PoseidonRoundKeys poseidon_round_keys_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 // Pre-kernel function declaration

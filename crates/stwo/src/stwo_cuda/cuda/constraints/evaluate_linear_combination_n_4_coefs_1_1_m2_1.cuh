@@ -89,7 +89,7 @@ DEVICE_FORCEINLINE void linear_combination_n_4_coefs_1_1_m2_1_evaluate(
     m31 combination_limb_9,
     m31 p_coef,
 
-    RangeCheck_3_3_3_3_3 range_check_3_3_3_3_3_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
@@ -295,27 +295,27 @@ DEVICE_FORCEINLINE void linear_combination_n_4_coefs_1_1_m2_1_evaluate(
     //   - Second: carry_4, carry_5, carry_6, carry_7, carry_8 (each + 3 for biasing)
 
     {
-        m31 values_0[5] = {
+        m31 values_0[6] = {
+            RANGE_CHECK_3_3_3_3_3_RELATION_ID,
             add(p_coef, M31_3),
             add(carry_0, M31_3),
             add(carry_1, M31_3),
             add(carry_2, M31_3),
             add(carry_3, M31_3)
         };
-        RelationEntry entry_0 = RelationEntry<5>(range_check_3_3_3_3_3_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
-        cuda_evaluator->add_to_relation<5>(entry_0);
+        cuda_evaluator->template add_to_relation<6>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
     }
 
     {
-        m31 values_1[5] = {
+        m31 values_1[6] = {
+            RANGE_CHECK_3_3_3_3_3_RELATION_ID,
             add(carry_4, M31_3),
             add(carry_5, M31_3),
             add(carry_6, M31_3),
             add(carry_7, M31_3),
             add(carry_8, M31_3)
         };
-        RelationEntry entry_1 = RelationEntry<5>(range_check_3_3_3_3_3_lookup_elements, qm31{{1,0}, {0,0}}, values_1);
-        cuda_evaluator->add_to_relation<5>(entry_1);
+        cuda_evaluator->template add_to_relation<6>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_1);
     }
 }
 

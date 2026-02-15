@@ -44,8 +44,7 @@ DEVICE_FORCEINLINE void evaluate_read_small(
     m31 remainder_bits_col6,
     m31 partial_limb_msb_col7,
     m31 *output_vec, // 2 elements: [decoded_value, id]
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     m31 M31_0 = m31(0);
@@ -62,13 +61,8 @@ DEVICE_FORCEINLINE void evaluate_read_small(
 
     // ReadId::evaluate: memory_address_to_id lookup
     {
-        m31 values[2] = {read_small_input, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, read_small_input, id_col0};
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // CondDecodeSmallSign::evaluate([1], msb, mid_limbs_set)
@@ -108,7 +102,8 @@ DEVICE_FORCEINLINE void evaluate_read_small(
 
     // memory_id_to_big lookup
     {
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col3,
             value_limb_1_col4,
@@ -139,12 +134,7 @@ DEVICE_FORCEINLINE void evaluate_read_small(
             M31_0,
             mul(msb_col1, M31_256)
         };
-        RelationEntry<29> entry(
-            memory_id_to_big_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<29>(entry);
+        cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // Output: decoded value (consistent with CPU version ReadSmall::evaluate return value)

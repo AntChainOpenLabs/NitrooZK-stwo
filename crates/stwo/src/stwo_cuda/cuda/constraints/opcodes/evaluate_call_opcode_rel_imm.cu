@@ -91,7 +91,7 @@ __global__ void evaluate_call_opcode_rel_imm_pre_kernel(
     evaluate_decode_instruction_2a7a2(
         input_pc_col0,
         decode_output,
-        call_opcode_rel_imm_eval->verify_instruction_lookup_elements,
+        call_opcode_rel_imm_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -107,8 +107,7 @@ __global__ void evaluate_call_opcode_rel_imm_pre_kernel(
         stored_fp_limb_3_col7,
         partial_limb_msb_col8,
         read_fp_output,
-        call_opcode_rel_imm_eval->memory_address_to_id_lookup_elements,
-        call_opcode_rel_imm_eval->memory_id_to_big_lookup_elements,
+        call_opcode_rel_imm_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -141,8 +140,7 @@ __global__ void evaluate_call_opcode_rel_imm_pre_kernel(
         stored_ret_pc_limb_3_col13,
         partial_limb_msb_col14,
         read_ret_pc_output,
-        call_opcode_rel_imm_eval->memory_address_to_id_lookup_elements,
-        call_opcode_rel_imm_eval->memory_id_to_big_lookup_elements,
+        call_opcode_rel_imm_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -178,8 +176,7 @@ __global__ void evaluate_call_opcode_rel_imm_pre_kernel(
         remainder_bits_col21,
         partial_limb_msb_col22,
         read_small_output,
-        call_opcode_rel_imm_eval->memory_address_to_id_lookup_elements,
-        call_opcode_rel_imm_eval->memory_id_to_big_lookup_elements,
+        call_opcode_rel_imm_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -195,33 +192,32 @@ __global__ void evaluate_call_opcode_rel_imm_pre_kernel(
 
     // Add first opcodes relation entry (positive)
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             input_pc_col0,
             input_ap_col1,
             input_fp_col2
         };
-        RelationEntry<3> entry(
-            call_opcode_rel_imm_eval->opcode_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            call_opcode_rel_imm_eval->common_lookup_elements,
             qm31{enabler, 0, 0, 0},  // positive multiplicity
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     // Add second opcodes relation entry (negative)
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             next_pc,
             new_ap,
             new_fp
         };
-        // Negate the multiplicity for the second entry
-        RelationEntry<3> entry(
-            call_opcode_rel_imm_eval->opcode_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            call_opcode_rel_imm_eval->common_lookup_elements,
             qm31{{neg(enabler), 0}, {0, 0}},  // negative multiplicity
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;

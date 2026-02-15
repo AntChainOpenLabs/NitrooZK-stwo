@@ -10,7 +10,7 @@
 // Pedersen Points Table evaluator structure
 struct PedersenPointsTable_Eval {
     unsigned eval_id;
-    PedersenPointsTable pedersen_points_table_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

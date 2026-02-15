@@ -6,16 +6,11 @@
 #include "relations.cuh"
 
 // Poseidon 3 Partial Rounds Chain evaluator structure
-// Must match Rust layout: eval_id, claim (log_size), lookup_elements...
+// Must match Rust layout: eval_id, claim (log_size), common_lookup_elements
 struct Poseidon3PartialRoundsChain_Eval {
     unsigned eval_id;
     unsigned log_size;  // Claim struct
-    PoseidonRoundKeys poseidon_round_keys_lookup_elements;
-    Cube252 cube_252_lookup_elements;
-    RangeCheck_4_4_4_4 range_check_4_4_4_4_lookup_elements;
-    RangeCheck_4_4 range_check_4_4_lookup_elements;
-    RangeCheckFelt252Width27 range_check_felt_252_width_27_lookup_elements;
-    Poseidon3PartialRoundsChain poseidon_3_partial_rounds_chain_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 // Standard extern "C" entry point declaration

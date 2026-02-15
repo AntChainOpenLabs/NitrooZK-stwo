@@ -79,13 +79,8 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
 
     // range_check_9_9 on limb_0_high_part, limb_1_low_part
     {
-        m31 values[2] = {limb_0_high_part_col10, limb_1_low_part_col11};
-        RelationEntry<2> entry(
-            range_eval->range_check_9_9_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<2>(entry);
+        m31 values[3] = {RANGE_CHECK_9_9_RELATION_ID, limb_0_high_part_col10, limb_1_low_part_col11};
+        cuda_evaluator.add_to_relation<3>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_0 - limb_0_high_part * 2^18) in RangeCheck_18
@@ -94,37 +89,22 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
             input_limb_0_col0,
             mul(limb_0_high_part_col10, M31_262144)
         );
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_1 - limb_1_low_part) * 2^22 in RangeCheck_18
     {
         m31 expr = mul(sub(input_limb_1_col1, limb_1_low_part_col11),
                        M31_4194304);
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // range_check_9_9_B on limb_2_high_part, limb_3_low_part
     {
-        m31 values[2] = {limb_2_high_part_col12, limb_3_low_part_col13};
-        RelationEntry<2> entry(
-            range_eval->range_check_9_9_b_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<2>(entry);
+        m31 values[3] = {RANGE_CHECK_9_9_B_RELATION_ID, limb_2_high_part_col12, limb_3_low_part_col13};
+        cuda_evaluator.add_to_relation<3>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_2 - limb_2_high_part * 2^18) in RangeCheck_18_B
@@ -133,37 +113,22 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
             input_limb_2_col2,
             mul(limb_2_high_part_col12, M31_262144)
         );
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_b_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_B_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_3 - limb_3_low_part) * 2^22 in RangeCheck_18
     {
         m31 expr = mul(sub(input_limb_3_col3, limb_3_low_part_col13),
                        M31_4194304);
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // range_check_9_9_C on limb_4_high_part, limb_5_low_part
     {
-        m31 values[2] = {limb_4_high_part_col14, limb_5_low_part_col15};
-        RelationEntry<2> entry(
-            range_eval->range_check_9_9_c_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<2>(entry);
+        m31 values[3] = {RANGE_CHECK_9_9_C_RELATION_ID, limb_4_high_part_col14, limb_5_low_part_col15};
+        cuda_evaluator.add_to_relation<3>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_4 - limb_4_high_part * 2^18) in RangeCheck_18
@@ -172,37 +137,22 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
             input_limb_4_col4,
             mul(limb_4_high_part_col14, M31_262144)
         );
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_5 - limb_5_low_part) * 2^22 in RangeCheck_18
     {
         m31 expr = mul(sub(input_limb_5_col5, limb_5_low_part_col15),
                        M31_4194304);
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // range_check_9_9_D on limb_6_high_part, limb_7_low_part
     {
-        m31 values[2] = {limb_6_high_part_col16, limb_7_low_part_col17};
-        RelationEntry<2> entry(
-            range_eval->range_check_9_9_d_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<2>(entry);
+        m31 values[3] = {RANGE_CHECK_9_9_D_RELATION_ID, limb_6_high_part_col16, limb_7_low_part_col17};
+        cuda_evaluator.add_to_relation<3>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_6 - limb_6_high_part * 2^18) in RangeCheck_18_B
@@ -211,37 +161,22 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
             input_limb_6_col6,
             mul(limb_6_high_part_col16, M31_262144)
         );
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_b_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_B_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_7 - limb_7_low_part) * 2^22 in RangeCheck_18
     {
         m31 expr = mul(sub(input_limb_7_col7, limb_7_low_part_col17),
                        M31_4194304);
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // range_check_9_9_E on limb_8_high_part, input_limb_9
     {
-        m31 values[2] = {limb_8_high_part_col18, input_limb_9_col9};
-        RelationEntry<2> entry(
-            range_eval->range_check_9_9_e_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<2>(entry);
+        m31 values[3] = {RANGE_CHECK_9_9_E_RELATION_ID, limb_8_high_part_col18, input_limb_9_col9};
+        cuda_evaluator.add_to_relation<3>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // (input_limb_8 - limb_8_high_part * 2^18) in RangeCheck_18
@@ -250,13 +185,8 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
             input_limb_8_col8,
             mul(limb_8_high_part_col18, M31_262144)
         );
-        m31 values[1] = {expr};
-        RelationEntry<1> entry(
-            range_eval->range_check_18_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_18_RELATION_ID, expr};
+        cuda_evaluator.add_to_relation<2>(range_eval->common_lookup_elements, qm31{m31(1), m31(0)}, values);
     }
 
     // Felt252 width-27 main relation, multiplicity = -enabler
@@ -264,7 +194,8 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
         m31 neg_enabler = neg(enabler);
         qm31 multiplicity_ext = {{neg_enabler, 0}, {0, 0}};
 
-        m31 values[10] = {
+        m31 values[11] = {
+            RANGE_CHECK_252_WIDTH_27_RELATION_ID,
             input_limb_0_col0,
             input_limb_1_col1,
             input_limb_2_col2,
@@ -276,12 +207,7 @@ __global__ void evaluate_range_check_felt_252_width_27_pre_kernel(
             input_limb_8_col8,
             input_limb_9_col9
         };
-        RelationEntry<10> entry(
-            range_eval->range_check_felt_252_width_27_lookup_elements,
-            multiplicity_ext,
-            values
-        );
-        cuda_evaluator.add_to_relation<10>(entry);
+        cuda_evaluator.add_to_relation<11>(range_eval->common_lookup_elements, multiplicity_ext, values);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;

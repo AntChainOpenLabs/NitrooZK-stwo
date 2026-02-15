@@ -9,7 +9,7 @@
 
 struct VerifyBitwiseXor_12_Eval {
     unsigned eval_id;
-    VerifyBitwiseXor_12 verify_bitwise_xor_12_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

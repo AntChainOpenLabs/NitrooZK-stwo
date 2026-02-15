@@ -1,11 +1,7 @@
 #ifndef EVALUATE_MUL_OPCODE_H
 #define EVALUATE_MUL_OPCODE_H
 
-#include "fields.cuh"
-#include "utils.cuh"
-#include "logup.cuh"
-#include "eval_at_row.cuh"
-#include "relations.cuh"
+#include "constraints/relations.cuh"
 
 struct MulOpcode_Claim {
     unsigned log_size;
@@ -14,18 +10,7 @@ struct MulOpcode_Claim {
 struct MulOpcode_Eval {
     unsigned eval_id;
     MulOpcode_Claim Claim;
-    VerifyInstruction verify_instruction_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    RangeCheck_19_H range_check_19_h_lookup_elements;
-    RangeCheck_19 range_check_19_lookup_elements;
-    RangeCheck_19_B range_check_19_b_lookup_elements;
-    RangeCheck_19_C range_check_19_c_lookup_elements;
-    RangeCheck_19_D range_check_19_d_lookup_elements;
-    RangeCheck_19_E range_check_19_e_lookup_elements;
-    RangeCheck_19_F range_check_19_f_lookup_elements;
-    RangeCheck_19_G range_check_19_g_lookup_elements;
-    Opcodes opcode_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

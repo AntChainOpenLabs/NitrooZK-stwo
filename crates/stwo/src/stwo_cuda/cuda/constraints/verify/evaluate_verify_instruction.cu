@@ -86,8 +86,7 @@ __global__ void evaluate_verify_instruction_pre_kernel(
         offset2_low_col12,
         offset2_mid_col13,
         offset2_high_col14,
-        verify_eval->range_check_7_2_5_lookup_elements,
-        verify_eval->range_check_4_3_lookup_elements,
+        verify_eval->common_lookup_elements,
         &encode_offsets_limb_1,
         &encode_offsets_limb_3,
         &cuda_evaluator
@@ -110,14 +109,14 @@ __global__ void evaluate_verify_instruction_pre_kernel(
         M31_0, M31_0, M31_0, M31_0, M31_0,
         M31_0, M31_0, M31_0, M31_0, M31_0,
         instruction_id_col15,
-        verify_eval->memory_address_to_id_lookup_elements,
-        verify_eval->memory_id_to_big_lookup_elements,
+        verify_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
     // VerifyInstruction logup relation.
     {
-        m31 values[7] = {
+        m31 values[8] = {
+            VERIFY_INSTRUCTION_RELATION_ID,
             input_pc_col0,
             input_offset0_col1,
             input_offset1_col2,
@@ -130,12 +129,7 @@ __global__ void evaluate_verify_instruction_pre_kernel(
         m31 neg_mult = neg(multiplicity);
         qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
 
-        RelationEntry<7> entry(
-            verify_eval->verify_instruction_lookup_elements,
-            multiplicity_ext,
-            values
-        );
-        cuda_evaluator.add_to_relation<7>(entry);
+        cuda_evaluator.add_to_relation<8>(verify_eval->common_lookup_elements, multiplicity_ext, values);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;

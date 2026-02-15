@@ -22,9 +22,7 @@ DEVICE_FORCEINLINE void read_blake_word_evaluate(
     m31 *output_limb_0,
     m31 *output_limb_1,
 
-    RangeCheck_7_2_5 range_check_7_2_5_lookup_elements,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
@@ -38,9 +36,7 @@ DEVICE_FORCEINLINE void read_blake_word_evaluate(
         high_5_ms_bits_col4,
         id_col5,
 
-        range_check_7_2_5_lookup_elements,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
 
         cuda_evaluator
     );

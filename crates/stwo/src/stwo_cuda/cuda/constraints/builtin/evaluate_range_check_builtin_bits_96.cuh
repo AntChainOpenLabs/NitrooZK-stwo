@@ -15,9 +15,7 @@ struct RangeCheckBuiltinBits96_Claim {
 struct RangeCheckBuiltinBits96_Eval {
     unsigned eval_id;
     RangeCheckBuiltinBits96_Claim Claim;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    RangeCheck_6 range_check_6_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

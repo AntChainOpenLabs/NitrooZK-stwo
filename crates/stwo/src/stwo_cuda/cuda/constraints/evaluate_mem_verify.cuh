@@ -41,21 +41,20 @@ DEVICE_FORCEINLINE void mem_verify_evaluate(
 
     m31 id_col0,
 
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
 
-    m31 values_0[2] = {
+    m31 values_0[3] = {
+        MEMORY_ADDRESS_TO_ID_RELATION_ID,
         mem_verify_input_limb_0,
         id_col0
     };
+    cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
 
-    RelationEntry entry_0 = RelationEntry<2>(memory_address_to_id_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
-    cuda_evaluator->add_to_relation<2>(entry_0);
-
-    m31 values_1[29] = {
+    m31 values_1[30] = {
+        MEMORY_ID_TO_BIG_RELATION_ID,
         id_col0,
         mem_verify_input_limb_1,
         mem_verify_input_limb_2,
@@ -86,9 +85,7 @@ DEVICE_FORCEINLINE void mem_verify_evaluate(
         mem_verify_input_limb_27,
         mem_verify_input_limb_28
     };
-
-    RelationEntry entry_1 = RelationEntry<29>(memory_id_to_big_lookup_elements, qm31{{1,0}, {0,0}}, values_1);
-    cuda_evaluator->add_to_relation<29>(entry_1);
+    cuda_evaluator->add_to_relation<30>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_1);
 }
 
 

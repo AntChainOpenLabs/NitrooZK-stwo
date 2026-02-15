@@ -15,9 +15,7 @@ struct TripleXor32_Claim {
 struct TripleXor32_Eval {
     unsigned eval_id;
     TripleXor32_Claim Claim;
-    VerifyBitwiseXor_8 verify_bitwise_xor_8_lookup_elements;
-    VerifyBitwiseXor_8_B verify_bitwise_xor_8_b_lookup_elements;
-    TripleXor32 triple_xor_32_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C" void evaluate_triple_xor_32(

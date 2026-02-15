@@ -17,13 +17,7 @@ struct BlakeG_Claim {
 struct BlakeG_Eval {
     unsigned eval_id;
     BlakeG_Claim Claim;
-    VerifyBitwiseXor_8 verify_bitwise_xor_8_lookup_elements;
-    VerifyBitwiseXor_8_B verify_bitwise_xor_8_b_lookup_elements;
-    VerifyBitwiseXor_12 verify_bitwise_xor_12_lookup_elements;
-    VerifyBitwiseXor_4 verify_bitwise_xor_4_lookup_elements;
-    VerifyBitwiseXor_7 verify_bitwise_xor_7_lookup_elements;
-    VerifyBitwiseXor_9 verify_bitwise_xor_9_lookup_elements;
-    BlakeG blake_g_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 template<typename EvaluatorT>

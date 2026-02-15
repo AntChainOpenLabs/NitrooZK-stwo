@@ -12,7 +12,7 @@ struct CommonEval {
 };
 
 extern "C"
-void evaluate_constraint_quotients_on_domain(
+bool evaluate_constraint_quotients_on_domain(
     m31 *quotients_0, m31 *quotients_1, m31 *quotients_2, m31 *quotients_3,
     m31 **trace0_evaluations,
     unsigned trace0_evaluations_len,

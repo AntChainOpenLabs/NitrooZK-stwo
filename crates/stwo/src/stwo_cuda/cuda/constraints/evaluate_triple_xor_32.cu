@@ -128,7 +128,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         split_16_low_part_size_8_output_tmp_298db_1_limb_0,
         split_16_low_part_size_8_output_tmp_298db_5_limb_0,
         xor_col12,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -136,7 +136,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         xor_col12,
         split_16_low_part_size_8_output_tmp_298db_9_limb_0,
         xor_col13,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -144,7 +144,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         ms_8_bits_col6,
         ms_8_bits_col8,
         xor_col14,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -152,7 +152,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         xor_col14,
         ms_8_bits_col10,
         xor_col15,
-        eval->verify_bitwise_xor_8_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -161,7 +161,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         split_16_low_part_size_8_output_tmp_298db_3_limb_0,
         split_16_low_part_size_8_output_tmp_298db_7_limb_0,
         xor_col16,
-        eval->verify_bitwise_xor_8_b_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -169,7 +169,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         xor_col16,
         split_16_low_part_size_8_output_tmp_298db_11_limb_0,
         xor_col17,
-        eval->verify_bitwise_xor_8_b_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -177,7 +177,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         ms_8_bits_col7,
         ms_8_bits_col9,
         xor_col18,
-        eval->verify_bitwise_xor_8_b_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -185,7 +185,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         xor_col18,
         ms_8_bits_col11,
         xor_col19,
-        eval->verify_bitwise_xor_8_b_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -195,7 +195,8 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
     m31 triple_xor32_output_tmp_298db_28_limb_1 = mul(xor_col19, M31_256);
     triple_xor32_output_tmp_298db_28_limb_1 = add(xor_col17, triple_xor32_output_tmp_298db_28_limb_1);
 
-    m31 values[8] = {
+    m31 values[9] = {
+        TRIPLE_XOR_32_RELATION_ID,
         input_limb_0_col0,
         input_limb_1_col1,
         input_limb_2_col2,
@@ -206,11 +207,7 @@ __global__ void evaluate_triple_xor_32_pre_kernel(
         triple_xor32_output_tmp_298db_28_limb_1,
     };
 
-    RelationEntry entry = RelationEntry<8>(
-        eval->triple_xor_32_lookup_elements,
-            qm31{{neg(enabler), 0}, {0, 0}},
-        values);
-    cuda_evaluator.add_to_relation<8>(entry);
+    cuda_evaluator.add_to_relation<9>(eval->common_lookup_elements, qm31{{neg(enabler), 0}, {0, 0}}, values);
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;
     numerators[row] = cuda_evaluator.row_res;

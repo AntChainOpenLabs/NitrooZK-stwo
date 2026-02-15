@@ -107,6 +107,7 @@ add_library(
         constraints/range_check/evaluate_range_check_19_f.cu
         constraints/range_check/evaluate_range_check_19_g.cu
         constraints/range_check/evaluate_range_check_19_h.cu
+        constraints/range_check/evaluate_range_check_20.cu
         constraints/range_check/evaluate_range_check_felt_252_width_27.cu
         constraints/range_check/evaluate_range_check_7_2_5.cu
         # Range check builtins
@@ -125,6 +126,7 @@ add_library(
         constraints/pedersen/evaluate_partial_ec_mul.cu
         pedersen_table_init.cu
         #poseidon
+        constraints/poseidon/evaluate_poseidon_aggregator.cu
         constraints/poseidon/evaluate_poseidon_round_keys.cu
         constraints/poseidon/evaluate_poseidon_full_round_chain.cu
         constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cu
@@ -156,6 +158,7 @@ add_library(
         constraints/opcodes/evaluate_jump_opcode_rel_imm.cu
         constraints/opcodes/evaluate_jump_opcode_rel.cu
         constraints/opcodes/evaluate_jnz_opcode.cu
+        constraints/opcodes/evaluate_jnz_opcode_non_taken.cu
         constraints/opcodes/evaluate_jnz_opcode_taken.cu
         constraints/opcodes/evaluate_mul_opcode.cu
         constraints/opcodes/evaluate_mul_opcode_small.cu

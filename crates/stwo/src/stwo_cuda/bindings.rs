@@ -444,7 +444,7 @@ extern "C" {
         cumsum_shift: CudaSecureField,
         should_accumulate: bool,
         use_assert_evaluator: bool,
-    );
+    ) -> bool;
 
     pub fn ntt_n2b_native_batch(
         value: *mut *mut u32,

@@ -33,6 +33,7 @@
 #include "constraints/pedersen/evaluate_pedersen_points_table.cuh"
 // Poseidon context components
 #include "constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cuh"
+#include "constraints/poseidon/evaluate_poseidon_aggregator.cuh"
 #include "constraints/poseidon/evaluate_poseidon_full_round_chain.cuh"
 #include "constraints/poseidon/evaluate_poseidon_round_keys.cuh"
 // Range-check components
@@ -56,7 +57,7 @@
 #include "evaluate_range_check_12.cuh"
 #include "evaluate_range_check_18.cuh"
 #include "evaluate_range_check_18_b.cuh"
-// 19-bit ranges
+// 19-bit ranges (legacy)
 #include "evaluate_range_check_19.cuh"
 #include "evaluate_range_check_19_b.cuh"
 #include "evaluate_range_check_19_c.cuh"
@@ -65,6 +66,8 @@
 #include "evaluate_range_check_19_f.cuh"
 #include "evaluate_range_check_19_g.cuh"
 #include "evaluate_range_check_19_h.cuh"
+// 20-bit range (replaces 19-bit in "now")
+#include "evaluate_range_check_20.cuh"
 // Builtin range-checks
 #include "evaluate_range_check_builtin_bits_96.cuh"
 #include "evaluate_range_check_builtin_bits_128.cuh"
@@ -88,6 +91,7 @@
 #include "evaluate_jump_opcode_rel_imm.cuh"
 #include "evaluate_jump_opcode_rel.cuh"
 #include "evaluate_jnz_opcode.cuh"
+#include "evaluate_jnz_opcode_non_taken.cuh"
 #include "evaluate_jnz_opcode_taken.cuh"
 #include "evaluate_mul_opcode.cuh"
 #include "evaluate_mul_opcode_small.cuh"
@@ -98,7 +102,8 @@ bool g_should_accumulate_host = true;
 
 // Internal dispatch: evaluates a single component, writing to the given quotient buffers
 // on the given stream. The should_accumulate flag controls overwrite vs accumulate.
-static void dispatch_single_eval(
+// Returns true if the component was handled, false if unsupported (caller should fall back to CPU).
+static bool dispatch_single_eval(
     m31 *quotients_0, m31 *quotients_1, m31 *quotients_2, m31 *quotients_3,
     m31 **trace0_evaluations,
     unsigned trace0_evaluations_len,
@@ -139,7 +144,7 @@ static void dispatch_single_eval(
             number_of_columns, \
             logup_counts \
         ); \
-        return; \
+        return true; \
     }
 
 #define DISPATCH_EVAL_WITH_BOOLS(TAG, MSG, FN) \
@@ -164,7 +169,7 @@ static void dispatch_single_eval(
             use_assert_evaluator, \
             stream \
         ); \
-        return; \
+        return true; \
     }
 
 #define DISPATCH_EVAL_WITH_CUMSUM(TAG, MSG, FN) \
@@ -186,7 +191,7 @@ static void dispatch_single_eval(
             eval, \
             cumsum_shift \
         ); \
-        return; \
+        return true; \
     }
 
     switch (eval_id) {
@@ -233,6 +238,17 @@ static void dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("range_check_19_f", "call cuda eval stwo-cairo range_check_19_f", evaluate_range_check_19_f);
         DISPATCH_EVAL_WITH_BOOLS("range_check_19_g", "call cuda eval stwo-cairo range_check_19_g", evaluate_range_check_19_g);
         DISPATCH_EVAL_WITH_BOOLS("range_check_19_h", "call cuda eval stwo-cairo range_check_19_h", evaluate_range_check_19_h);
+        // range_check_20: 8 variants (replaces range_check_19 in "now")
+        // All range_check_20 variants use the same kernel (evaluate_range_check_20) since the
+        // constraint logic is identical for single-column range checks - only the domain size differs.
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20", "call cuda eval stwo-cairo range_check_20", evaluate_range_check_20);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20_b", "call cuda eval stwo-cairo range_check_20_b", evaluate_range_check_20);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20_c", "call cuda eval stwo-cairo range_check_20_c", evaluate_range_check_20);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20_d", "call cuda eval stwo-cairo range_check_20_d", evaluate_range_check_20);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20_e", "call cuda eval stwo-cairo range_check_20_e", evaluate_range_check_20);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20_f", "call cuda eval stwo-cairo range_check_20_f", evaluate_range_check_20);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20_g", "call cuda eval stwo-cairo range_check_20_g", evaluate_range_check_20);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_20_h", "call cuda eval stwo-cairo range_check_20_h", evaluate_range_check_20);
         DISPATCH_EVAL_WITH_BOOLS("range_check_builtin_bits_96", "call cuda eval stwo-cairo range_check_builtin_bits_96", evaluate_range_check_builtin_bits_96);
         DISPATCH_EVAL_WITH_BOOLS("range_check_builtin_bits_128", "call cuda eval stwo-cairo range_check_builtin_bits_128", evaluate_range_check_builtin_bits_128);
         DISPATCH_EVAL_WITH_BOOLS("range_check_felt_252_width_27", "call cuda eval stwo-cairo range_check_felt_252_width_27", evaluate_range_check_felt_252_width_27);
@@ -257,6 +273,7 @@ static void dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("jump_opcode_rel_imm", "call cuda eval stwo-cairo jump_opcode_rel_imm", evaluate_jump_opcode_rel_imm);
         DISPATCH_EVAL_WITH_BOOLS("jump_opcode_rel", "call cuda eval stwo-cairo jump_opcode_rel", evaluate_jump_opcode_rel);
         DISPATCH_EVAL_WITH_BOOLS("jnz_opcode", "call cuda eval stwo-cairo jnz_opcode", evaluate_jnz_opcode);
+        DISPATCH_EVAL_WITH_BOOLS("jnz_opcode_non_taken", "call cuda eval stwo-cairo jnz_opcode_non_taken", evaluate_jnz_opcode_non_taken);
         DISPATCH_EVAL_WITH_BOOLS("jnz_opcode_taken", "call cuda eval stwo-cairo jnz_opcode_taken", evaluate_jnz_opcode_taken);
         DISPATCH_EVAL_WITH_BOOLS("mul_opcode", "call cuda eval stwo-cairo mul_opcode", evaluate_mul_opcode);
         DISPATCH_EVAL_WITH_BOOLS("mul_opcode_small", "call cuda eval stwo-cairo mul_opcode_small", evaluate_mul_opcode_small);
@@ -274,22 +291,26 @@ static void dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("pedersen_points_table", "call cuda eval stwo-cairo pedersen_points_table", evaluate_pedersen_points_table);
         // Poseidon context components
         DISPATCH_EVAL_WITH_BOOLS("poseidon_3_partial_rounds_chain", "call cuda eval stwo-cairo poseidon_3_partial_rounds_chain", evaluate_poseidon_3_partial_rounds_chain);
+        DISPATCH_EVAL_WITH_BOOLS("poseidon_aggregator", "call cuda eval stwo-cairo poseidon_aggregator", evaluate_poseidon_aggregator);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_full_round_chain", "call cuda eval stwo-cairo poseidon_full_round_chain", evaluate_poseidon_full_round_chain);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_round_keys", "call cuda eval stwo-cairo poseidon_round_keys", evaluate_poseidon_round_keys);
 
         default:
-            fprintf(stderr, "eval id:%u not supported\n", eval_id);
+            fprintf(stderr, "CUDA dispatch: eval id:%u not supported, falling back to CPU\n", eval_id);
             fflush(stderr);
-            assert(false && "Unsupported eval_id in CUDA dispatch");
+            return false;
     }
 
 #undef DISPATCH_EVAL_SIMPLE
 #undef DISPATCH_EVAL_WITH_BOOLS
 #undef DISPATCH_EVAL_WITH_CUMSUM
+    return true;
 }
 
 // Original sequential entry point (backward compatible)
-void evaluate_constraint_quotients_on_domain(
+// Returns true if the component was handled by CUDA, false if unsupported (caller should
+// fall back to CPU evaluation).
+bool evaluate_constraint_quotients_on_domain(
     m31 *quotients_0, m31 *quotients_1, m31 *quotients_2, m31 *quotients_3,
     m31 **trace0_evaluations,
     unsigned trace0_evaluations_len,
@@ -309,7 +330,7 @@ void evaluate_constraint_quotients_on_domain(
     bool use_assert_evaluator
 ) {
     // Delegate to internal dispatch with default stream (0)
-    dispatch_single_eval(
+    return dispatch_single_eval(
         quotients_0, quotients_1, quotients_2, quotients_3,
         trace0_evaluations, trace0_evaluations_len,
         trace1_evaluations, trace1_evaluations_len,

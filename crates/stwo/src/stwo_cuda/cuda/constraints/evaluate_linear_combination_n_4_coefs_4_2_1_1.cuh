@@ -89,8 +89,7 @@ DEVICE_FORCEINLINE void linear_combination_n_4_coefs_4_2_1_1_evaluate(
     m31 combination_limb_9,
     m31 p_coef,
 
-    RangeCheck_4_4_4_4 range_check_4_4_4_4_lookup_elements,
-    RangeCheck_4_4 range_check_4_4_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
@@ -328,34 +327,34 @@ DEVICE_FORCEINLINE void linear_combination_n_4_coefs_4_2_1_1_evaluate(
     //   - Third RangeCheck_4_4: carry_7, carry_8 (each + 1 for biasing)
 
     {
-        m31 values_0[4] = {
+        m31 values_0[5] = {
+            RANGE_CHECK_4_4_4_4_RELATION_ID,
             add(p_coef, M31_1),
             add(carry_0, M31_1),
             add(carry_1, M31_1),
             add(carry_2, M31_1)
         };
-        RelationEntry entry_0 = RelationEntry<4>(range_check_4_4_4_4_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
-        cuda_evaluator->add_to_relation<4>(entry_0);
+        cuda_evaluator->add_to_relation<5>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
     }
 
     {
-        m31 values_1[4] = {
+        m31 values_1[5] = {
+            RANGE_CHECK_4_4_4_4_RELATION_ID,
             add(carry_3, M31_1),
             add(carry_4, M31_1),
             add(carry_5, M31_1),
             add(carry_6, M31_1)
         };
-        RelationEntry entry_1 = RelationEntry<4>(range_check_4_4_4_4_lookup_elements, qm31{{1,0}, {0,0}}, values_1);
-        cuda_evaluator->add_to_relation<4>(entry_1);
+        cuda_evaluator->add_to_relation<5>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_1);
     }
 
     {
-        m31 values_2[2] = {
+        m31 values_2[3] = {
+            RANGE_CHECK_4_4_RELATION_ID,
             add(carry_7, M31_1),
             add(carry_8, M31_1)
         };
-        RelationEntry entry_2 = RelationEntry<2>(range_check_4_4_lookup_elements, qm31{{1,0}, {0,0}}, values_2);
-        cuda_evaluator->add_to_relation<2>(entry_2);
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_2);
     }
 }
 

@@ -65,22 +65,30 @@ __global__ void evaluate_verify_bitwise_xor_8_pre_kernel(
         logup_counts
     );
 
+    // 3 preprocessed columns
     m31 a = cuda_evaluator0.next_trace_mask();
     m31 b = cuda_evaluator0.next_trace_mask();
     m31 c = cuda_evaluator0.next_trace_mask();
-    m31 multiplicity = cuda_evaluator1.next_trace_mask();
 
-    m31 values[3] = {a, b, c};
+    // 2 trace columns (was 1 in legacy)
+    m31 multiplicity_0 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_1 = cuda_evaluator1.next_trace_mask();
 
-    m31 neg_mult = neg(multiplicity);
-    qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+    // First relation entry: VerifyBitwiseXor8 with multiplicity_0
+    {
+        m31 values[4] = {VERIFY_BITWISE_XOR_8_RELATION_ID, a, b, c};
+        m31 neg_mult = neg(multiplicity_0);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<4>(xor_eval->common_lookup_elements, multiplicity_ext, values);
+    }
 
-    RelationEntry<3> entry(
-        xor_eval->verify_bitwise_xor_8_lookup_elements,
-        multiplicity_ext,
-        values
-    );
-    cuda_evaluator1.add_to_relation<3>(entry);
+    // Second relation entry: VerifyBitwiseXor8_B with multiplicity_1
+    {
+        m31 values[4] = {VERIFY_BITWISE_XOR_8_B_RELATION_ID, a, b, c};
+        m31 neg_mult = neg(multiplicity_1);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<4>(xor_eval->common_lookup_elements, multiplicity_ext, values);
+    }
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;
     numerators[row] = cuda_evaluator1.row_res;
@@ -241,4 +249,3 @@ void evaluate_verify_bitwise_xor_8(
     cuda_free_memory(d_intermediate_fractions);
     cuda_free_memory(constraint_index_array);
 }
-

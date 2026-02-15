@@ -90,33 +90,23 @@ __global__ void evaluate_range_check_builtin_bits_96_pre_kernel(
     m31 addr = add(segment_start, seq);
 
     // ReadPositiveNumBits96 = ReadId(addr, id) + ReadPositiveKnownIdNumBits96(id, limbs)
-    // Here we directly reuse existing helper combination logic:
     // (1) address->id lookup
     {
-        m31 values[2] = {addr, value_id_col0};
-        RelationEntry<2> entry(
-            range_eval->memory_address_to_id_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator1.add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, addr, value_id_col0};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // (2) Last limb range check: RangeCheck_6(value_limb_10)
     {
-        m31 values[1] = {value_limb_10_col11};
-        RelationEntry<1> entry(
-            range_eval->range_check_6_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_6_RELATION_ID, value_limb_10_col11};
+        cuda_evaluator1.add_to_relation<2>(range_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // (3) id-to-big lookup, MemoryIdToBig needs 29 values, unused limbs padded with 0
+    // (3) id-to-big lookup, MemoryIdToBig needs 30 values (RELATION_ID + 29), unused limbs padded with 0
     {
         m31 M31_0 = m31(0);
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             value_id_col0,
             value_limb_0_col1,
             value_limb_1_col2,
@@ -129,18 +119,13 @@ __global__ void evaluate_range_check_builtin_bits_96_pre_kernel(
             value_limb_8_col9,
             value_limb_9_col10,
             value_limb_10_col11,
-            // padding to 29 (total 17 zeros)
+            // padding to 30 (total 17 zeros)
             M31_0, M31_0, M31_0, M31_0, M31_0,
             M31_0, M31_0, M31_0, M31_0, M31_0,
             M31_0, M31_0, M31_0, M31_0, M31_0,
             M31_0, M31_0
         };
-        RelationEntry<29> entry(
-            range_eval->memory_id_to_big_lookup_elements,
-            qm31{m31(1), m31(0)},
-            values
-        );
-        cuda_evaluator1.add_to_relation<29>(entry);
+        cuda_evaluator1.add_to_relation<30>(range_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;

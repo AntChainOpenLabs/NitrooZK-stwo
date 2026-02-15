@@ -12,8 +12,7 @@
 
 struct RangeCheck_6_Eval {
     unsigned eval_id;
-    // No claim field - Rust Claim struct is empty (zero-sized type)
-    RangeCheck_6 range_check_6_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

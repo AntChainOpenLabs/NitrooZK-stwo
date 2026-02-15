@@ -22,8 +22,7 @@ DEVICE_FORCEINLINE void encode_offsets_evaluate(
     m31 offset2_low_col5,
     m31 offset2_mid_col6,
     m31 offset2_high_col7,
-    RangeCheck_7_2_5 range_check_7_2_5_lookup_elements,
-    RangeCheck_4_3 range_check_4_3_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     m31 *out_limb_1,
     m31 *out_limb_3,
     EvaluatorT *cuda_evaluator
@@ -62,31 +61,23 @@ DEVICE_FORCEINLINE void encode_offsets_evaluate(
 
     // RangeCheck_7_2_5 relation.
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            RANGE_CHECK_7_2_5_RELATION_ID,
             offset0_mid_col1,
             offset1_low_col2,
             offset1_high_col4,
         };
-        RelationEntry<3> entry(
-            range_check_7_2_5_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<3>(entry);
+        cuda_evaluator->add_to_relation<4>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // RangeCheck_4_3 relation.
     {
-        m31 values[2] = {
+        m31 values[3] = {
+            RANGE_CHECK_4_3_RELATION_ID,
             offset2_low_col5,
             offset2_high_col7,
         };
-        RelationEntry<2> entry(
-            range_check_4_3_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // Return limbs.

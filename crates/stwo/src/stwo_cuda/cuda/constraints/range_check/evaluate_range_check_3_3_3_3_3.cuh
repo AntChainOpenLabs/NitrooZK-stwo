@@ -12,7 +12,7 @@
 // Eval parameters passed from Rust (mirrors cairo-air::components::range_check_3_3_3_3_3::Eval)
 struct RangeCheck_3_3_3_3_3_Eval {
     unsigned eval_id;
-    RangeCheck_3_3_3_3_3 range_check_3_3_3_3_3_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 // CUDA AIR evaluator entry point (same signature pattern as other components)

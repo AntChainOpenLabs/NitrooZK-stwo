@@ -15,12 +15,7 @@ struct BlakeRound_Claim {
 struct BlakeRound_Eval {
     unsigned eval_id;
     BlakeRound_Claim Claim;
-    BlakeRoundSigma blake_round_sigma_lookup_elements;
-    RangeCheck_7_2_5 range_check_7_2_5_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    BlakeG blake_g_lookup_elements;
-    BlakeRound blake_round_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C" void evaluate_blake_round(

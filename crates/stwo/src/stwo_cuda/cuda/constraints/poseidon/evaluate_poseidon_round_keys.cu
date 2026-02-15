@@ -116,23 +116,19 @@ __global__ void evaluate_poseidon_round_keys_pre_kernel(
     m31 multiplicity_col0 = cuda_evaluator1.next_trace_mask();
 
     // ===================== Relation Lookup: PoseidonRoundKeys (PROVIDE) =====================
-    // Build lookup table entry: (seq, poseidonroundkeys[0..29])
+    // Build lookup table entry: (RELATION_ID, seq, poseidonroundkeys[0..29])
     // PROVIDE side uses negative multiplicity
-    m31 lookup_values[31];
-    lookup_values[0] = seq;
+    m31 lookup_values[32];
+    lookup_values[0] = POSEIDON_ROUND_KEYS_RELATION_ID;
+    lookup_values[1] = seq;
     for (int i = 0; i < 30; i++) {
-        lookup_values[i + 1] = poseidonroundkeys[i];
+        lookup_values[i + 2] = poseidonroundkeys[i];
     }
 
     // PROVIDE side: multiplicity is negative
     // Use neg() to get proper M31 field negation (P - x), not m31(-1)
     qm31 multiplicity = qm31{{neg(multiplicity_col0), 0}, {0, 0}};
-    RelationEntry<31> entry(
-        poseidon_eval->poseidon_round_keys_lookup_elements,
-        multiplicity,
-        lookup_values
-    );
-    cuda_evaluator1.add_to_relation<31>(entry);
+    cuda_evaluator1.add_to_relation<32>(poseidon_eval->common_lookup_elements, multiplicity, lookup_values);
 
     // ===================== Cleanup =====================
     // Store results back to global memory

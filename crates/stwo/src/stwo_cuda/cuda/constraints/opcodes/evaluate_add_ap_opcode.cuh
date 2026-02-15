@@ -1,12 +1,7 @@
 #ifndef EVALUATE_ADD_AP_OPCODE_H
 #define EVALUATE_ADD_AP_OPCODE_H
 
-
-#include "fields.cuh"
-#include "utils.cuh"
-#include "logup.cuh"
-#include "eval_at_row.cuh"
-#include "relations.cuh"
+#include "constraints/relations.cuh"
 
 struct AddApCode_Claim {
     unsigned log_size;
@@ -15,12 +10,7 @@ struct AddApCode_Claim {
 struct AddApCode_Eval {
     unsigned eval_id;
     AddApCode_Claim Claim;
-    VerifyInstruction verify_instruction_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    RangeCheck_18 range_check_18_lookup_elements;
-    RangeCheck_11 range_check_11_lookup_elements;
-    Opcodes add_ap_code_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

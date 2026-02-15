@@ -184,15 +184,10 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
                 bitwise_eval->Claim.bitwise_builtin_segment_start, seq, seq_times_5, op0_address);
         }
 
-        // 1. MemoryAddressToId lookup: verify address → ID mapping
+        // 1. MemoryAddressToId lookup: verify address -> ID mapping
         // Ensure memory cell at op0_address has ID op0_id
-        m31 addr_values[2] = {op0_address, op0_id};
-        RelationEntry<2> addr_entry(
-            bitwise_eval->memory_address_to_id_lookup_elements,
-            qm31{M31_1, M31_0},
-            addr_values
-        );
-        cuda_evaluator1.add_to_relation<2>(addr_entry);
+        m31 addr_values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, op0_address, op0_id};
+        cuda_evaluator1.add_to_relation<3>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, addr_values);
 
         // Debug: Print first fraction for row 0
         if (row == 0) {
@@ -202,19 +197,15 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
                 first_frac.denominator.a.a, first_frac.denominator.a.b, first_frac.denominator.b.a, first_frac.denominator.b.b);
         }
 
-        // 2. MemoryIdToBig lookup: verify ID → Big Number mapping
+        // 2. MemoryIdToBig lookup: verify ID -> Big Number mapping
         // Ensure memory cell op0_id contains 252-bit number composed of 28 limbs
-        m31 id_big_values[29];
-        id_big_values[0] = op0_id;
+        m31 id_big_values[30];
+        id_big_values[0] = MEMORY_ID_TO_BIG_RELATION_ID;
+        id_big_values[1] = op0_id;
         for (int i = 0; i < 28; i++) {
-            id_big_values[i + 1] = op0_limbs[i];
+            id_big_values[i + 2] = op0_limbs[i];
         }
-        RelationEntry<29> id_big_entry(
-            bitwise_eval->memory_id_to_big_lookup_elements,
-            qm31{M31_1, M31_0},
-            id_big_values
-        );
-        cuda_evaluator1.add_to_relation<29>(id_big_entry);
+        cuda_evaluator1.add_to_relation<30>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, id_big_values);
     }
 
     // ===================== op1 Memory Lookup (Second Operand) =====================
@@ -225,26 +216,17 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
         m31 op1_address = add(add(m31(bitwise_eval->Claim.bitwise_builtin_segment_start), mul(seq, M31_5)), M31_1);
 
         // 1. MemoryAddressToId lookup
-        m31 addr_values[2] = {op1_address, op1_id};
-        RelationEntry<2> addr_entry(
-            bitwise_eval->memory_address_to_id_lookup_elements,
-            qm31{M31_1, M31_0},
-            addr_values
-        );
-        cuda_evaluator1.add_to_relation<2>(addr_entry);
+        m31 addr_values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, op1_address, op1_id};
+        cuda_evaluator1.add_to_relation<3>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, addr_values);
 
         // 2. MemoryIdToBig lookup
-        m31 id_big_values[29];
-        id_big_values[0] = op1_id;
+        m31 id_big_values[30];
+        id_big_values[0] = MEMORY_ID_TO_BIG_RELATION_ID;
+        id_big_values[1] = op1_id;
         for (int i = 0; i < 28; i++) {
-            id_big_values[i + 1] = op1_limbs[i];
+            id_big_values[i + 2] = op1_limbs[i];
         }
-        RelationEntry<29> id_big_entry(
-            bitwise_eval->memory_id_to_big_lookup_elements,
-            qm31{M31_1, M31_0},
-            id_big_values
-        );
-        cuda_evaluator1.add_to_relation<29>(id_big_entry);
+        cuda_evaluator1.add_to_relation<30>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, id_big_values);
     }
 
     // ===================== XOR Verification and AND Computation =====================
@@ -266,13 +248,8 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
     // Use VerifyBitwiseXor_9 table lookup to verify XOR correctness
     for (int i = 0; i < 27; i++) {
         // VerifyBitwiseXor_9 lookup: verify op0_limb XOR op1_limb = xor_limb
-        m31 xor_values[3] = {op0_limbs[i], op1_limbs[i], xor_limbs[i]};
-        RelationEntry<3> xor_entry(
-            bitwise_eval->verify_bitwise_xor_9_lookup_elements,
-            qm31{M31_1, M31_0},
-            xor_values
-        );
-        cuda_evaluator1.add_to_relation<3>(xor_entry);
+        m31 xor_values[4] = {VERIFY_BITWISE_XOR_9_RELATION_ID, op0_limbs[i], op1_limbs[i], xor_limbs[i]};
+        cuda_evaluator1.add_to_relation<4>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, xor_values);
 
         // Compute AND: and_limb = (op0_limb + op1_limb - xor_limb) / 2
         // In M31 field, division by 2 is equivalent to multiplication by 2^30 = 1073741824
@@ -283,13 +260,8 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
     // Because we need a total of 252 bits = 27×9 + 9, but the last one actually only needs 8 bits
     // Use VerifyBitwiseXor_8 table lookup
     {
-        m31 xor_values[3] = {op0_limbs[27], op1_limbs[27], xor_limbs[27]};
-        RelationEntry<3> xor_entry(
-            bitwise_eval->verify_bitwise_xor_8_lookup_elements,
-            qm31{M31_1, M31_0},
-            xor_values
-        );
-        cuda_evaluator1.add_to_relation<3>(xor_entry);
+        m31 xor_values[4] = {VERIFY_BITWISE_XOR_8_RELATION_ID, op0_limbs[27], op1_limbs[27], xor_limbs[27]};
+        cuda_evaluator1.add_to_relation<4>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, xor_values);
 
         and_limbs[27] = mul(M31_1073741824, sub(add(op0_limbs[27], op1_limbs[27]), xor_limbs[27]));
     }
@@ -302,27 +274,18 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
         m31 and_address = add(add(m31(bitwise_eval->Claim.bitwise_builtin_segment_start), mul(seq, M31_5)), M31_2);
 
         // 1. MemoryAddressToId lookup
-        m31 addr_values[2] = {and_address, and_id};
-        RelationEntry<2> addr_entry(
-            bitwise_eval->memory_address_to_id_lookup_elements,
-            qm31{M31_1, M31_0},
-            addr_values
-        );
-        cuda_evaluator1.add_to_relation<2>(addr_entry);
+        m31 addr_values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, and_address, and_id};
+        cuda_evaluator1.add_to_relation<3>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, addr_values);
 
         // 2. MemoryIdToBig lookup
         // Verify memory cell and_id contains the AND result we computed (28 limbs)
-        m31 id_big_values[29];
-        id_big_values[0] = and_id;
+        m31 id_big_values[30];
+        id_big_values[0] = MEMORY_ID_TO_BIG_RELATION_ID;
+        id_big_values[1] = and_id;
         for (int i = 0; i < 28; i++) {
-            id_big_values[i + 1] = and_limbs[i];
+            id_big_values[i + 2] = and_limbs[i];
         }
-        RelationEntry<29> id_big_entry(
-            bitwise_eval->memory_id_to_big_lookup_elements,
-            qm31{M31_1, M31_0},
-            id_big_values
-        );
-        cuda_evaluator1.add_to_relation<29>(id_big_entry);
+        cuda_evaluator1.add_to_relation<30>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, id_big_values);
     }
 
     // ===================== XOR Result Memory Verification =====================
@@ -333,27 +296,18 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
         m31 xor_address = add(add(m31(bitwise_eval->Claim.bitwise_builtin_segment_start), mul(seq, M31_5)), m31(3));
 
         // 1. MemoryAddressToId lookup
-        m31 addr_values[2] = {xor_address, xor_id};
-        RelationEntry<2> addr_entry(
-            bitwise_eval->memory_address_to_id_lookup_elements,
-            qm31{M31_1, M31_0},
-            addr_values
-        );
-        cuda_evaluator1.add_to_relation<2>(addr_entry);
+        m31 addr_values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, xor_address, xor_id};
+        cuda_evaluator1.add_to_relation<3>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, addr_values);
 
         // 2. MemoryIdToBig lookup
         // Verify memory cell xor_id contains XOR result (28 limbs)
-        m31 id_big_values[29];
-        id_big_values[0] = xor_id;
+        m31 id_big_values[30];
+        id_big_values[0] = MEMORY_ID_TO_BIG_RELATION_ID;
+        id_big_values[1] = xor_id;
         for (int i = 0; i < 28; i++) {
-            id_big_values[i + 1] = xor_limbs[i];
+            id_big_values[i + 2] = xor_limbs[i];
         }
-        RelationEntry<29> id_big_entry(
-            bitwise_eval->memory_id_to_big_lookup_elements,
-            qm31{M31_1, M31_0},
-            id_big_values
-        );
-        cuda_evaluator1.add_to_relation<29>(id_big_entry);
+        cuda_evaluator1.add_to_relation<30>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, id_big_values);
     }
 
     // ===================== OR Result Memory Verification =====================
@@ -364,28 +318,19 @@ __global__ void evaluate_bitwise_builtin_pre_kernel(
         m31 or_address = add(add(m31(bitwise_eval->Claim.bitwise_builtin_segment_start), mul(seq, M31_5)), m31(4));
 
         // 1. MemoryAddressToId lookup
-        m31 addr_values[2] = {or_address, or_id};
-        RelationEntry<2> addr_entry(
-            bitwise_eval->memory_address_to_id_lookup_elements,
-            qm31{M31_1, M31_0},
-            addr_values
-        );
-        cuda_evaluator1.add_to_relation<2>(addr_entry);
+        m31 addr_values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, or_address, or_id};
+        cuda_evaluator1.add_to_relation<3>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, addr_values);
 
         // 2. MemoryIdToBig lookup
         // Verify memory cell or_id contains OR result
         // OR computed via algebraic relation: OR = AND + XOR
-        m31 id_big_values[29];
-        id_big_values[0] = or_id;
+        m31 id_big_values[30];
+        id_big_values[0] = MEMORY_ID_TO_BIG_RELATION_ID;
+        id_big_values[1] = or_id;
         for (int i = 0; i < 28; i++) {
-            id_big_values[i + 1] = add(and_limbs[i], xor_limbs[i]);
+            id_big_values[i + 2] = add(and_limbs[i], xor_limbs[i]);
         }
-        RelationEntry<29> id_big_entry(
-            bitwise_eval->memory_id_to_big_lookup_elements,
-            qm31{M31_1, M31_0},
-            id_big_values
-        );
-        cuda_evaluator1.add_to_relation<29>(id_big_entry);
+        cuda_evaluator1.add_to_relation<30>(bitwise_eval->common_lookup_elements, qm31{M31_1, M31_0}, id_big_values);
     }
 
     // ===================== Complete Constraint Evaluation =====================

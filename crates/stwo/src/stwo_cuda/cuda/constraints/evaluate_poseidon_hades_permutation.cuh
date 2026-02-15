@@ -323,13 +323,7 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
     m31 poseidon_full_round_chain_output_limb_29_col196,
 
     // Lookup elements
-    PoseidonFullRoundChain poseidon_full_round_chain_lookup_elements,
-    RangeCheckFelt252Width27 range_check_felt_252_width_27_lookup_elements,
-    Cube252 cube_252_lookup_elements,
-    RangeCheck_3_3_3_3_3 range_check_3_3_3_3_3_lookup_elements,
-    RangeCheck_4_4_4_4 range_check_4_4_4_4_lookup_elements,
-    RangeCheck_4_4 range_check_4_4_lookup_elements,
-    Poseidon3PartialRoundsChain poseidon_3_partial_rounds_chain_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     m31 seq,
 
@@ -527,89 +521,81 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
     // Lookup input state (negative multiplicity)
     m31 poseidon_full_round_chain_chain_tmp_tmp_7d028_66 = add(seq, seq);  // seq * 2
 
-    m31 input_values[32];
-    input_values[0] = poseidon_full_round_chain_chain_tmp_tmp_7d028_66;
-    input_values[1] = M31_0;
-    input_values[2] = combination_limb_0_col0;
-    input_values[3] = combination_limb_1_col1;
-    input_values[4] = combination_limb_2_col2;
-    input_values[5] = combination_limb_3_col3;
-    input_values[6] = combination_limb_4_col4;
-    input_values[7] = combination_limb_5_col5;
-    input_values[8] = combination_limb_6_col6;
-    input_values[9] = combination_limb_7_col7;
-    input_values[10] = combination_limb_8_col8;
-    input_values[11] = combination_limb_9_col9;
-    input_values[12] = combination_limb_0_col11;
-    input_values[13] = combination_limb_1_col12;
-    input_values[14] = combination_limb_2_col13;
-    input_values[15] = combination_limb_3_col14;
-    input_values[16] = combination_limb_4_col15;
-    input_values[17] = combination_limb_5_col16;
-    input_values[18] = combination_limb_6_col17;
-    input_values[19] = combination_limb_7_col18;
-    input_values[20] = combination_limb_8_col19;
-    input_values[21] = combination_limb_9_col20;
-    input_values[22] = combination_limb_0_col22;
-    input_values[23] = combination_limb_1_col23;
-    input_values[24] = combination_limb_2_col24;
-    input_values[25] = combination_limb_3_col25;
-    input_values[26] = combination_limb_4_col26;
-    input_values[27] = combination_limb_5_col27;
-    input_values[28] = combination_limb_6_col28;
-    input_values[29] = combination_limb_7_col29;
-    input_values[30] = combination_limb_8_col30;
-    input_values[31] = combination_limb_9_col31;
+    m31 input_values[33];
+    input_values[0] = POSEIDON_FULL_ROUND_CHAIN_RELATION_ID;
+    input_values[1] = poseidon_full_round_chain_chain_tmp_tmp_7d028_66;
+    input_values[2] = M31_0;
+    input_values[3] = combination_limb_0_col0;
+    input_values[4] = combination_limb_1_col1;
+    input_values[5] = combination_limb_2_col2;
+    input_values[6] = combination_limb_3_col3;
+    input_values[7] = combination_limb_4_col4;
+    input_values[8] = combination_limb_5_col5;
+    input_values[9] = combination_limb_6_col6;
+    input_values[10] = combination_limb_7_col7;
+    input_values[11] = combination_limb_8_col8;
+    input_values[12] = combination_limb_9_col9;
+    input_values[13] = combination_limb_0_col11;
+    input_values[14] = combination_limb_1_col12;
+    input_values[15] = combination_limb_2_col13;
+    input_values[16] = combination_limb_3_col14;
+    input_values[17] = combination_limb_4_col15;
+    input_values[18] = combination_limb_5_col16;
+    input_values[19] = combination_limb_6_col17;
+    input_values[20] = combination_limb_7_col18;
+    input_values[21] = combination_limb_8_col19;
+    input_values[22] = combination_limb_9_col20;
+    input_values[23] = combination_limb_0_col22;
+    input_values[24] = combination_limb_1_col23;
+    input_values[25] = combination_limb_2_col24;
+    input_values[26] = combination_limb_3_col25;
+    input_values[27] = combination_limb_4_col26;
+    input_values[28] = combination_limb_5_col27;
+    input_values[29] = combination_limb_6_col28;
+    input_values[30] = combination_limb_7_col29;
+    input_values[31] = combination_limb_8_col30;
+    input_values[32] = combination_limb_9_col31;
 
-    RelationEntry<32> input_entry(
-        poseidon_full_round_chain_lookup_elements,
-        qm31{{sub(M31_0, M31_1), 0}, {0, 0}},  // -1
-        input_values
-    );
-    cuda_evaluator->add_to_relation(input_entry);
+    cuda_evaluator->template add_to_relation<33>(common_lookup_elements, qm31{{sub(M31_0, M31_1), 0}, {0, 0}}, input_values);
 
     // ===================== First PoseidonFullRoundChain Lookup (Output) =====================
     // Lookup output state (positive multiplicity)
-    m31 output_values[32];
-    output_values[0] = poseidon_full_round_chain_chain_tmp_tmp_7d028_66;
-    output_values[1] = M31_4;
-    output_values[2] = poseidon_full_round_chain_output_limb_0_col33;
-    output_values[3] = poseidon_full_round_chain_output_limb_1_col34;
-    output_values[4] = poseidon_full_round_chain_output_limb_2_col35;
-    output_values[5] = poseidon_full_round_chain_output_limb_3_col36;
-    output_values[6] = poseidon_full_round_chain_output_limb_4_col37;
-    output_values[7] = poseidon_full_round_chain_output_limb_5_col38;
-    output_values[8] = poseidon_full_round_chain_output_limb_6_col39;
-    output_values[9] = poseidon_full_round_chain_output_limb_7_col40;
-    output_values[10] = poseidon_full_round_chain_output_limb_8_col41;
-    output_values[11] = poseidon_full_round_chain_output_limb_9_col42;
-    output_values[12] = poseidon_full_round_chain_output_limb_10_col43;
-    output_values[13] = poseidon_full_round_chain_output_limb_11_col44;
-    output_values[14] = poseidon_full_round_chain_output_limb_12_col45;
-    output_values[15] = poseidon_full_round_chain_output_limb_13_col46;
-    output_values[16] = poseidon_full_round_chain_output_limb_14_col47;
-    output_values[17] = poseidon_full_round_chain_output_limb_15_col48;
-    output_values[18] = poseidon_full_round_chain_output_limb_16_col49;
-    output_values[19] = poseidon_full_round_chain_output_limb_17_col50;
-    output_values[20] = poseidon_full_round_chain_output_limb_18_col51;
-    output_values[21] = poseidon_full_round_chain_output_limb_19_col52;
-    output_values[22] = poseidon_full_round_chain_output_limb_20_col53;
-    output_values[23] = poseidon_full_round_chain_output_limb_21_col54;
-    output_values[24] = poseidon_full_round_chain_output_limb_22_col55;
-    output_values[25] = poseidon_full_round_chain_output_limb_23_col56;
-    output_values[26] = poseidon_full_round_chain_output_limb_24_col57;
-    output_values[27] = poseidon_full_round_chain_output_limb_25_col58;
-    output_values[28] = poseidon_full_round_chain_output_limb_26_col59;
-    output_values[29] = poseidon_full_round_chain_output_limb_27_col60;
-    output_values[30] = poseidon_full_round_chain_output_limb_28_col61;
-    output_values[31] = poseidon_full_round_chain_output_limb_29_col62;
+    m31 output_values[33];
+    output_values[0] = POSEIDON_FULL_ROUND_CHAIN_RELATION_ID;
+    output_values[1] = poseidon_full_round_chain_chain_tmp_tmp_7d028_66;
+    output_values[2] = M31_4;
+    output_values[3] = poseidon_full_round_chain_output_limb_0_col33;
+    output_values[4] = poseidon_full_round_chain_output_limb_1_col34;
+    output_values[5] = poseidon_full_round_chain_output_limb_2_col35;
+    output_values[6] = poseidon_full_round_chain_output_limb_3_col36;
+    output_values[7] = poseidon_full_round_chain_output_limb_4_col37;
+    output_values[8] = poseidon_full_round_chain_output_limb_5_col38;
+    output_values[9] = poseidon_full_round_chain_output_limb_6_col39;
+    output_values[10] = poseidon_full_round_chain_output_limb_7_col40;
+    output_values[11] = poseidon_full_round_chain_output_limb_8_col41;
+    output_values[12] = poseidon_full_round_chain_output_limb_9_col42;
+    output_values[13] = poseidon_full_round_chain_output_limb_10_col43;
+    output_values[14] = poseidon_full_round_chain_output_limb_11_col44;
+    output_values[15] = poseidon_full_round_chain_output_limb_12_col45;
+    output_values[16] = poseidon_full_round_chain_output_limb_13_col46;
+    output_values[17] = poseidon_full_round_chain_output_limb_14_col47;
+    output_values[18] = poseidon_full_round_chain_output_limb_15_col48;
+    output_values[19] = poseidon_full_round_chain_output_limb_16_col49;
+    output_values[20] = poseidon_full_round_chain_output_limb_17_col50;
+    output_values[21] = poseidon_full_round_chain_output_limb_18_col51;
+    output_values[22] = poseidon_full_round_chain_output_limb_19_col52;
+    output_values[23] = poseidon_full_round_chain_output_limb_20_col53;
+    output_values[24] = poseidon_full_round_chain_output_limb_21_col54;
+    output_values[25] = poseidon_full_round_chain_output_limb_22_col55;
+    output_values[26] = poseidon_full_round_chain_output_limb_23_col56;
+    output_values[27] = poseidon_full_round_chain_output_limb_24_col57;
+    output_values[28] = poseidon_full_round_chain_output_limb_25_col58;
+    output_values[29] = poseidon_full_round_chain_output_limb_26_col59;
+    output_values[30] = poseidon_full_round_chain_output_limb_27_col60;
+    output_values[31] = poseidon_full_round_chain_output_limb_28_col61;
+    output_values[32] = poseidon_full_round_chain_output_limb_29_col62;
 
-    RelationEntry<32> output_entry(
-        poseidon_full_round_chain_lookup_elements,
-        qm31{{M31_1, 0}, {0, 0}},  // 1
-        output_values
-    );
-    cuda_evaluator->add_to_relation(output_entry);
+    cuda_evaluator->template add_to_relation<33>(common_lookup_elements, qm31{{M31_1, 0}, {0, 0}}, output_values);
 
     // ===================== RangeCheckFelt252Width27 Lookups =====================
     // First range check (limbs 0-9)
@@ -625,12 +611,10 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
     range_check_1_values[8] = poseidon_full_round_chain_output_limb_8_col41;
     range_check_1_values[9] = poseidon_full_round_chain_output_limb_9_col42;
 
-    RelationEntry<10> range_check_1_entry(
-        range_check_felt_252_width_27_lookup_elements,
-        qm31{{M31_1, 0}, {0, 0}},
-        range_check_1_values
-    );
-    cuda_evaluator->add_to_relation(range_check_1_entry);
+    m31 range_check_1_values_ext[11];
+    range_check_1_values_ext[0] = RANGE_CHECK_252_WIDTH_27_RELATION_ID;
+    for (int i = 0; i < 10; i++) range_check_1_values_ext[i+1] = range_check_1_values[i];
+    cuda_evaluator->add_to_relation<11>(common_lookup_elements, qm31{{M31_1, 0}, {0, 0}}, range_check_1_values_ext);
 
     // Second range check (limbs 10-19)
     m31 range_check_2_values[10];
@@ -645,12 +629,10 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
     range_check_2_values[8] = poseidon_full_round_chain_output_limb_18_col51;
     range_check_2_values[9] = poseidon_full_round_chain_output_limb_19_col52;
 
-    RelationEntry<10> range_check_2_entry(
-        range_check_felt_252_width_27_lookup_elements,
-        qm31{{M31_1, 0}, {0, 0}},
-        range_check_2_values
-    );
-    cuda_evaluator->add_to_relation(range_check_2_entry);
+    m31 range_check_2_values_ext[11];
+    range_check_2_values_ext[0] = RANGE_CHECK_252_WIDTH_27_RELATION_ID;
+    for (int i = 0; i < 10; i++) range_check_2_values_ext[i+1] = range_check_2_values[i];
+    cuda_evaluator->add_to_relation<11>(common_lookup_elements, qm31{{M31_1, 0}, {0, 0}}, range_check_2_values_ext);
 
     // ===================== First Cube252 Lookup =====================
     // Cube the third element (limbs 20-29)
@@ -676,12 +658,10 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
     cube_1_values[18] = cube_252_output_limb_8_col71;
     cube_1_values[19] = cube_252_output_limb_9_col72;
 
-    RelationEntry<20> cube_1_entry(
-        cube_252_lookup_elements,
-        qm31{{M31_1, 0}, {0, 0}},
-        cube_1_values
-    );
-    cuda_evaluator->add_to_relation(cube_1_entry);
+    m31 cube_1_values_ext[21];
+    cube_1_values_ext[0] = CUBE_252_RELATION_ID;
+    for (int i = 0; i < 20; i++) cube_1_values_ext[i+1] = cube_1_values[i];
+    cuda_evaluator->add_to_relation<21>(common_lookup_elements, qm31{{M31_1, 0}, {0, 0}}, cube_1_values_ext);
 
     // ===================== LinearCombinationN4Coefs11M21 =====================
     // Combines elements for partial rounds input
@@ -737,7 +717,7 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
         combination_limb_8_col81,
         combination_limb_9_col82,
         p_coef_col83,
-        range_check_3_3_3_3_3_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -765,12 +745,10 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
     cube_2_values[18] = cube_252_output_limb_8_col92;
     cube_2_values[19] = cube_252_output_limb_9_col93;
 
-    RelationEntry<20> cube_2_entry(
-        cube_252_lookup_elements,
-        qm31{{M31_1, 0}, {0, 0}},
-        cube_2_values
-    );
-    cuda_evaluator->add_to_relation(cube_2_entry);
+    m31 cube_2_values_ext[21];
+    cube_2_values_ext[0] = CUBE_252_RELATION_ID;
+    for (int i = 0; i < 20; i++) cube_2_values_ext[i+1] = cube_2_values[i];
+    cuda_evaluator->add_to_relation<21>(common_lookup_elements, qm31{{M31_1, 0}, {0, 0}}, cube_2_values_ext);
 
     // ===================== LinearCombinationN4Coefs42M21 =====================
     // Combines all cubed elements
@@ -826,114 +804,105 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
         combination_limb_8_col102,
         combination_limb_9_col103,
         p_coef_col104,
-        range_check_4_4_4_4_lookup_elements,
-        range_check_4_4_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
     // ===================== Poseidon3PartialRoundsChain Lookup (Input) =====================
-    m31 partial_input_values[42];
-    partial_input_values[0] = seq;
-    partial_input_values[1] = M31_4;
-    partial_input_values[2] = cube_252_output_limb_0_col63;
-    partial_input_values[3] = cube_252_output_limb_1_col64;
-    partial_input_values[4] = cube_252_output_limb_2_col65;
-    partial_input_values[5] = cube_252_output_limb_3_col66;
-    partial_input_values[6] = cube_252_output_limb_4_col67;
-    partial_input_values[7] = cube_252_output_limb_5_col68;
-    partial_input_values[8] = cube_252_output_limb_6_col69;
-    partial_input_values[9] = cube_252_output_limb_7_col70;
-    partial_input_values[10] = cube_252_output_limb_8_col71;
-    partial_input_values[11] = cube_252_output_limb_9_col72;
-    partial_input_values[12] = combination_limb_0_col73;
-    partial_input_values[13] = combination_limb_1_col74;
-    partial_input_values[14] = combination_limb_2_col75;
-    partial_input_values[15] = combination_limb_3_col76;
-    partial_input_values[16] = combination_limb_4_col77;
-    partial_input_values[17] = combination_limb_5_col78;
-    partial_input_values[18] = combination_limb_6_col79;
-    partial_input_values[19] = combination_limb_7_col80;
-    partial_input_values[20] = combination_limb_8_col81;
-    partial_input_values[21] = combination_limb_9_col82;
-    partial_input_values[22] = cube_252_output_limb_0_col84;
-    partial_input_values[23] = cube_252_output_limb_1_col85;
-    partial_input_values[24] = cube_252_output_limb_2_col86;
-    partial_input_values[25] = cube_252_output_limb_3_col87;
-    partial_input_values[26] = cube_252_output_limb_4_col88;
-    partial_input_values[27] = cube_252_output_limb_5_col89;
-    partial_input_values[28] = cube_252_output_limb_6_col90;
-    partial_input_values[29] = cube_252_output_limb_7_col91;
-    partial_input_values[30] = cube_252_output_limb_8_col92;
-    partial_input_values[31] = cube_252_output_limb_9_col93;
-    partial_input_values[32] = combination_limb_0_col94;
-    partial_input_values[33] = combination_limb_1_col95;
-    partial_input_values[34] = combination_limb_2_col96;
-    partial_input_values[35] = combination_limb_3_col97;
-    partial_input_values[36] = combination_limb_4_col98;
-    partial_input_values[37] = combination_limb_5_col99;
-    partial_input_values[38] = combination_limb_6_col100;
-    partial_input_values[39] = combination_limb_7_col101;
-    partial_input_values[40] = combination_limb_8_col102;
-    partial_input_values[41] = combination_limb_9_col103;
+    m31 partial_input_values[43];
+    partial_input_values[0] = POSEIDON_3_PARTIAL_ROUNDS_CHAIN_RELATION_ID;
+    partial_input_values[1] = seq;
+    partial_input_values[2] = M31_4;
+    partial_input_values[3] = cube_252_output_limb_0_col63;
+    partial_input_values[4] = cube_252_output_limb_1_col64;
+    partial_input_values[5] = cube_252_output_limb_2_col65;
+    partial_input_values[6] = cube_252_output_limb_3_col66;
+    partial_input_values[7] = cube_252_output_limb_4_col67;
+    partial_input_values[8] = cube_252_output_limb_5_col68;
+    partial_input_values[9] = cube_252_output_limb_6_col69;
+    partial_input_values[10] = cube_252_output_limb_7_col70;
+    partial_input_values[11] = cube_252_output_limb_8_col71;
+    partial_input_values[12] = cube_252_output_limb_9_col72;
+    partial_input_values[13] = combination_limb_0_col73;
+    partial_input_values[14] = combination_limb_1_col74;
+    partial_input_values[15] = combination_limb_2_col75;
+    partial_input_values[16] = combination_limb_3_col76;
+    partial_input_values[17] = combination_limb_4_col77;
+    partial_input_values[18] = combination_limb_5_col78;
+    partial_input_values[19] = combination_limb_6_col79;
+    partial_input_values[20] = combination_limb_7_col80;
+    partial_input_values[21] = combination_limb_8_col81;
+    partial_input_values[22] = combination_limb_9_col82;
+    partial_input_values[23] = cube_252_output_limb_0_col84;
+    partial_input_values[24] = cube_252_output_limb_1_col85;
+    partial_input_values[25] = cube_252_output_limb_2_col86;
+    partial_input_values[26] = cube_252_output_limb_3_col87;
+    partial_input_values[27] = cube_252_output_limb_4_col88;
+    partial_input_values[28] = cube_252_output_limb_5_col89;
+    partial_input_values[29] = cube_252_output_limb_6_col90;
+    partial_input_values[30] = cube_252_output_limb_7_col91;
+    partial_input_values[31] = cube_252_output_limb_8_col92;
+    partial_input_values[32] = cube_252_output_limb_9_col93;
+    partial_input_values[33] = combination_limb_0_col94;
+    partial_input_values[34] = combination_limb_1_col95;
+    partial_input_values[35] = combination_limb_2_col96;
+    partial_input_values[36] = combination_limb_3_col97;
+    partial_input_values[37] = combination_limb_4_col98;
+    partial_input_values[38] = combination_limb_5_col99;
+    partial_input_values[39] = combination_limb_6_col100;
+    partial_input_values[40] = combination_limb_7_col101;
+    partial_input_values[41] = combination_limb_8_col102;
+    partial_input_values[42] = combination_limb_9_col103;
 
-    RelationEntry<42> partial_input_entry(
-        poseidon_3_partial_rounds_chain_lookup_elements,
-        qm31{{sub(M31_0, M31_1), 0}, {0, 0}},  // -1
-        partial_input_values
-    );
-    cuda_evaluator->add_to_relation(partial_input_entry);
+    cuda_evaluator->template add_to_relation<43>(common_lookup_elements, qm31{{sub(M31_0, M31_1), 0}, {0, 0}}, partial_input_values);
 
     // ===================== Poseidon3PartialRoundsChain Lookup (Output) =====================
-    m31 partial_output_values[42];
-    partial_output_values[0] = seq;
-    partial_output_values[1] = M31_31;
-    partial_output_values[2] = poseidon_3_partial_rounds_chain_output_limb_0_col105;
-    partial_output_values[3] = poseidon_3_partial_rounds_chain_output_limb_1_col106;
-    partial_output_values[4] = poseidon_3_partial_rounds_chain_output_limb_2_col107;
-    partial_output_values[5] = poseidon_3_partial_rounds_chain_output_limb_3_col108;
-    partial_output_values[6] = poseidon_3_partial_rounds_chain_output_limb_4_col109;
-    partial_output_values[7] = poseidon_3_partial_rounds_chain_output_limb_5_col110;
-    partial_output_values[8] = poseidon_3_partial_rounds_chain_output_limb_6_col111;
-    partial_output_values[9] = poseidon_3_partial_rounds_chain_output_limb_7_col112;
-    partial_output_values[10] = poseidon_3_partial_rounds_chain_output_limb_8_col113;
-    partial_output_values[11] = poseidon_3_partial_rounds_chain_output_limb_9_col114;
-    partial_output_values[12] = poseidon_3_partial_rounds_chain_output_limb_10_col115;
-    partial_output_values[13] = poseidon_3_partial_rounds_chain_output_limb_11_col116;
-    partial_output_values[14] = poseidon_3_partial_rounds_chain_output_limb_12_col117;
-    partial_output_values[15] = poseidon_3_partial_rounds_chain_output_limb_13_col118;
-    partial_output_values[16] = poseidon_3_partial_rounds_chain_output_limb_14_col119;
-    partial_output_values[17] = poseidon_3_partial_rounds_chain_output_limb_15_col120;
-    partial_output_values[18] = poseidon_3_partial_rounds_chain_output_limb_16_col121;
-    partial_output_values[19] = poseidon_3_partial_rounds_chain_output_limb_17_col122;
-    partial_output_values[20] = poseidon_3_partial_rounds_chain_output_limb_18_col123;
-    partial_output_values[21] = poseidon_3_partial_rounds_chain_output_limb_19_col124;
-    partial_output_values[22] = poseidon_3_partial_rounds_chain_output_limb_20_col125;
-    partial_output_values[23] = poseidon_3_partial_rounds_chain_output_limb_21_col126;
-    partial_output_values[24] = poseidon_3_partial_rounds_chain_output_limb_22_col127;
-    partial_output_values[25] = poseidon_3_partial_rounds_chain_output_limb_23_col128;
-    partial_output_values[26] = poseidon_3_partial_rounds_chain_output_limb_24_col129;
-    partial_output_values[27] = poseidon_3_partial_rounds_chain_output_limb_25_col130;
-    partial_output_values[28] = poseidon_3_partial_rounds_chain_output_limb_26_col131;
-    partial_output_values[29] = poseidon_3_partial_rounds_chain_output_limb_27_col132;
-    partial_output_values[30] = poseidon_3_partial_rounds_chain_output_limb_28_col133;
-    partial_output_values[31] = poseidon_3_partial_rounds_chain_output_limb_29_col134;
-    partial_output_values[32] = poseidon_3_partial_rounds_chain_output_limb_30_col135;
-    partial_output_values[33] = poseidon_3_partial_rounds_chain_output_limb_31_col136;
-    partial_output_values[34] = poseidon_3_partial_rounds_chain_output_limb_32_col137;
-    partial_output_values[35] = poseidon_3_partial_rounds_chain_output_limb_33_col138;
-    partial_output_values[36] = poseidon_3_partial_rounds_chain_output_limb_34_col139;
-    partial_output_values[37] = poseidon_3_partial_rounds_chain_output_limb_35_col140;
-    partial_output_values[38] = poseidon_3_partial_rounds_chain_output_limb_36_col141;
-    partial_output_values[39] = poseidon_3_partial_rounds_chain_output_limb_37_col142;
-    partial_output_values[40] = poseidon_3_partial_rounds_chain_output_limb_38_col143;
-    partial_output_values[41] = poseidon_3_partial_rounds_chain_output_limb_39_col144;
+    m31 partial_output_values[43];
+    partial_output_values[0] = POSEIDON_3_PARTIAL_ROUNDS_CHAIN_RELATION_ID;
+    partial_output_values[1] = seq;
+    partial_output_values[2] = M31_31;
+    partial_output_values[3] = poseidon_3_partial_rounds_chain_output_limb_0_col105;
+    partial_output_values[4] = poseidon_3_partial_rounds_chain_output_limb_1_col106;
+    partial_output_values[5] = poseidon_3_partial_rounds_chain_output_limb_2_col107;
+    partial_output_values[6] = poseidon_3_partial_rounds_chain_output_limb_3_col108;
+    partial_output_values[7] = poseidon_3_partial_rounds_chain_output_limb_4_col109;
+    partial_output_values[8] = poseidon_3_partial_rounds_chain_output_limb_5_col110;
+    partial_output_values[9] = poseidon_3_partial_rounds_chain_output_limb_6_col111;
+    partial_output_values[10] = poseidon_3_partial_rounds_chain_output_limb_7_col112;
+    partial_output_values[11] = poseidon_3_partial_rounds_chain_output_limb_8_col113;
+    partial_output_values[12] = poseidon_3_partial_rounds_chain_output_limb_9_col114;
+    partial_output_values[13] = poseidon_3_partial_rounds_chain_output_limb_10_col115;
+    partial_output_values[14] = poseidon_3_partial_rounds_chain_output_limb_11_col116;
+    partial_output_values[15] = poseidon_3_partial_rounds_chain_output_limb_12_col117;
+    partial_output_values[16] = poseidon_3_partial_rounds_chain_output_limb_13_col118;
+    partial_output_values[17] = poseidon_3_partial_rounds_chain_output_limb_14_col119;
+    partial_output_values[18] = poseidon_3_partial_rounds_chain_output_limb_15_col120;
+    partial_output_values[19] = poseidon_3_partial_rounds_chain_output_limb_16_col121;
+    partial_output_values[20] = poseidon_3_partial_rounds_chain_output_limb_17_col122;
+    partial_output_values[21] = poseidon_3_partial_rounds_chain_output_limb_18_col123;
+    partial_output_values[22] = poseidon_3_partial_rounds_chain_output_limb_19_col124;
+    partial_output_values[23] = poseidon_3_partial_rounds_chain_output_limb_20_col125;
+    partial_output_values[24] = poseidon_3_partial_rounds_chain_output_limb_21_col126;
+    partial_output_values[25] = poseidon_3_partial_rounds_chain_output_limb_22_col127;
+    partial_output_values[26] = poseidon_3_partial_rounds_chain_output_limb_23_col128;
+    partial_output_values[27] = poseidon_3_partial_rounds_chain_output_limb_24_col129;
+    partial_output_values[28] = poseidon_3_partial_rounds_chain_output_limb_25_col130;
+    partial_output_values[29] = poseidon_3_partial_rounds_chain_output_limb_26_col131;
+    partial_output_values[30] = poseidon_3_partial_rounds_chain_output_limb_27_col132;
+    partial_output_values[31] = poseidon_3_partial_rounds_chain_output_limb_28_col133;
+    partial_output_values[32] = poseidon_3_partial_rounds_chain_output_limb_29_col134;
+    partial_output_values[33] = poseidon_3_partial_rounds_chain_output_limb_30_col135;
+    partial_output_values[34] = poseidon_3_partial_rounds_chain_output_limb_31_col136;
+    partial_output_values[35] = poseidon_3_partial_rounds_chain_output_limb_32_col137;
+    partial_output_values[36] = poseidon_3_partial_rounds_chain_output_limb_33_col138;
+    partial_output_values[37] = poseidon_3_partial_rounds_chain_output_limb_34_col139;
+    partial_output_values[38] = poseidon_3_partial_rounds_chain_output_limb_35_col140;
+    partial_output_values[39] = poseidon_3_partial_rounds_chain_output_limb_36_col141;
+    partial_output_values[40] = poseidon_3_partial_rounds_chain_output_limb_37_col142;
+    partial_output_values[41] = poseidon_3_partial_rounds_chain_output_limb_38_col143;
+    partial_output_values[42] = poseidon_3_partial_rounds_chain_output_limb_39_col144;
 
-    RelationEntry<42> partial_output_entry(
-        poseidon_3_partial_rounds_chain_lookup_elements,
-        qm31{{M31_1, 0}, {0, 0}},  // 1
-        partial_output_values
-    );
-    cuda_evaluator->add_to_relation(partial_output_entry);
+    cuda_evaluator->template add_to_relation<43>(common_lookup_elements, qm31{{M31_1, 0}, {0, 0}}, partial_output_values);
 
     // ===================== First LinearCombinationN4Coefs4211 =====================
     // Combines partial rounds output for final full rounds
@@ -989,8 +958,7 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
         combination_limb_8_col153,
         combination_limb_9_col154,
         p_coef_col155,
-        range_check_4_4_4_4_lookup_elements,
-        range_check_4_4_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -1048,96 +1016,87 @@ DEVICE_FORCEINLINE void poseidon_hades_permutation_evaluate(
         combination_limb_8_col164,
         combination_limb_9_col165,
         p_coef_col166,
-        range_check_4_4_4_4_lookup_elements,
-        range_check_4_4_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
     // ===================== Second PoseidonFullRoundChain Lookup (Input) =====================
     m31 poseidon_full_round_chain_chain_id_tmp_7d028_149 = add(poseidon_full_round_chain_chain_tmp_tmp_7d028_66, M31_1);
 
-    m31 final_input_values[32];
-    final_input_values[0] = poseidon_full_round_chain_chain_id_tmp_7d028_149;
-    final_input_values[1] = M31_31;
-    final_input_values[2] = combination_limb_0_col156;
-    final_input_values[3] = combination_limb_1_col157;
-    final_input_values[4] = combination_limb_2_col158;
-    final_input_values[5] = combination_limb_3_col159;
-    final_input_values[6] = combination_limb_4_col160;
-    final_input_values[7] = combination_limb_5_col161;
-    final_input_values[8] = combination_limb_6_col162;
-    final_input_values[9] = combination_limb_7_col163;
-    final_input_values[10] = combination_limb_8_col164;
-    final_input_values[11] = combination_limb_9_col165;
-    final_input_values[12] = combination_limb_0_col145;
-    final_input_values[13] = combination_limb_1_col146;
-    final_input_values[14] = combination_limb_2_col147;
-    final_input_values[15] = combination_limb_3_col148;
-    final_input_values[16] = combination_limb_4_col149;
-    final_input_values[17] = combination_limb_5_col150;
-    final_input_values[18] = combination_limb_6_col151;
-    final_input_values[19] = combination_limb_7_col152;
-    final_input_values[20] = combination_limb_8_col153;
-    final_input_values[21] = combination_limb_9_col154;
-    final_input_values[22] = poseidon_3_partial_rounds_chain_output_limb_30_col135;
-    final_input_values[23] = poseidon_3_partial_rounds_chain_output_limb_31_col136;
-    final_input_values[24] = poseidon_3_partial_rounds_chain_output_limb_32_col137;
-    final_input_values[25] = poseidon_3_partial_rounds_chain_output_limb_33_col138;
-    final_input_values[26] = poseidon_3_partial_rounds_chain_output_limb_34_col139;
-    final_input_values[27] = poseidon_3_partial_rounds_chain_output_limb_35_col140;
-    final_input_values[28] = poseidon_3_partial_rounds_chain_output_limb_36_col141;
-    final_input_values[29] = poseidon_3_partial_rounds_chain_output_limb_37_col142;
-    final_input_values[30] = poseidon_3_partial_rounds_chain_output_limb_38_col143;
-    final_input_values[31] = poseidon_3_partial_rounds_chain_output_limb_39_col144;
+    m31 final_input_values[33];
+    final_input_values[0] = POSEIDON_FULL_ROUND_CHAIN_RELATION_ID;
+    final_input_values[1] = poseidon_full_round_chain_chain_id_tmp_7d028_149;
+    final_input_values[2] = M31_31;
+    final_input_values[3] = combination_limb_0_col156;
+    final_input_values[4] = combination_limb_1_col157;
+    final_input_values[5] = combination_limb_2_col158;
+    final_input_values[6] = combination_limb_3_col159;
+    final_input_values[7] = combination_limb_4_col160;
+    final_input_values[8] = combination_limb_5_col161;
+    final_input_values[9] = combination_limb_6_col162;
+    final_input_values[10] = combination_limb_7_col163;
+    final_input_values[11] = combination_limb_8_col164;
+    final_input_values[12] = combination_limb_9_col165;
+    final_input_values[13] = combination_limb_0_col145;
+    final_input_values[14] = combination_limb_1_col146;
+    final_input_values[15] = combination_limb_2_col147;
+    final_input_values[16] = combination_limb_3_col148;
+    final_input_values[17] = combination_limb_4_col149;
+    final_input_values[18] = combination_limb_5_col150;
+    final_input_values[19] = combination_limb_6_col151;
+    final_input_values[20] = combination_limb_7_col152;
+    final_input_values[21] = combination_limb_8_col153;
+    final_input_values[22] = combination_limb_9_col154;
+    final_input_values[23] = poseidon_3_partial_rounds_chain_output_limb_30_col135;
+    final_input_values[24] = poseidon_3_partial_rounds_chain_output_limb_31_col136;
+    final_input_values[25] = poseidon_3_partial_rounds_chain_output_limb_32_col137;
+    final_input_values[26] = poseidon_3_partial_rounds_chain_output_limb_33_col138;
+    final_input_values[27] = poseidon_3_partial_rounds_chain_output_limb_34_col139;
+    final_input_values[28] = poseidon_3_partial_rounds_chain_output_limb_35_col140;
+    final_input_values[29] = poseidon_3_partial_rounds_chain_output_limb_36_col141;
+    final_input_values[30] = poseidon_3_partial_rounds_chain_output_limb_37_col142;
+    final_input_values[31] = poseidon_3_partial_rounds_chain_output_limb_38_col143;
+    final_input_values[32] = poseidon_3_partial_rounds_chain_output_limb_39_col144;
 
-    RelationEntry<32> final_input_entry(
-        poseidon_full_round_chain_lookup_elements,
-        qm31{{sub(M31_0, M31_1), 0}, {0, 0}},  // -1
-        final_input_values
-    );
-    cuda_evaluator->add_to_relation(final_input_entry);
+    cuda_evaluator->template add_to_relation<33>(common_lookup_elements, qm31{{sub(M31_0, M31_1), 0}, {0, 0}}, final_input_values);
 
     // ===================== Second PoseidonFullRoundChain Lookup (Output) =====================
-    m31 final_output_values[32];
-    final_output_values[0] = poseidon_full_round_chain_chain_id_tmp_7d028_149;
-    final_output_values[1] = M31_35;
-    final_output_values[2] = poseidon_full_round_chain_output_limb_0_col167;
-    final_output_values[3] = poseidon_full_round_chain_output_limb_1_col168;
-    final_output_values[4] = poseidon_full_round_chain_output_limb_2_col169;
-    final_output_values[5] = poseidon_full_round_chain_output_limb_3_col170;
-    final_output_values[6] = poseidon_full_round_chain_output_limb_4_col171;
-    final_output_values[7] = poseidon_full_round_chain_output_limb_5_col172;
-    final_output_values[8] = poseidon_full_round_chain_output_limb_6_col173;
-    final_output_values[9] = poseidon_full_round_chain_output_limb_7_col174;
-    final_output_values[10] = poseidon_full_round_chain_output_limb_8_col175;
-    final_output_values[11] = poseidon_full_round_chain_output_limb_9_col176;
-    final_output_values[12] = poseidon_full_round_chain_output_limb_10_col177;
-    final_output_values[13] = poseidon_full_round_chain_output_limb_11_col178;
-    final_output_values[14] = poseidon_full_round_chain_output_limb_12_col179;
-    final_output_values[15] = poseidon_full_round_chain_output_limb_13_col180;
-    final_output_values[16] = poseidon_full_round_chain_output_limb_14_col181;
-    final_output_values[17] = poseidon_full_round_chain_output_limb_15_col182;
-    final_output_values[18] = poseidon_full_round_chain_output_limb_16_col183;
-    final_output_values[19] = poseidon_full_round_chain_output_limb_17_col184;
-    final_output_values[20] = poseidon_full_round_chain_output_limb_18_col185;
-    final_output_values[21] = poseidon_full_round_chain_output_limb_19_col186;
-    final_output_values[22] = poseidon_full_round_chain_output_limb_20_col187;
-    final_output_values[23] = poseidon_full_round_chain_output_limb_21_col188;
-    final_output_values[24] = poseidon_full_round_chain_output_limb_22_col189;
-    final_output_values[25] = poseidon_full_round_chain_output_limb_23_col190;
-    final_output_values[26] = poseidon_full_round_chain_output_limb_24_col191;
-    final_output_values[27] = poseidon_full_round_chain_output_limb_25_col192;
-    final_output_values[28] = poseidon_full_round_chain_output_limb_26_col193;
-    final_output_values[29] = poseidon_full_round_chain_output_limb_27_col194;
-    final_output_values[30] = poseidon_full_round_chain_output_limb_28_col195;
-    final_output_values[31] = poseidon_full_round_chain_output_limb_29_col196;
+    m31 final_output_values[33];
+    final_output_values[0] = POSEIDON_FULL_ROUND_CHAIN_RELATION_ID;
+    final_output_values[1] = poseidon_full_round_chain_chain_id_tmp_7d028_149;
+    final_output_values[2] = M31_35;
+    final_output_values[3] = poseidon_full_round_chain_output_limb_0_col167;
+    final_output_values[4] = poseidon_full_round_chain_output_limb_1_col168;
+    final_output_values[5] = poseidon_full_round_chain_output_limb_2_col169;
+    final_output_values[6] = poseidon_full_round_chain_output_limb_3_col170;
+    final_output_values[7] = poseidon_full_round_chain_output_limb_4_col171;
+    final_output_values[8] = poseidon_full_round_chain_output_limb_5_col172;
+    final_output_values[9] = poseidon_full_round_chain_output_limb_6_col173;
+    final_output_values[10] = poseidon_full_round_chain_output_limb_7_col174;
+    final_output_values[11] = poseidon_full_round_chain_output_limb_8_col175;
+    final_output_values[12] = poseidon_full_round_chain_output_limb_9_col176;
+    final_output_values[13] = poseidon_full_round_chain_output_limb_10_col177;
+    final_output_values[14] = poseidon_full_round_chain_output_limb_11_col178;
+    final_output_values[15] = poseidon_full_round_chain_output_limb_12_col179;
+    final_output_values[16] = poseidon_full_round_chain_output_limb_13_col180;
+    final_output_values[17] = poseidon_full_round_chain_output_limb_14_col181;
+    final_output_values[18] = poseidon_full_round_chain_output_limb_15_col182;
+    final_output_values[19] = poseidon_full_round_chain_output_limb_16_col183;
+    final_output_values[20] = poseidon_full_round_chain_output_limb_17_col184;
+    final_output_values[21] = poseidon_full_round_chain_output_limb_18_col185;
+    final_output_values[22] = poseidon_full_round_chain_output_limb_19_col186;
+    final_output_values[23] = poseidon_full_round_chain_output_limb_20_col187;
+    final_output_values[24] = poseidon_full_round_chain_output_limb_21_col188;
+    final_output_values[25] = poseidon_full_round_chain_output_limb_22_col189;
+    final_output_values[26] = poseidon_full_round_chain_output_limb_23_col190;
+    final_output_values[27] = poseidon_full_round_chain_output_limb_24_col191;
+    final_output_values[28] = poseidon_full_round_chain_output_limb_25_col192;
+    final_output_values[29] = poseidon_full_round_chain_output_limb_26_col193;
+    final_output_values[30] = poseidon_full_round_chain_output_limb_27_col194;
+    final_output_values[31] = poseidon_full_round_chain_output_limb_28_col195;
+    final_output_values[32] = poseidon_full_round_chain_output_limb_29_col196;
 
-    RelationEntry<32> final_output_entry(
-        poseidon_full_round_chain_lookup_elements,
-        qm31{{M31_1, 0}, {0, 0}},  // 1
-        final_output_values
-    );
-    cuda_evaluator->add_to_relation(final_output_entry);
+    cuda_evaluator->template add_to_relation<33>(common_lookup_elements, qm31{{M31_1, 0}, {0, 0}}, final_output_values);
 }
 
 #endif // EVALUATE_POSEIDON_HADES_PERMUTATION_H

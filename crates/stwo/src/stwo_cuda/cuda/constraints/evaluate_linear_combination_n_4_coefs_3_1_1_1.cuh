@@ -64,7 +64,7 @@ DEVICE_FORCEINLINE void linear_combination_n_4_coefs_3_1_1_1_evaluate(
     m31 p_coef,
 
     // Lookup elements
-    RangeCheck_3_3_3_3_3 range_check_3_3_3_3_3_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     // Evaluator
     EvaluatorT *cuda_evaluator
@@ -301,36 +301,28 @@ DEVICE_FORCEINLINE void linear_combination_n_4_coefs_3_1_1_1_evaluate(
     // RangeCheck_3_3_3_3_3 lookups for carry values
     // First lookup: p_coef, carry_0, carry_1, carry_2, carry_3
     {
-        m31 values[5];
-        values[0] = add(p_coef, M31_1);
-        values[1] = add(carry_0, M31_1);
-        values[2] = add(carry_1, M31_1);
-        values[3] = add(carry_2, M31_1);
-        values[4] = add(carry_3, M31_1);
-
-        RelationEntry<5> entry(
-            range_check_3_3_3_3_3_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<5>(entry);
+        m31 values[6] = {
+            RANGE_CHECK_3_3_3_3_3_RELATION_ID,
+            add(p_coef, M31_1),
+            add(carry_0, M31_1),
+            add(carry_1, M31_1),
+            add(carry_2, M31_1),
+            add(carry_3, M31_1)
+        };
+        cuda_evaluator->add_to_relation<6>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // Second lookup: carry_4, carry_5, carry_6, carry_7, carry_8
     {
-        m31 values[5];
-        values[0] = add(carry_4, M31_1);
-        values[1] = add(carry_5, M31_1);
-        values[2] = add(carry_6, M31_1);
-        values[3] = add(carry_7, M31_1);
-        values[4] = add(carry_8, M31_1);
-
-        RelationEntry<5> entry(
-            range_check_3_3_3_3_3_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<5>(entry);
+        m31 values[6] = {
+            RANGE_CHECK_3_3_3_3_3_RELATION_ID,
+            add(carry_4, M31_1),
+            add(carry_5, M31_1),
+            add(carry_6, M31_1),
+            add(carry_7, M31_1),
+            add(carry_8, M31_1)
+        };
+        cuda_evaluator->add_to_relation<6>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 }
 

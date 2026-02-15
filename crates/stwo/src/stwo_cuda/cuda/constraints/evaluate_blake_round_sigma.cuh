@@ -14,7 +14,7 @@ struct BlakeRoundSigma_Claim {
 struct BlakeRoundSigma_Eval {
     unsigned eval_id;
     // BlakeRoundSigma_Claim Claim; // Not needed
-    BlakeRoundSigma blake_round_sigma_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C" void evaluate_blake_round_sigma(

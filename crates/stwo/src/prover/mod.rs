@@ -1,5 +1,5 @@
 use thiserror::Error;
-use tracing::{info, instrument, span, Level};
+use tracing::{error, info, instrument, span, Level};
 
 use crate::core::channel::{Channel, MerkleChannel};
 use crate::core::circle::CirclePoint;
@@ -118,18 +118,22 @@ pub fn prove_ex<B: BackendForChannel<MC>, MC: MerkleChannel>(
 
     // Evaluate composition polynomial at OODS point and check that it matches the trace OODS
     // values. This is a sanity check.
-    if proof
+    let committed_eval = proof
         .extract_composition_oods_eval(oods_point, max_log_degree_bound)
-        .unwrap()
-        != component_provers
-            .components()
-            .eval_composition_polynomial_at_point(
-                oods_point,
-                &proof.sampled_values,
-                random_coeff,
-                max_log_degree_bound,
-            )
-    {
+        .unwrap();
+    let cpu_eval = component_provers
+        .components()
+        .eval_composition_polynomial_at_point(
+            oods_point,
+            &proof.sampled_values,
+            random_coeff,
+            max_log_degree_bound,
+        );
+    if committed_eval != cpu_eval {
+        error!(
+            "ConstraintsNotSatisfied: committed_eval={:?}, cpu_eval={:?}, diff={:?}",
+            committed_eval, cpu_eval, committed_eval - cpu_eval
+        );
         return Err(ProvingError::ConstraintsNotSatisfied);
     }
 

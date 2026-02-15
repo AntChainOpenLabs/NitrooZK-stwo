@@ -90,7 +90,7 @@ DEVICE_FORCEINLINE void verify_reduced_252_evaluate(
     m31 ms_and_mid_limbs_are_max_col1,
     m31 rc_input_col2,
 
-    RangeCheck_8 range_check_8_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
@@ -113,15 +113,11 @@ DEVICE_FORCEINLINE void verify_reduced_252_evaluate(
 
     // ===================== RangeCheck_8: limb_27 - ms_limb_is_max =====================
     // Verify that limb_27 is within range when not flagged as max
-    m31 rc_value_0[1] = {
+    m31 rc_value_0[2] = {
+        RANGE_CHECK_8_RELATION_ID,
         sub(verify_reduced_252_input_limb_27, ms_limb_is_max_col0)
     };
-    RelationEntry<1> rc_entry_0(
-        range_check_8_lookup_elements,
-        qm31{{1, 0}, {0, 0}},  // positive multiplicity
-        rc_value_0
-    );
-    cuda_evaluator->add_to_relation<1>(rc_entry_0);
+    cuda_evaluator->add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc_value_0);
 
     // ===================== If MS limb is max, high limbs (22-26) must be 0 =====================
     // These constraints ensure that if ms_limb_is_max = 1, then limbs 22-26 are all zero
@@ -162,13 +158,8 @@ DEVICE_FORCEINLINE void verify_reduced_252_evaluate(
     );
 
     // ===================== RangeCheck_8: rc_input =====================
-    m31 rc_value_1[1] = {rc_input_col2};
-    RelationEntry<1> rc_entry_1(
-        range_check_8_lookup_elements,
-        qm31{{1, 0}, {0, 0}},  // positive multiplicity
-        rc_value_1
-    );
-    cuda_evaluator->add_to_relation<1>(rc_entry_1);
+    m31 rc_value_1[2] = {RANGE_CHECK_8_RELATION_ID, rc_input_col2};
+    cuda_evaluator->add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc_value_1);
 
     // ===================== If MS and mid limbs are max, low limbs (0-20) must be 0 =====================
     // These constraints ensure that if ms_and_mid_limbs_are_max = 1, then limbs 0-20 are all zero

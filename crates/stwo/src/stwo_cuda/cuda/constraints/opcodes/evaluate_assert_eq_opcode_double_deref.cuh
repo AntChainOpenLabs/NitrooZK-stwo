@@ -1,12 +1,7 @@
 #ifndef EVALUATE_ASSERT_EQ_OPCODE_DOUBLE_DEREF_H
 #define EVALUATE_ASSERT_EQ_OPCODE_DOUBLE_DEREF_H
 
-
-#include "fields.cuh"
-#include "utils.cuh"
-#include "logup.cuh"
-#include "eval_at_row.cuh"
-#include "relations.cuh"
+#include "constraints/relations.cuh"
 
 struct AssertEqDoubleDerefClaim {
     unsigned log_size;
@@ -15,10 +10,7 @@ struct AssertEqDoubleDerefClaim {
 struct AssertEqDoubleDerefEval {
     unsigned eval_id;
     AssertEqDoubleDerefClaim Claim;
-    VerifyInstruction verify_instruction_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    Opcodes opcode_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

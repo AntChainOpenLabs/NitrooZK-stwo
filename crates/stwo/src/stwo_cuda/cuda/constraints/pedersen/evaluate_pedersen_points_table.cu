@@ -117,23 +117,19 @@ __global__ void evaluate_pedersen_points_table_pre_kernel(
     m31 multiplicity_col0 = cuda_evaluator1.next_trace_mask();
 
     // ===================== Relation Lookup: PedersenPointsTable (PROVIDE) =====================
-    // Build lookup table entry: (seq, pedersen_points[0..55])
+    // Build lookup table entry: (RELATION_ID, seq, pedersen_points[0..55])
     // PROVIDE side uses negative multiplicity
-    m31 lookup_values[57];
-    lookup_values[0] = pedersen_seq;
+    m31 lookup_values[58];
+    lookup_values[0] = PEDERSEN_POINTS_TABLE_RELATION_ID;
+    lookup_values[1] = pedersen_seq;
     for (int i = 0; i < 56; i++) {
-        lookup_values[i + 1] = pedersen_points[i];
+        lookup_values[i + 2] = pedersen_points[i];
     }
 
     // PROVIDE side: multiplicity is negative
     // Use neg() to get proper M31 field negation (P - x), not m31(-1)
     qm31 multiplicity = qm31{{neg(multiplicity_col0), 0}, {0, 0}};
-    RelationEntry<57> entry(
-        pedersen_eval->pedersen_points_table_lookup_elements,
-        multiplicity,
-        lookup_values
-    );
-    cuda_evaluator1.add_to_relation<57>(entry);
+    cuda_evaluator1.add_to_relation<58>(pedersen_eval->common_lookup_elements, multiplicity, lookup_values);
 
     // ===================== Complete constraint evaluation =====================
     // No additional algebraic constraints, only relation lookup

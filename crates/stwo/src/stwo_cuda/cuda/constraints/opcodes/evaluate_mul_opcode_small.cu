@@ -78,13 +78,12 @@ __device__ __forceinline__ void VerifyMulSmall(
 
     // Range check carry_1
     {
-        m31 values[1] = {carries[0]};
-        RelationEntry<1> entry(
-            mul_eval->range_check_11_lookup_elements,
+        m31 values[2] = {RANGE_CHECK_11_RELATION_ID, carries[0]};
+        eval->add_to_relation<2>(
+            mul_eval->common_lookup_elements,
             qm31{M31_1_local, M31_0_local},
             values
         );
-        eval->add_to_relation<1>(entry);
     }
 
     // Constraint for carry_3
@@ -102,13 +101,12 @@ __device__ __forceinline__ void VerifyMulSmall(
 
     // Range check carry_3
     {
-        m31 values[1] = {carries[1]};
-        RelationEntry<1> entry(
-            mul_eval->range_check_11_lookup_elements,
+        m31 values[2] = {RANGE_CHECK_11_RELATION_ID, carries[1]};
+        eval->add_to_relation<2>(
+            mul_eval->common_lookup_elements,
             qm31{M31_1_local, M31_0_local},
             values
         );
-        eval->add_to_relation<1>(entry);
     }
 
     // Constraint for carry_5
@@ -124,13 +122,12 @@ __device__ __forceinline__ void VerifyMulSmall(
 
     // Range check carry_5
     {
-        m31 values[1] = {carries[2]};
-        RelationEntry<1> entry(
-            mul_eval->range_check_11_lookup_elements,
+        m31 values[2] = {RANGE_CHECK_11_RELATION_ID, carries[2]};
+        eval->add_to_relation<2>(
+            mul_eval->common_lookup_elements,
             qm31{M31_1_local, M31_0_local},
             values
         );
-        eval->add_to_relation<1>(entry);
     }
 
     // Final constraint: carry_5 + (op0[3]*op1[3] - dst[6]) + (-dst[7]) * 512 = 0
@@ -245,7 +242,7 @@ __global__ void evaluate_mul_opcode_small_pre_kernel(
         op1_imm, op1_base_fp,
         ap_update_add_1,
         decode_outputs,
-        mul_eval->verify_instruction_lookup_elements,
+        mul_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -260,8 +257,7 @@ __global__ void evaluate_mul_opcode_small_pre_kernel(
         dst_id,
         dst_limbs[0], dst_limbs[1], dst_limbs[2], dst_limbs[3],
         dst_limbs[4], dst_limbs[5], dst_limbs[6], dst_limbs[7],
-        mul_eval->memory_address_to_id_lookup_elements,
-        mul_eval->memory_id_to_big_lookup_elements,
+        mul_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -270,8 +266,7 @@ __global__ void evaluate_mul_opcode_small_pre_kernel(
         add(mem0_base, decode_offset1),  // address
         op0_id,
         op0_limbs[0], op0_limbs[1], op0_limbs[2], op0_limbs[3],
-        mul_eval->memory_address_to_id_lookup_elements,
-        mul_eval->memory_id_to_big_lookup_elements,
+        mul_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -280,8 +275,7 @@ __global__ void evaluate_mul_opcode_small_pre_kernel(
         add(mem1_base, decode_offset2),  // address
         op1_id,
         op1_limbs[0], op1_limbs[1], op1_limbs[2], op1_limbs[3],
-        mul_eval->memory_address_to_id_lookup_elements,
-        mul_eval->memory_id_to_big_lookup_elements,
+        mul_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -316,26 +310,24 @@ __global__ void evaluate_mul_opcode_small_pre_kernel(
     // Add opcodes relation entries (state transition)
     // Forward entry: (input_pc, input_ap, input_fp) with multiplicity +enabler
     {
-        m31 values[3] = {input_pc, input_ap, input_fp};
-        RelationEntry<3> entry(
-            mul_eval->opcode_lookup_elements,
+        m31 values[4] = {OPCODES_RELATION_ID, input_pc, input_ap, input_fp};
+        cuda_evaluator.add_to_relation<4>(
+            mul_eval->common_lookup_elements,
             qm31{enabler, M31_0_local},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     // Backward entry: (next_pc, next_ap, input_fp) with multiplicity -enabler
     m31 next_pc = add(add(input_pc, M31_1_local), op1_imm);
     m31 next_ap = add(input_ap, ap_update_add_1);
     {
-        m31 values[3] = {next_pc, next_ap, input_fp};
-        RelationEntry<3> entry(
-            mul_eval->opcode_lookup_elements,
+        m31 values[4] = {OPCODES_RELATION_ID, next_pc, next_ap, input_fp};
+        cuda_evaluator.add_to_relation<4>(
+            mul_eval->common_lookup_elements,
             sub(qm31{{M31_0_local, M31_0_local}, {M31_0_local, M31_0_local}}, qm31{enabler, M31_0_local}),
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     // Store constraint index

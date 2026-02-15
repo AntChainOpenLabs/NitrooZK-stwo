@@ -69,7 +69,8 @@ __global__ void evaluate_range_check_19_b_pre_kernel(
     eval_range_check_19_core(
         cuda_evaluator0,
         cuda_evaluator1,
-        range_eval->range_check_19_b_lookup_elements
+        range_eval->common_lookup_elements,
+        RANGE_CHECK_20_B_RELATION_ID
     );
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;

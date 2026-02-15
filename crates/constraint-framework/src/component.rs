@@ -109,6 +109,16 @@ pub trait FrameworkEval {
     fn max_constraint_log_degree_bound(&self) -> u32;
 
     fn evaluate<E: EvalAtRow>(&self, eval: E) -> E;
+
+    /// Returns the CUDA eval name used to compute the FNV1a eval_id for GPU dispatch.
+    /// Must match the string used in the CUDA `evaluate_constraints.cu` dispatch table.
+    /// Override this for components with CUDA kernel support.
+    fn cuda_eval_name(&self) -> &'static str {
+        unimplemented!(
+            "cuda_eval_name() not implemented for this component. \
+             Override this method to enable CUDA constraint evaluation."
+        )
+    }
 }
 
 #[repr(C)]

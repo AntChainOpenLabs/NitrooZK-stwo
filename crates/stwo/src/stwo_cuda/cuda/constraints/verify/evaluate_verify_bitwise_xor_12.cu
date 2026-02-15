@@ -89,17 +89,12 @@ __global__ void evaluate_verify_bitwise_xor_12_pre_kernel(
             m31 b = add(b_low, b_shift);
             m31 c = add(c_low, c_shift);
 
-            m31 values[3] = {a, b, c};
+            m31 values[4] = {VERIFY_BITWISE_XOR_12_RELATION_ID, a, b, c};
 
             m31 neg_mult = neg(multiplicity);
             qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
 
-            RelationEntry<3> entry(
-                xor_eval->verify_bitwise_xor_12_lookup_elements,
-                multiplicity_ext,
-                values
-            );
-            cuda_evaluator1.add_to_relation<3>(entry);
+            cuda_evaluator1.add_to_relation<4>(xor_eval->common_lookup_elements, multiplicity_ext, values);
         }
     }
 

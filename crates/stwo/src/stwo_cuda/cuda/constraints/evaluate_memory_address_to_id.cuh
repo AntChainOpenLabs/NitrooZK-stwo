@@ -13,7 +13,7 @@
 struct MemoryAddressToId_Eval {
     unsigned eval_id;
     unsigned log_size;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

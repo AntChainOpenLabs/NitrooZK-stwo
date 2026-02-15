@@ -12,10 +12,7 @@ struct JumpOpcodeRelImm_Claim {
 struct JumpOpcodeRelImm_Eval {
     unsigned eval_id;
     JumpOpcodeRelImm_Claim claim;  // Must match Rust struct layout
-    VerifyInstruction verify_instruction_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    Opcodes opcode_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 // External function declaration for CUDA kernel

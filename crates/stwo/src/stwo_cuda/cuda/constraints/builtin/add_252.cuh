@@ -14,89 +14,96 @@
 template<typename EvaluatorT>
 DEVICE_FORCEINLINE void range_check_mem_value_n_28(
     const m31 limbs[28],  // 28 limbs to range check
-    const RangeCheck_9_9& rc_9_9,
-    const RangeCheck_9_9_B& rc_9_9_b,
-    const RangeCheck_9_9_C& rc_9_9_c,
-    const RangeCheck_9_9_D& rc_9_9_d,
-    const RangeCheck_9_9_E& rc_9_9_e,
-    const RangeCheck_9_9_F& rc_9_9_f,
-    const RangeCheck_9_9_G& rc_9_9_g,
-    const RangeCheck_9_9_H& rc_9_9_h,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT* cuda_evaluator
 ) {
     // Check limbs in pairs using 8 different RangeCheck_9_9 variants
     // Pattern: A,B,C,D,E,F,G,H repeats for 28 limbs (14 pairs)
 
     // Pairs 0-1: RangeCheck_9_9
-    m31 values0[2] = {limbs[0], limbs[1]};
-    RelationEntry<2> entry0(rc_9_9, qm31{{1, 0}, {0, 0}}, values0);
-    cuda_evaluator->template add_to_relation<2>(entry0);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_RELATION_ID, limbs[0], limbs[1]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 2-3: RangeCheck_9_9_B
-    m31 values1[2] = {limbs[2], limbs[3]};
-    RelationEntry<2> entry1(rc_9_9_b, qm31{{1, 0}, {0, 0}}, values1);
-    cuda_evaluator->template add_to_relation<2>(entry1);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_B_RELATION_ID, limbs[2], limbs[3]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 4-5: RangeCheck_9_9_C
-    m31 values2[2] = {limbs[4], limbs[5]};
-    RelationEntry<2> entry2(rc_9_9_c, qm31{{1, 0}, {0, 0}}, values2);
-    cuda_evaluator->template add_to_relation<2>(entry2);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_C_RELATION_ID, limbs[4], limbs[5]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 6-7: RangeCheck_9_9_D
-    m31 values3[2] = {limbs[6], limbs[7]};
-    RelationEntry<2> entry3(rc_9_9_d, qm31{{1, 0}, {0, 0}}, values3);
-    cuda_evaluator->template add_to_relation<2>(entry3);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_D_RELATION_ID, limbs[6], limbs[7]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 8-9: RangeCheck_9_9_E
-    m31 values4[2] = {limbs[8], limbs[9]};
-    RelationEntry<2> entry4(rc_9_9_e, qm31{{1, 0}, {0, 0}}, values4);
-    cuda_evaluator->template add_to_relation<2>(entry4);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_E_RELATION_ID, limbs[8], limbs[9]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 10-11: RangeCheck_9_9_F
-    m31 values5[2] = {limbs[10], limbs[11]};
-    RelationEntry<2> entry5(rc_9_9_f, qm31{{1, 0}, {0, 0}}, values5);
-    cuda_evaluator->template add_to_relation<2>(entry5);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_F_RELATION_ID, limbs[10], limbs[11]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 12-13: RangeCheck_9_9_G
-    m31 values6[2] = {limbs[12], limbs[13]};
-    RelationEntry<2> entry6(rc_9_9_g, qm31{{1, 0}, {0, 0}}, values6);
-    cuda_evaluator->template add_to_relation<2>(entry6);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_G_RELATION_ID, limbs[12], limbs[13]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 14-15: RangeCheck_9_9_H
-    m31 values7[2] = {limbs[14], limbs[15]};
-    RelationEntry<2> entry7(rc_9_9_h, qm31{{1, 0}, {0, 0}}, values7);
-    cuda_evaluator->template add_to_relation<2>(entry7);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_H_RELATION_ID, limbs[14], limbs[15]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Repeat pattern for remaining limbs
     // Pairs 16-17: RangeCheck_9_9
-    m31 values8[2] = {limbs[16], limbs[17]};
-    RelationEntry<2> entry8(rc_9_9, qm31{{1, 0}, {0, 0}}, values8);
-    cuda_evaluator->template add_to_relation<2>(entry8);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_RELATION_ID, limbs[16], limbs[17]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 18-19: RangeCheck_9_9_B
-    m31 values9[2] = {limbs[18], limbs[19]};
-    RelationEntry<2> entry9(rc_9_9_b, qm31{{1, 0}, {0, 0}}, values9);
-    cuda_evaluator->template add_to_relation<2>(entry9);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_B_RELATION_ID, limbs[18], limbs[19]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 20-21: RangeCheck_9_9_C
-    m31 values10[2] = {limbs[20], limbs[21]};
-    RelationEntry<2> entry10(rc_9_9_c, qm31{{1, 0}, {0, 0}}, values10);
-    cuda_evaluator->template add_to_relation<2>(entry10);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_C_RELATION_ID, limbs[20], limbs[21]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 22-23: RangeCheck_9_9_D
-    m31 values11[2] = {limbs[22], limbs[23]};
-    RelationEntry<2> entry11(rc_9_9_d, qm31{{1, 0}, {0, 0}}, values11);
-    cuda_evaluator->template add_to_relation<2>(entry11);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_D_RELATION_ID, limbs[22], limbs[23]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 24-25: RangeCheck_9_9_E
-    m31 values12[2] = {limbs[24], limbs[25]};
-    RelationEntry<2> entry12(rc_9_9_e, qm31{{1, 0}, {0, 0}}, values12);
-    cuda_evaluator->template add_to_relation<2>(entry12);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_E_RELATION_ID, limbs[24], limbs[25]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 
     // Pairs 26-27: RangeCheck_9_9_F
-    m31 values13[2] = {limbs[26], limbs[27]};
-    RelationEntry<2> entry13(rc_9_9_f, qm31{{1, 0}, {0, 0}}, values13);
-    cuda_evaluator->template add_to_relation<2>(entry13);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_F_RELATION_ID, limbs[26], limbs[27]};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
+    }
 }
 
 // Main Add252 function
@@ -107,20 +114,12 @@ DEVICE_FORCEINLINE void add_252_evaluate(
     const m31 input_b[28],   // Second operand (28 limbs)
     const m31 result[28],    // Result of addition (28 limbs)
     const m31 sub_p_bit,     // Boolean: whether we subtracted p
-    const RangeCheck_9_9& rc_9_9,
-    const RangeCheck_9_9_B& rc_9_9_b,
-    const RangeCheck_9_9_C& rc_9_9_c,
-    const RangeCheck_9_9_D& rc_9_9_d,
-    const RangeCheck_9_9_E& rc_9_9_e,
-    const RangeCheck_9_9_F& rc_9_9_f,
-    const RangeCheck_9_9_G& rc_9_9_g,
-    const RangeCheck_9_9_H& rc_9_9_h,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT* cuda_evaluator
 ) {
     // Step 1: Range check the result limbs
     range_check_mem_value_n_28(
-        result, rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
+        result, common_lookup_elements,
         cuda_evaluator
     );
 

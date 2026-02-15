@@ -238,13 +238,11 @@ __global__ void evaluate_partial_ec_mul_pre_kernel(
 
     // USE side: multiplicity is positive
     {
+        m31 pedersen_lookup_values_ext[58];
+        pedersen_lookup_values_ext[0] = PEDERSEN_POINTS_TABLE_RELATION_ID;
+        for (int i = 0; i < 57; i++) pedersen_lookup_values_ext[i + 1] = pedersen_lookup_values[i];
         qm31 multiplicity = qm31{{1, 0}, {0, 0}};
-        RelationEntry<57> pedersen_entry(
-            partial_ec_mul_eval->pedersen_points_table_lookup_elements,
-            multiplicity,
-            pedersen_lookup_values
-        );
-        cuda_evaluator1.add_to_relation<57>(pedersen_entry);
+        cuda_evaluator1.add_to_relation<58>(partial_ec_mul_eval->common_lookup_elements, multiplicity, pedersen_lookup_values_ext);
     }
 
     // ===================== Call EC Add Subroutine (inlined) =====================
@@ -282,81 +280,59 @@ __global__ void evaluate_partial_ec_mul_pre_kernel(
             sub_res_3, &sub_p_bit_4,
             mul_res_1, &k_mul_1, carry_mul_1,
             sub_res_4, &sub_p_bit_5,
-            partial_ec_mul_eval->range_check_9_9_lookup_elements,
-            partial_ec_mul_eval->range_check_9_9_b_lookup_elements,
-            partial_ec_mul_eval->range_check_9_9_c_lookup_elements,
-            partial_ec_mul_eval->range_check_9_9_d_lookup_elements,
-            partial_ec_mul_eval->range_check_9_9_e_lookup_elements,
-            partial_ec_mul_eval->range_check_9_9_f_lookup_elements,
-            partial_ec_mul_eval->range_check_9_9_g_lookup_elements,
-            partial_ec_mul_eval->range_check_9_9_h_lookup_elements,
-            partial_ec_mul_eval->range_check_19_h_lookup_elements,  // H comes first!
-            partial_ec_mul_eval->range_check_19_lookup_elements,
-            partial_ec_mul_eval->range_check_19_b_lookup_elements,
-            partial_ec_mul_eval->range_check_19_c_lookup_elements,
-            partial_ec_mul_eval->range_check_19_d_lookup_elements,
-            partial_ec_mul_eval->range_check_19_e_lookup_elements,
-            partial_ec_mul_eval->range_check_19_f_lookup_elements,
-            partial_ec_mul_eval->range_check_19_g_lookup_elements,  // G is last
+            partial_ec_mul_eval->common_lookup_elements,
             &cuda_evaluator1
         );
     }
 
     // ===================== Relation Lookup: PartialEcMul (first entry: positive) =====================
-    // Construct full relation entry: all 73 input values
+    // Construct full relation entry: RELATION_ID + all 73 input values
     // Multiplicity is +enabler (from Rust line 1167)
-    m31 partial_ec_mul_values[73];
+    m31 partial_ec_mul_values[74];
+    partial_ec_mul_values[0] = PARTIAL_EC_MUL_RELATION_ID;
     for (int i = 0; i < 73; i++) {
-        partial_ec_mul_values[i] = input_limb[i];
+        partial_ec_mul_values[i + 1] = input_limb[i];
     }
 
     {
         qm31 multiplicity = qm31{{enabler, 0}, {0, 0}};
-        RelationEntry<73> partial_ec_mul_entry(
-            partial_ec_mul_eval->partial_ec_mul_lookup_elements,
-            multiplicity,
-            partial_ec_mul_values
-        );
-        cuda_evaluator1.add_to_relation<73>(partial_ec_mul_entry);
+        cuda_evaluator1.add_to_relation<74>(partial_ec_mul_eval->common_lookup_elements, multiplicity, partial_ec_mul_values);
     }
 
     // ===================== Relation Lookup: PartialEcMul (second entry: negative) =====================
     // From Rust lines 1245-1323: second entry with -enabler multiplicity and output values
     // Values mapping (from Rust code):
-    // [0]: input_limb_0
-    // [1]: input_limb_1 + 1
-    // [2]: input_limb_2
-    // [3..16]: input_limb_4..input_limb_16 (shifted, skipping input_limb_3)
-    // [16]: 0
-    // [17..44]: sub_res_2 (x3 result)
-    // [45..72]: sub_res_4 (y3 result)
-    m31 partial_ec_mul_values_neg[73];
-    partial_ec_mul_values_neg[0] = input_limb[0];
-    partial_ec_mul_values_neg[1] = add(input_limb[1], m31(1));
-    partial_ec_mul_values_neg[2] = input_limb[2];
-    // Shift: [3..16] gets input_limb[4..17]
-    for (int i = 3; i < 17; i++) {
-        partial_ec_mul_values_neg[i] = input_limb[i + 1];
+    // [0]: RELATION_ID
+    // [1]: input_limb_0
+    // [2]: input_limb_1 + 1
+    // [3]: input_limb_2
+    // [4..17]: input_limb_4..input_limb_16 (shifted, skipping input_limb_3)
+    // [17]: 0
+    // [18..45]: sub_res_2 (x3 result)
+    // [46..73]: sub_res_4 (y3 result)
+    m31 partial_ec_mul_values_neg[74];
+    partial_ec_mul_values_neg[0] = PARTIAL_EC_MUL_RELATION_ID;
+    partial_ec_mul_values_neg[1] = input_limb[0];
+    partial_ec_mul_values_neg[2] = add(input_limb[1], m31(1));
+    partial_ec_mul_values_neg[3] = input_limb[2];
+    // Shift: [4..17] gets input_limb[4..17]
+    for (int i = 4; i < 18; i++) {
+        partial_ec_mul_values_neg[i] = input_limb[i];
     }
-    partial_ec_mul_values_neg[16] = m31(0);  // M31_0 at position 16
-    // [17..44]: x3 result (sub_res_2)
+    partial_ec_mul_values_neg[17] = m31(0);  // M31_0 at position 17
+    // [18..45]: x3 result (sub_res_2)
     for (int i = 0; i < 28; i++) {
-        partial_ec_mul_values_neg[17 + i] = sub_res_2[i];
+        partial_ec_mul_values_neg[18 + i] = sub_res_2[i];
     }
-    // [45..72]: y3 result (sub_res_4)
+    // [46..73]: y3 result (sub_res_4)
     for (int i = 0; i < 28; i++) {
-        partial_ec_mul_values_neg[45 + i] = sub_res_4[i];
+        partial_ec_mul_values_neg[46 + i] = sub_res_4[i];
     }
 
     {
         // Negative multiplicity: -enabler
         qm31 neg_multiplicity = qm31{{neg(enabler), 0}, {0, 0}};
-        RelationEntry<73> partial_ec_mul_entry_neg(
-            partial_ec_mul_eval->partial_ec_mul_lookup_elements,
-            neg_multiplicity,
-            partial_ec_mul_values_neg
-        );
-        cuda_evaluator1.add_to_relation<73>(partial_ec_mul_entry_neg);
+        cuda_evaluator1.add_to_relation<74>(partial_ec_mul_eval->common_lookup_elements, neg_multiplicity, partial_ec_mul_values_neg);
     }
 
     // ===================== Complete constraint evaluation =====================

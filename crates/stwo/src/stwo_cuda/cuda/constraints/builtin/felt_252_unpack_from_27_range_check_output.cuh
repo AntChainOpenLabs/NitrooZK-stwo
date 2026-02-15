@@ -39,14 +39,7 @@ DEVICE_FORCEINLINE void felt_252_unpack_from_27_range_check_output_evaluate(
     const m31 unpacked_limb_22,    // 9-bit unpacked limb 22
     const m31 unpacked_limb_24,    // 9-bit unpacked limb 24
     const m31 unpacked_limb_25,    // 9-bit unpacked limb 25
-    const RangeCheck_9_9& rc_9_9,
-    const RangeCheck_9_9_B& rc_9_9_b,
-    const RangeCheck_9_9_C& rc_9_9_c,
-    const RangeCheck_9_9_D& rc_9_9_d,
-    const RangeCheck_9_9_E& rc_9_9_e,
-    const RangeCheck_9_9_F& rc_9_9_f,
-    const RangeCheck_9_9_G& rc_9_9_g,
-    const RangeCheck_9_9_H& rc_9_9_h,
+    const CommonLookupElements& common_lookup_elements,
     m31 output[10],               // Output: computed limbs 2,5,8,11,14,17,20,23,26,27
     EvaluatorT* cuda_evaluator
 ) {
@@ -120,8 +113,7 @@ DEVICE_FORCEINLINE void felt_252_unpack_from_27_range_check_output_evaluate(
     // Range check all 28 limbs using RangeCheckMemValueN28
     range_check_mem_value_n_28(
         full_limbs,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
+        common_lookup_elements,
         cuda_evaluator
     );
 }

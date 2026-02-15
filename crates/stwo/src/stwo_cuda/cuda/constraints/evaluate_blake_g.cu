@@ -138,8 +138,7 @@ __global__ void evaluate_blake_g_pre_kernel(
             &xor_rot_32_r_16_output_tmp_f72c8_21_limb_0,
             &xor_rot_32_r_16_output_tmp_f72c8_21_limb_1,
 
-            eval->verify_bitwise_xor_8_lookup_elements,
-            eval->verify_bitwise_xor_8_b_lookup_elements,
+            eval->common_lookup_elements,
 
             &cuda_evaluator
         );
@@ -175,8 +174,7 @@ __global__ void evaluate_blake_g_pre_kernel(
             &xor_rot_32_r_12_output_tmp_f72c8_43_limb_0,
             &xor_rot_32_r_12_output_tmp_f72c8_43_limb_1,
 
-            eval->verify_bitwise_xor_12_lookup_elements,
-            eval->verify_bitwise_xor_4_lookup_elements,
+            eval->common_lookup_elements,
 
             &cuda_evaluator
         );
@@ -211,8 +209,7 @@ __global__ void evaluate_blake_g_pre_kernel(
             &xor_rot_32_r_8_output_tmp_f72c8_65_limb_0,
             &xor_rot_32_r_8_output_tmp_f72c8_65_limb_1,
 
-            eval->verify_bitwise_xor_8_lookup_elements,
-            eval->verify_bitwise_xor_8_b_lookup_elements,
+            eval->common_lookup_elements,
 
             &cuda_evaluator
         );
@@ -247,13 +244,13 @@ __global__ void evaluate_blake_g_pre_kernel(
             &xor_rot_32_r_7_output_tmp_f72c8_87_limb_0,
             &xor_rot_32_r_7_output_tmp_f72c8_87_limb_1,
 
-            eval->verify_bitwise_xor_7_lookup_elements,
-            eval->verify_bitwise_xor_9_lookup_elements,
+            eval->common_lookup_elements,
 
             &cuda_evaluator
         );
 
-        m31 values[20] = {
+        m31 values[21] = {
+            BLAKE_G_RELATION_ID,
             input_limb_0_col0,
             input_limb_1_col1,
             input_limb_2_col2,
@@ -276,12 +273,7 @@ __global__ void evaluate_blake_g_pre_kernel(
             xor_rot_32_r_8_output_tmp_f72c8_65_limb_1,
         };
 
-        RelationEntry entry = RelationEntry<20>(
-            eval->blake_g_lookup_elements,
-            qm31{{neg(enabler), 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator.add_to_relation<20>(entry);
+        cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{neg(enabler), 0}, {0, 0}}, values);
     }
 
     numerators[row] = cuda_evaluator.row_res;

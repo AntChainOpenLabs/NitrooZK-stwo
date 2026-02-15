@@ -77,7 +77,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
     const m31 triple_xor_32_output_limb_0_col14,
     const m31 triple_xor_32_output_limb_1_col15,
 
-    TripleXor32 triple_xor_32_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     // CUDA evaluator
     EvaluatorT* cuda_evaluator,
     // output (16 limbs)
@@ -85,7 +85,8 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
 ) {
     // 1
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_16,
             create_blake_output_input_limb_17,
             create_blake_output_input_limb_32,
@@ -95,12 +96,12 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col0,
             triple_xor_32_output_limb_1_col1
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
     // 2
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_18,
             create_blake_output_input_limb_19,
             create_blake_output_input_limb_34,
@@ -110,12 +111,12 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col2,
             triple_xor_32_output_limb_1_col3
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
     // 3
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_20,
             create_blake_output_input_limb_21,
             create_blake_output_input_limb_36,
@@ -125,12 +126,12 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col4,
             triple_xor_32_output_limb_1_col5
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
     // 4
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_22,
             create_blake_output_input_limb_23,
             create_blake_output_input_limb_38,
@@ -140,12 +141,12 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col6,
             triple_xor_32_output_limb_1_col7
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
     // 5
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_24,
             create_blake_output_input_limb_25,
             create_blake_output_input_limb_40,
@@ -155,12 +156,12 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col8,
             triple_xor_32_output_limb_1_col9
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
     // 6
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_26,
             create_blake_output_input_limb_27,
             create_blake_output_input_limb_42,
@@ -170,12 +171,12 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col10,
             triple_xor_32_output_limb_1_col11
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
     // 7
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_28,
             create_blake_output_input_limb_29,
             create_blake_output_input_limb_44,
@@ -185,12 +186,12 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col12,
             triple_xor_32_output_limb_1_col13
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
     // 8
     {
-        m31 values[8] = {
+        m31 values[9] = {
+            TRIPLE_XOR_32_RELATION_ID,
             create_blake_output_input_limb_30,
             create_blake_output_input_limb_31,
             create_blake_output_input_limb_46,
@@ -200,8 +201,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_output(
             triple_xor_32_output_limb_0_col14,
             triple_xor_32_output_limb_1_col15
         };
-        RelationEntry<8> entry(triple_xor_32_lookup_elements, qm31{1, 0, 0, 0}, values);
-        cuda_evaluator->add_to_relation<8>(entry);
+        cuda_evaluator->add_to_relation<9>(common_lookup_elements, qm31{1, 0, 0, 0}, values);
     }
 
     // output

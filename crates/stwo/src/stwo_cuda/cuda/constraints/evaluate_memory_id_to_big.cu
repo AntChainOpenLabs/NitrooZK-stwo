@@ -78,107 +78,39 @@ __global__ void evaluate_memory_id_to_big_big_pre_kernel(
 
     // Range check limbs in pairs using 8 different range_check_9_9 relations
     // 28 limbs = 14 pairs
+    static constexpr m31 rc_relation_ids[8] = {
+        RANGE_CHECK_9_9_RELATION_ID,
+        RANGE_CHECK_9_9_B_RELATION_ID,
+        RANGE_CHECK_9_9_C_RELATION_ID,
+        RANGE_CHECK_9_9_D_RELATION_ID,
+        RANGE_CHECK_9_9_E_RELATION_ID,
+        RANGE_CHECK_9_9_F_RELATION_ID,
+        RANGE_CHECK_9_9_G_RELATION_ID,
+        RANGE_CHECK_9_9_H_RELATION_ID,
+    };
     for (unsigned i = 0; i < N_M31_IN_FELT252 / 2; ++i) {
-        m31 limb_pair[2] = {value[2 * i], value[2 * i + 1]};
         qm31 multiplicity_one = {{1, 0}, {0, 0}};
-
         unsigned relation_index = i % 8;
-        switch (relation_index) {
-            case 0: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 1: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_b_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 2: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_c_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 3: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_d_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 4: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_e_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 5: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_f_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 6: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_g_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 7: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_h_lookup_elements,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-        }
+        m31 values[3] = {rc_relation_ids[relation_index], value[2 * i], value[2 * i + 1]};
+        cuda_evaluator1.add_to_relation<3>(memory_eval->common_lookup_elements, multiplicity_one, values);
     }
 
     // Yield the value with MemoryIdToBig relation
     // id = seq + LARGE_MEMORY_VALUE_ID_BASE + offset
     m31 id = add(add(seq_val, m31(LARGE_MEMORY_VALUE_ID_BASE)), m31(memory_eval->offset));
 
-    // Prepare values array: [id, value[0..28]] - total 29 elements
-    m31 id_and_value[29];
-    id_and_value[0] = id;
+    // Prepare values array: [RELATION_ID, id, value[0..28]] - total 30 elements
+    m31 id_and_value[30];
+    id_and_value[0] = MEMORY_ID_TO_BIG_RELATION_ID;
+    id_and_value[1] = id;
     for (unsigned i = 0; i < N_M31_IN_FELT252; ++i) {
-        id_and_value[i + 1] = value[i];
+        id_and_value[i + 2] = value[i];
     }
 
     m31 neg_mult = neg(multiplicity);
     qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
 
-    RelationEntry<29> entry(
-        memory_eval->memory_id_to_big_lookup_elements,
-        multiplicity_ext,
-        id_and_value
-    );
-    cuda_evaluator1.add_to_relation<29>(entry);
+    cuda_evaluator1.add_to_relation<30>(memory_eval->common_lookup_elements, multiplicity_ext, id_and_value);
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;
     numerators[row] = cuda_evaluator1.row_res;
@@ -249,76 +181,40 @@ __global__ void evaluate_memory_id_to_big_small_pre_kernel(
 
     // Range check limbs in pairs using 4 different range_check_9_9 relations
     // 8 limbs = 4 pairs
+    static constexpr m31 rc_relation_ids[4] = {
+        RANGE_CHECK_9_9_RELATION_ID,
+        RANGE_CHECK_9_9_B_RELATION_ID,
+        RANGE_CHECK_9_9_C_RELATION_ID,
+        RANGE_CHECK_9_9_D_RELATION_ID,
+    };
     for (unsigned i = 0; i < N_M31_IN_SMALL_FELT252 / 2; ++i) {
-        m31 limb_pair[2] = {value[2 * i], value[2 * i + 1]};
         qm31 multiplicity_one = {{1, 0}, {0, 0}};
-
         unsigned relation_index = i % 4;
-        switch (relation_index) {
-            case 0: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_relation,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 1: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_b_relation,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 2: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_c_relation,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-            case 3: {
-                RelationEntry<2> entry(
-                    memory_eval->range_check_9_9_d_relation,
-                    multiplicity_one,
-                    limb_pair
-                );
-                cuda_evaluator1.add_to_relation<2>(entry);
-                break;
-            }
-        }
+        m31 values[3] = {rc_relation_ids[relation_index], value[2 * i], value[2 * i + 1]};
+        cuda_evaluator1.add_to_relation<3>(memory_eval->common_lookup_elements, multiplicity_one, values);
     }
 
     // Yield the value with MemoryIdToBig relation
     // For small eval, id = seq (no offset)
     m31 id = seq_val;
 
-    // Prepare values array: [id, value[0..8]] - but MemoryIdToBig still expects 29 elements
+    // Prepare values array: [RELATION_ID, id, value[0..8]] - but MemoryIdToBig still expects 29 elements + 1 relation ID
     // Pad with zeros to match the relation size
-    m31 id_and_value[29];
-    id_and_value[0] = id;
+    m31 id_and_value[30];
+    id_and_value[0] = MEMORY_ID_TO_BIG_RELATION_ID;
+    id_and_value[1] = id;
     for (unsigned i = 0; i < N_M31_IN_SMALL_FELT252; ++i) {
-        id_and_value[i + 1] = value[i];
+        id_and_value[i + 2] = value[i];
     }
     // Pad remaining elements with zeros
-    for (unsigned i = N_M31_IN_SMALL_FELT252 + 1; i < 29; ++i) {
+    for (unsigned i = N_M31_IN_SMALL_FELT252 + 2; i < 30; ++i) {
         id_and_value[i] = m31(0);
     }
 
     m31 neg_mult = neg(multiplicity);
     qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
 
-    RelationEntry<29> entry(
-        memory_eval->memory_id_to_big_lookup_elements,
-        multiplicity_ext,
-        id_and_value
-    );
-    cuda_evaluator1.add_to_relation<29>(entry);
+    cuda_evaluator1.add_to_relation<30>(memory_eval->common_lookup_elements, multiplicity_ext, id_and_value);
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;
     numerators[row] = cuda_evaluator1.row_res;

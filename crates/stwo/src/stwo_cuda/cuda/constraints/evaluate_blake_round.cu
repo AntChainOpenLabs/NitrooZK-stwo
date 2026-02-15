@@ -261,7 +261,8 @@ __global__ void evaluate_blake_round_pre_kernel(
 
     cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
-    m31 values_blake_round_sigma[17] = {
+    m31 values_blake_round_sigma[18] = {
+        BLAKE_ROUND_SIGMA_RELATION_ID,
         input_limb_1_col1,
         blake_round_sigma_output_limb_0_col35,
         blake_round_sigma_output_limb_1_col36,
@@ -281,8 +282,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_round_sigma_output_limb_15_col50,
     };
 
-    RelationEntry entry_blake_round_sigma = RelationEntry<17>(eval->blake_round_sigma_lookup_elements, qm31{{1, 0}, {0, 0}}, values_blake_round_sigma);
-    cuda_evaluator.add_to_relation<17>(entry_blake_round_sigma);
+    cuda_evaluator.add_to_relation<18>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, values_blake_round_sigma);
 
     m31 read_blake_word_output_tmp_92ff8_9_limb_0 = {0};
     m31 read_blake_word_output_tmp_92ff8_9_limb_1 = {0};
@@ -296,9 +296,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_0_id_col56,
         &read_blake_word_output_tmp_92ff8_9_limb_0,
         &read_blake_word_output_tmp_92ff8_9_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -314,9 +312,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_1_id_col62,
         &read_blake_word_output_tmp_92ff8_18_limb_0,
         &read_blake_word_output_tmp_92ff8_18_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -332,9 +328,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_2_id_col68,
         &read_blake_word_output_tmp_92ff8_27_limb_0,
         &read_blake_word_output_tmp_92ff8_27_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -350,9 +344,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_3_id_col74,
         &read_blake_word_output_tmp_92ff8_36_limb_0,
         &read_blake_word_output_tmp_92ff8_36_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -368,9 +360,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_4_id_col80,
         &read_blake_word_output_tmp_92ff8_45_limb_0,
         &read_blake_word_output_tmp_92ff8_45_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -386,9 +376,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_5_id_col86,
         &read_blake_word_output_tmp_92ff8_54_limb_0,
         &read_blake_word_output_tmp_92ff8_54_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -404,9 +392,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_6_id_col92,
         &read_blake_word_output_tmp_92ff8_63_limb_0,
         &read_blake_word_output_tmp_92ff8_63_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -422,9 +408,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_7_id_col98,
         &read_blake_word_output_tmp_92ff8_72_limb_0,
         &read_blake_word_output_tmp_92ff8_72_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -440,9 +424,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_8_id_col104,
         &read_blake_word_output_tmp_92ff8_81_limb_0,
         &read_blake_word_output_tmp_92ff8_81_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -458,9 +440,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_9_id_col110,
         &read_blake_word_output_tmp_92ff8_90_limb_0,
         &read_blake_word_output_tmp_92ff8_90_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -476,9 +456,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_10_id_col116,
         &read_blake_word_output_tmp_92ff8_99_limb_0,
         &read_blake_word_output_tmp_92ff8_99_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -494,9 +472,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_11_id_col122,
         &read_blake_word_output_tmp_92ff8_108_limb_0,
         &read_blake_word_output_tmp_92ff8_108_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -512,9 +488,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_12_id_col128,
         &read_blake_word_output_tmp_92ff8_117_limb_0,
         &read_blake_word_output_tmp_92ff8_117_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -530,9 +504,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_13_id_col134,
         &read_blake_word_output_tmp_92ff8_126_limb_0,
         &read_blake_word_output_tmp_92ff8_126_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -548,9 +520,7 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_14_id_col140,
         &read_blake_word_output_tmp_92ff8_135_limb_0,
         &read_blake_word_output_tmp_92ff8_135_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -566,13 +536,12 @@ __global__ void evaluate_blake_round_pre_kernel(
         message_word_15_id_col146,
         &read_blake_word_output_tmp_92ff8_144_limb_0,
         &read_blake_word_output_tmp_92ff8_144_limb_1,
-        eval->range_check_7_2_5_lookup_elements,
-        eval->memory_address_to_id_lookup_elements,
-        eval->memory_id_to_big_lookup_elements,
+        eval->common_lookup_elements,
         &cuda_evaluator
     );
 
-    m31 value_blake_g_0[20] = {
+    m31 value_blake_g_0[21] = {
+        BLAKE_G_RELATION_ID,
         input_limb_2_col2,
         input_limb_3_col3,
         input_limb_10_col10,
@@ -594,10 +563,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col153,
         blake_g_output_limb_7_col154,
     };
-    RelationEntry entry_blake_g_0 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_0);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_0);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_0);
 
-    m31 value_blake_g_1[20] = {
+    m31 value_blake_g_1[21] = {
+        BLAKE_G_RELATION_ID,
         input_limb_4_col4,
         input_limb_5_col5,
         input_limb_12_col12,
@@ -619,10 +588,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col161,
         blake_g_output_limb_7_col162,
     };
-    RelationEntry entry_blake_g_1 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_1);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_1);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_1);
 
-    m31 value_blake_g_2[20] = {
+    m31 value_blake_g_2[21] = {
+        BLAKE_G_RELATION_ID,
         input_limb_6_col6,
         input_limb_7_col7,
         input_limb_14_col14,
@@ -644,10 +613,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col169,
         blake_g_output_limb_7_col170,
     };
-    RelationEntry entry_blake_g_2 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_2);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_2);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_2);
 
-    m31 value_blake_g_3[20] = {
+    m31 value_blake_g_3[21] = {
+        BLAKE_G_RELATION_ID,
         input_limb_8_col8,
         input_limb_9_col9,
         input_limb_16_col16,
@@ -669,10 +638,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col177,
         blake_g_output_limb_7_col178,
     };
-    RelationEntry entry_blake_g_3 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_3);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_3);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_3);
 
-    m31 value_blake_g_4[20] = {
+    m31 value_blake_g_4[21] = {
+        BLAKE_G_RELATION_ID,
         blake_g_output_limb_0_col147,
         blake_g_output_limb_1_col148,
         blake_g_output_limb_2_col157,
@@ -694,10 +663,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col185,
         blake_g_output_limb_7_col186,
     };
-    RelationEntry entry_blake_g_4 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_4);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_4);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_4);
 
-    m31 value_blake_g_5[20] = {
+    m31 value_blake_g_5[21] = {
+        BLAKE_G_RELATION_ID,
         blake_g_output_limb_0_col155,
         blake_g_output_limb_1_col156,
         blake_g_output_limb_2_col165,
@@ -719,10 +688,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col193,
         blake_g_output_limb_7_col194,
     };
-    RelationEntry entry_blake_g_5 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_5);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_5);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_5);
 
-    m31 value_blake_g_6[20] = {
+    m31 value_blake_g_6[21] = {
+        BLAKE_G_RELATION_ID,
         blake_g_output_limb_0_col163,
         blake_g_output_limb_1_col164,
         blake_g_output_limb_2_col173,
@@ -744,10 +713,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col201,
         blake_g_output_limb_7_col202,
     };
-    RelationEntry entry_blake_g_6 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_6);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_6);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_6);
 
-    m31 value_blake_g_7[20] = {
+    m31 value_blake_g_7[21] = {
+        BLAKE_G_RELATION_ID,
         blake_g_output_limb_0_col171,
         blake_g_output_limb_1_col172,
         blake_g_output_limb_2_col149,
@@ -769,11 +738,11 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_6_col209,
         blake_g_output_limb_7_col210,
     };
-    RelationEntry entry_blake_g_7 = RelationEntry<20>(eval->blake_g_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_7);
-    cuda_evaluator.add_to_relation<20>(entry_blake_g_7);
+    cuda_evaluator.add_to_relation<21>(eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, value_blake_g_7);
 
     // blake_round_lookup_elements, enabler
-    m31 value_blake_round_0[35] = {
+    m31 value_blake_round_0[36] = {
+        BLAKE_ROUND_RELATION_ID,
         input_limb_0_col0,
         input_limb_1_col1,
         input_limb_2_col2,
@@ -810,10 +779,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         input_limb_33_col33,
         input_limb_34_col34,
     };
-    RelationEntry entry_blake_round_0 = RelationEntry<35>(eval->blake_round_lookup_elements, qm31{{enabler, 0}, {0, 0}}, value_blake_round_0);
-    cuda_evaluator.add_to_relation<35>(entry_blake_round_0);
+    cuda_evaluator.add_to_relation<36>(eval->common_lookup_elements, qm31{{enabler, 0}, {0, 0}}, value_blake_round_0);
 
-    m31 value_blake_round_1[35] = {
+    m31 value_blake_round_1[36] = {
+        BLAKE_ROUND_RELATION_ID,
         input_limb_0_col0,
         add(input_limb_1_col1, M31_1),
         blake_g_output_limb_0_col179,
@@ -850,11 +819,10 @@ __global__ void evaluate_blake_round_pre_kernel(
         blake_g_output_limb_7_col186,
         input_limb_34_col34,
     };
-    RelationEntry entry_blake_round_1 = RelationEntry<35>(
-        eval->blake_round_lookup_elements,
+    cuda_evaluator.add_to_relation<36>(
+        eval->common_lookup_elements,
         qm31{{(enabler == 0 ? 0 : P - enabler), 0}, {0, 0}},
         value_blake_round_1);
-    cuda_evaluator.add_to_relation<35>(entry_blake_round_1);
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;
     numerators[row] = cuda_evaluator.row_res;

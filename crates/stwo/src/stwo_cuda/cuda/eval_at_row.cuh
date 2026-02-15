@@ -246,6 +246,34 @@ typedef struct CudaAssertEvaluator {
             result[i] = combine_ef(values);
         }
     }
+
+    // Overload for CommonLookupElements (LookupElementsBasic<128>).
+    // N = number of values including RELATION_ID as first element.
+    template<int N>
+    DEVICE_FORCEINLINE void add_to_relation(
+        const LookupElementsBasic<128>& common_elements,
+        qm31 multiplicity,
+        const m31* values
+    ) {
+        Fraction fraction = Fraction(multiplicity, common_elements.combine(values, N));
+        this->logup.fractions[this->logup_fraction_index + this->row * logup_fraction_counts_per_eval] = fraction;
+        // Check for zero denominator (invalid fraction)
+        bool denom_is_zero = (fraction.denominator.a.a == 0) &&
+                             (fraction.denominator.a.b == 0) &&
+                             (fraction.denominator.b.a == 0) &&
+                             (fraction.denominator.b.b == 0);
+        if (denom_is_zero) {
+            printf("CUDA_ASSERT_FRAC ERROR: zero denominator at row=%u, fraction_index=%u\n",
+                this->row, this->logup_fraction_index);
+            printf("  num=[%u, %u, %u, %u] den=[%u, %u, %u, %u]\n",
+                fraction.numerator.a.a, fraction.numerator.a.b,
+                fraction.numerator.b.a, fraction.numerator.b.b,
+                fraction.denominator.a.a, fraction.denominator.a.b,
+                fraction.denominator.b.a, fraction.denominator.b.b);
+            assert(false && "Zero denominator in CUDA fraction");
+        }
+        this->logup_fraction_index = this->logup_fraction_index + 1;
+    }
 }CudaAssertEvaluator;
 
 
@@ -388,6 +416,20 @@ typedef struct CudaEvaluator {
             }
             result[i] = combine_ef(values);
         }
+    }
+
+    // Overload for CommonLookupElements (LookupElementsBasic<128>).
+    // N = number of values including RELATION_ID as first element.
+    template<int N>
+    DEVICE_FORCEINLINE void add_to_relation(
+        const LookupElementsBasic<128>& common_elements,
+        qm31 multiplicity,
+        const m31* values
+    ) {
+        Fraction fraction = Fraction(multiplicity, common_elements.combine(values, N));
+        unsigned idx = this->logup_fraction_index + this->row * logup_fraction_counts_per_eval;
+        this->logup.fractions[idx] = fraction;
+        this->logup_fraction_index = this->logup_fraction_index + 1;
     }
 }CudaEvaluator;
 

@@ -8,13 +8,27 @@
 
 // CUDA version VerifyMul252::evaluate
 // translated from cairo-air/src/components/subroutines/verify_mul_252.rs
-// Verifies: a * b = c (mod p), where p = 2^252 + 17*2^192 + 1
+// Verifies: a * b = c (mod p), where p = 2^251 + 17*2^192 + 1
 //
 // This implements the full modular reduction verification:
 // 1. Compute 55-limb product via DoubleKaratsubaN7
 // 2. Compute convolution difference: product - result
 // 3. Compute modular reduction values using coefficients derived from p
-// 4. Verify via carry chain with RangeCheck_19 lookups
+// 4. Verify via carry chain with RangeCheck_20 lookups
+//
+// Relation ID pattern for carries (cycling through 8 variants):
+//   k:       RANGE_CHECK_20_RELATION_ID
+//   carry 0: RANGE_CHECK_20_B_RELATION_ID
+//   carry 1: RANGE_CHECK_20_C_RELATION_ID
+//   carry 2: RANGE_CHECK_20_D_RELATION_ID
+//   carry 3: RANGE_CHECK_20_E_RELATION_ID
+//   carry 4: RANGE_CHECK_20_F_RELATION_ID
+//   carry 5: RANGE_CHECK_20_G_RELATION_ID
+//   carry 6: RANGE_CHECK_20_H_RELATION_ID
+//   carry 7: RANGE_CHECK_20_RELATION_ID
+//   ... (repeats)
+//
+// All range check offsets use M31_524288 (= 2^19).
 
 template<typename EvaluatorT>
 DEVICE_FORCEINLINE void verify_mul_252_evaluate(
@@ -23,14 +37,7 @@ DEVICE_FORCEINLINE void verify_mul_252_evaluate(
     const m31 input_c[28],   // Expected result (28 9-bit limbs)
     const m31 k,             // Quotient factor
     const m31 carry[27],     // Carry values for verification
-    const RangeCheck_19_H& rc_19_h,  // H comes first for range_check_19!
-    const RangeCheck_19& rc_19,
-    const RangeCheck_19_B& rc_19_b,
-    const RangeCheck_19_C& rc_19_c,
-    const RangeCheck_19_D& rc_19_d,
-    const RangeCheck_19_E& rc_19_e,
-    const RangeCheck_19_F& rc_19_f,
-    const RangeCheck_19_G& rc_19_g,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT* cuda_evaluator
 ) {
     // Constants matching Rust implementation
@@ -42,8 +49,7 @@ DEVICE_FORCEINLINE void verify_mul_252_evaluate(
     const m31 M31_136 = m31(136);
     const m31 M31_256 = m31(256);
     const m31 M31_512 = m31(512);
-    const m31 M31_131072 = m31(131072);   // 2^17
-    const m31 M31_262144 = m31(262144);   // 2^18
+    const m31 M31_524288 = m31(524288);   // 2^19
 
     // Step 1: Compute 55-limb product via DoubleKaratsubaN7
     m31 dk_input[56];
@@ -66,26 +72,26 @@ DEVICE_FORCEINLINE void verify_mul_252_evaluate(
     }
 
     // Step 3: Compute modular reduction values (conv_mod)
-    // These coefficients come from the modular reduction of p = 2^252 + 17*2^192 + 1
+    // These coefficients come from the modular reduction of p = 2^251 + 17*2^192 + 1
     m31 conv_mod[28];
 
     // limb 0: (32 * conv[0]) - (4 * conv[21]) + (8 * conv[49])
-    conv_mod[0] = sub(add(mul(M31_32, conv[0]), mul(M31_8, conv[49])), mul(M31_4, conv[21]));
+    conv_mod[0] = add(sub(mul(M31_32, conv[0]), mul(M31_4, conv[21])), mul(M31_8, conv[49]));
 
     // limb 1: conv[0] + (32 * conv[1]) - (4 * conv[22]) + (8 * conv[50])
-    conv_mod[1] = sub(add(add(conv[0], mul(M31_32, conv[1])), mul(M31_8, conv[50])), mul(M31_4, conv[22]));
+    conv_mod[1] = add(sub(add(conv[0], mul(M31_32, conv[1])), mul(M31_4, conv[22])), mul(M31_8, conv[50]));
 
     // limb 2: conv[1] + (32 * conv[2]) - (4 * conv[23]) + (8 * conv[51])
-    conv_mod[2] = sub(add(add(conv[1], mul(M31_32, conv[2])), mul(M31_8, conv[51])), mul(M31_4, conv[23]));
+    conv_mod[2] = add(sub(add(conv[1], mul(M31_32, conv[2])), mul(M31_4, conv[23])), mul(M31_8, conv[51]));
 
     // limb 3: conv[2] + (32 * conv[3]) - (4 * conv[24]) + (8 * conv[52])
-    conv_mod[3] = sub(add(add(conv[2], mul(M31_32, conv[3])), mul(M31_8, conv[52])), mul(M31_4, conv[24]));
+    conv_mod[3] = add(sub(add(conv[2], mul(M31_32, conv[3])), mul(M31_4, conv[24])), mul(M31_8, conv[52]));
 
     // limb 4: conv[3] + (32 * conv[4]) - (4 * conv[25]) + (8 * conv[53])
-    conv_mod[4] = sub(add(add(conv[3], mul(M31_32, conv[4])), mul(M31_8, conv[53])), mul(M31_4, conv[25]));
+    conv_mod[4] = add(sub(add(conv[3], mul(M31_32, conv[4])), mul(M31_4, conv[25])), mul(M31_8, conv[53]));
 
     // limb 5: conv[4] + (32 * conv[5]) - (4 * conv[26]) + (8 * conv[54])
-    conv_mod[5] = sub(add(add(conv[4], mul(M31_32, conv[5])), mul(M31_8, conv[54])), mul(M31_4, conv[26]));
+    conv_mod[5] = add(sub(add(conv[4], mul(M31_32, conv[5])), mul(M31_4, conv[26])), mul(M31_8, conv[54]));
 
     // limb 6: conv[5] + (32 * conv[6]) - (4 * conv[27])
     conv_mod[6] = sub(add(conv[5], mul(M31_32, conv[6])), mul(M31_4, conv[27]));
@@ -127,262 +133,203 @@ DEVICE_FORCEINLINE void verify_mul_252_evaluate(
     // limb 27: (2 * conv[20]) - (4 * conv[48]) + (2 * conv[54])
     conv_mod[27] = add(sub(mul(M31_2, conv[20]), mul(M31_4, conv[48])), mul(M31_2, conv[54]));
 
-    // Step 4: Range check k with RangeCheck_19_H (k + 262144)
+    // Step 4: Range check k (k + 524288) with RANGE_CHECK_20_RELATION_ID
     {
-        m31 k_offset = add(k, M31_262144);
-        m31 values[1] = {k_offset};
-        RelationEntry<1> entry(rc_19_h, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_RELATION_ID, add(k, M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Step 5: Carry chain constraints
-    // Pattern: _, B, C, D, E, F, G, H, _, B, C, D, E, F, G, H, _, B, C, D, E, F, G, H, _, B, C
-    // First carry constraint: carry[0] * 512 = conv_mod[0] - k
+    // Step 5: Carry chain constraints and range checks
+    // carry_0 * 512 = conv_mod[0] - k
     cuda_evaluator->add_constraint(sub(mul(carry[0], M31_512), sub(conv_mod[0], k)));
-
-    // Range check carry[0] with rc_19
     {
-        m31 carry_offset = add(carry[0], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_B_RELATION_ID, add(carry[0], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 1: carry[1] * 512 = conv_mod[1] + carry[0]
+    // carry_1 * 512 = conv_mod[1] + carry_0
     cuda_evaluator->add_constraint(sub(mul(carry[1], M31_512), add(conv_mod[1], carry[0])));
     {
-        m31 carry_offset = add(carry[1], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_b, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_C_RELATION_ID, add(carry[1], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 2: carry[2] * 512 = conv_mod[2] + carry[1]
+    // carry_2 * 512 = conv_mod[2] + carry_1
     cuda_evaluator->add_constraint(sub(mul(carry[2], M31_512), add(conv_mod[2], carry[1])));
     {
-        m31 carry_offset = add(carry[2], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_c, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_D_RELATION_ID, add(carry[2], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 3: carry[3] * 512 = conv_mod[3] + carry[2]
+    // carry_3 * 512 = conv_mod[3] + carry_2
     cuda_evaluator->add_constraint(sub(mul(carry[3], M31_512), add(conv_mod[3], carry[2])));
     {
-        m31 carry_offset = add(carry[3], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_d, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_E_RELATION_ID, add(carry[3], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 4: carry[4] * 512 = conv_mod[4] + carry[3]
+    // carry_4 * 512 = conv_mod[4] + carry_3
     cuda_evaluator->add_constraint(sub(mul(carry[4], M31_512), add(conv_mod[4], carry[3])));
     {
-        m31 carry_offset = add(carry[4], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_e, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_F_RELATION_ID, add(carry[4], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 5: carry[5] * 512 = conv_mod[5] + carry[4]
+    // carry_5 * 512 = conv_mod[5] + carry_4
     cuda_evaluator->add_constraint(sub(mul(carry[5], M31_512), add(conv_mod[5], carry[4])));
     {
-        m31 carry_offset = add(carry[5], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_f, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_G_RELATION_ID, add(carry[5], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 6: carry[6] * 512 = conv_mod[6] + carry[5]
+    // carry_6 * 512 = conv_mod[6] + carry_5
     cuda_evaluator->add_constraint(sub(mul(carry[6], M31_512), add(conv_mod[6], carry[5])));
     {
-        m31 carry_offset = add(carry[6], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_g, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_H_RELATION_ID, add(carry[6], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 7: carry[7] * 512 = conv_mod[7] + carry[6]
+    // carry_7 * 512 = conv_mod[7] + carry_6
     cuda_evaluator->add_constraint(sub(mul(carry[7], M31_512), add(conv_mod[7], carry[6])));
     {
-        m31 carry_offset = add(carry[7], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_h, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_RELATION_ID, add(carry[7], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 8: carry[8] * 512 = conv_mod[8] + carry[7]
+    // carry_8 * 512 = conv_mod[8] + carry_7
     cuda_evaluator->add_constraint(sub(mul(carry[8], M31_512), add(conv_mod[8], carry[7])));
     {
-        m31 carry_offset = add(carry[8], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_B_RELATION_ID, add(carry[8], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 9: carry[9] * 512 = conv_mod[9] + carry[8]
+    // carry_9 * 512 = conv_mod[9] + carry_8
     cuda_evaluator->add_constraint(sub(mul(carry[9], M31_512), add(conv_mod[9], carry[8])));
     {
-        m31 carry_offset = add(carry[9], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_b, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_C_RELATION_ID, add(carry[9], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 10: carry[10] * 512 = conv_mod[10] + carry[9]
+    // carry_10 * 512 = conv_mod[10] + carry_9
     cuda_evaluator->add_constraint(sub(mul(carry[10], M31_512), add(conv_mod[10], carry[9])));
     {
-        m31 carry_offset = add(carry[10], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_c, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_D_RELATION_ID, add(carry[10], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 11: carry[11] * 512 = conv_mod[11] + carry[10]
+    // carry_11 * 512 = conv_mod[11] + carry_10
     cuda_evaluator->add_constraint(sub(mul(carry[11], M31_512), add(conv_mod[11], carry[10])));
     {
-        m31 carry_offset = add(carry[11], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_d, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_E_RELATION_ID, add(carry[11], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 12: carry[12] * 512 = conv_mod[12] + carry[11]
+    // carry_12 * 512 = conv_mod[12] + carry_11
     cuda_evaluator->add_constraint(sub(mul(carry[12], M31_512), add(conv_mod[12], carry[11])));
     {
-        m31 carry_offset = add(carry[12], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_e, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_F_RELATION_ID, add(carry[12], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 13: carry[13] * 512 = conv_mod[13] + carry[12]
+    // carry_13 * 512 = conv_mod[13] + carry_12
     cuda_evaluator->add_constraint(sub(mul(carry[13], M31_512), add(conv_mod[13], carry[12])));
     {
-        m31 carry_offset = add(carry[13], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_f, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_G_RELATION_ID, add(carry[13], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 14: carry[14] * 512 = conv_mod[14] + carry[13]
+    // carry_14 * 512 = conv_mod[14] + carry_13
     cuda_evaluator->add_constraint(sub(mul(carry[14], M31_512), add(conv_mod[14], carry[13])));
     {
-        m31 carry_offset = add(carry[14], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_g, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_H_RELATION_ID, add(carry[14], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 15: carry[15] * 512 = conv_mod[15] + carry[14]
+    // carry_15 * 512 = conv_mod[15] + carry_14
     cuda_evaluator->add_constraint(sub(mul(carry[15], M31_512), add(conv_mod[15], carry[14])));
     {
-        m31 carry_offset = add(carry[15], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_h, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_RELATION_ID, add(carry[15], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 16: carry[16] * 512 = conv_mod[16] + carry[15]
+    // carry_16 * 512 = conv_mod[16] + carry_15
     cuda_evaluator->add_constraint(sub(mul(carry[16], M31_512), add(conv_mod[16], carry[15])));
     {
-        m31 carry_offset = add(carry[16], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_B_RELATION_ID, add(carry[16], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 17: carry[17] * 512 = conv_mod[17] + carry[16]
+    // carry_17 * 512 = conv_mod[17] + carry_16
     cuda_evaluator->add_constraint(sub(mul(carry[17], M31_512), add(conv_mod[17], carry[16])));
     {
-        m31 carry_offset = add(carry[17], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_b, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_C_RELATION_ID, add(carry[17], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 18: carry[18] * 512 = conv_mod[18] + carry[17]
+    // carry_18 * 512 = conv_mod[18] + carry_17
     cuda_evaluator->add_constraint(sub(mul(carry[18], M31_512), add(conv_mod[18], carry[17])));
     {
-        m31 carry_offset = add(carry[18], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_c, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_D_RELATION_ID, add(carry[18], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 19: carry[19] * 512 = conv_mod[19] + carry[18]
+    // carry_19 * 512 = conv_mod[19] + carry_18
     cuda_evaluator->add_constraint(sub(mul(carry[19], M31_512), add(conv_mod[19], carry[18])));
     {
-        m31 carry_offset = add(carry[19], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_d, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_E_RELATION_ID, add(carry[19], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 20: carry[20] * 512 = conv_mod[20] + carry[19]
+    // carry_20 * 512 = conv_mod[20] + carry_19
     cuda_evaluator->add_constraint(sub(mul(carry[20], M31_512), add(conv_mod[20], carry[19])));
     {
-        m31 carry_offset = add(carry[20], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_e, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_F_RELATION_ID, add(carry[20], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 21: SPECIAL - carry[21] * 512 = (conv_mod[21] - 136*k) + carry[20]
+    // carry_21 SPECIAL: carry_21 * 512 = (conv_mod[21] - 136*k) + carry_20
     cuda_evaluator->add_constraint(sub(mul(carry[21], M31_512), add(sub(conv_mod[21], mul(M31_136, k)), carry[20])));
     {
-        m31 carry_offset = add(carry[21], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_f, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_G_RELATION_ID, add(carry[21], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 22: carry[22] * 512 = conv_mod[22] + carry[21]
+    // carry_22 * 512 = conv_mod[22] + carry_21
     cuda_evaluator->add_constraint(sub(mul(carry[22], M31_512), add(conv_mod[22], carry[21])));
     {
-        m31 carry_offset = add(carry[22], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_g, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_H_RELATION_ID, add(carry[22], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 23: carry[23] * 512 = conv_mod[23] + carry[22]
+    // carry_23 * 512 = conv_mod[23] + carry_22
     cuda_evaluator->add_constraint(sub(mul(carry[23], M31_512), add(conv_mod[23], carry[22])));
     {
-        m31 carry_offset = add(carry[23], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_h, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_RELATION_ID, add(carry[23], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 24: carry[24] * 512 = conv_mod[24] + carry[23]
+    // carry_24 * 512 = conv_mod[24] + carry_23
     cuda_evaluator->add_constraint(sub(mul(carry[24], M31_512), add(conv_mod[24], carry[23])));
     {
-        m31 carry_offset = add(carry[24], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_B_RELATION_ID, add(carry[24], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 25: carry[25] * 512 = conv_mod[25] + carry[24]
+    // carry_25 * 512 = conv_mod[25] + carry_24
     cuda_evaluator->add_constraint(sub(mul(carry[25], M31_512), add(conv_mod[25], carry[24])));
     {
-        m31 carry_offset = add(carry[25], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_b, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_C_RELATION_ID, add(carry[25], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Carry 26: carry[26] * 512 = conv_mod[26] + carry[25]
+    // carry_26 * 512 = conv_mod[26] + carry_25
     cuda_evaluator->add_constraint(sub(mul(carry[26], M31_512), add(conv_mod[26], carry[25])));
     {
-        m31 carry_offset = add(carry[26], M31_131072);
-        m31 values[1] = {carry_offset};
-        RelationEntry<1> entry(rc_19_c, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->template add_to_relation<1>(entry);
+        m31 values[2] = {RANGE_CHECK_20_D_RELATION_ID, add(carry[26], M31_524288)};
+        cuda_evaluator->template add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
-    // Final constraint: (conv_mod[27] - 256*k) + carry[26] = 0
+    // Final constraint: (conv_mod[27] - 256*k) + carry_26 = 0
     cuda_evaluator->add_constraint(add(sub(conv_mod[27], mul(M31_256, k)), carry[26]));
 }
 

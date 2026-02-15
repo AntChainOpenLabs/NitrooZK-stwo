@@ -81,9 +81,7 @@ DEVICE_FORCEINLINE m31 read_split_evaluate(
     m31 ms_limb_high,
     m31 id,
 
-    RangeCheck_5_4 range_check_5_4_lookup_elements,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
@@ -92,17 +90,12 @@ DEVICE_FORCEINLINE m31 read_split_evaluate(
 
     // ===================== RangeCheck_5_4: Verify MS limb split =====================
     // Verify that ms_limb_low is 5 bits and ms_limb_high is 4 bits
-    m31 rc_values[2] = {
+    m31 rc_values[3] = {
+        RANGE_CHECK_5_4_RELATION_ID,
         ms_limb_low,
         ms_limb_high
     };
-
-    RelationEntry<2> rc_entry(
-        range_check_5_4_lookup_elements,
-        qm31{{1, 0}, {0, 0}},  // positive multiplicity (USE side)
-        rc_values
-    );
-    cuda_evaluator->add_to_relation<2>(rc_entry);
+    cuda_evaluator->add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc_values);
 
     // ===================== Reconstruct MS limb =====================
     // ms_limb = ms_limb_high * 32 + ms_limb_low
@@ -143,8 +136,7 @@ DEVICE_FORCEINLINE m31 read_split_evaluate(
         value_limb_26,             // limb 27
         reconstructed_ms_limb,     // limb 28: reconstructed MS limb
         id,                        // memory ID
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 

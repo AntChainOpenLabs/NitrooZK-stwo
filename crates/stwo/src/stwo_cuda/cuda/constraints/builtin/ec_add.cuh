@@ -50,101 +50,61 @@ DEVICE_FORCEINLINE void ec_add_evaluate(
     m31 *carry_mul_1,    // Step 8: carries (27, cols 286-312)
     m31 *sub_res_4,      // Step 9: y3 = slope*(x1-x3) - y1 (28 limbs, cols 313-340)
     m31 *sub_p_bit_5,    // Step 9: borrow bit (col 341)
-    // Range check lookup elements (order must match Rust EcAdd::evaluate)
-    const RangeCheck_9_9& rc_9_9,
-    const RangeCheck_9_9_B& rc_9_9_b,
-    const RangeCheck_9_9_C& rc_9_9_c,
-    const RangeCheck_9_9_D& rc_9_9_d,
-    const RangeCheck_9_9_E& rc_9_9_e,
-    const RangeCheck_9_9_F& rc_9_9_f,
-    const RangeCheck_9_9_G& rc_9_9_g,
-    const RangeCheck_9_9_H& rc_9_9_h,
-    const RangeCheck_19_H& rc_19_h,  // H comes first for range_check_19!
-    const RangeCheck_19& rc_19,
-    const RangeCheck_19_B& rc_19_b,
-    const RangeCheck_19_C& rc_19_c,
-    const RangeCheck_19_D& rc_19_d,
-    const RangeCheck_19_E& rc_19_e,
-    const RangeCheck_19_F& rc_19_f,
-    const RangeCheck_19_G& rc_19_g,  // G is last (no H at end)
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT* cuda_evaluator
 ) {
     // Step 1: Compute diff_x = x2 - x1
     sub_252_evaluate(
         x2, x1, sub_res_0, *sub_p_bit_0,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 2: Compute sum_x = x2 + x1
     add_252_evaluate(
         x2, x1, add_res_0, *sub_p_bit_1,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 3: Compute diff_y = y2 - y1
     sub_252_evaluate(
         y2, y1, sub_res_1, *sub_p_bit_2,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 4: Compute slope = diff_y / diff_x = (y2 - y1) / (x2 - x1)
     div_252_evaluate(
         sub_res_1, sub_res_0, div_res, *k_div, carry_div,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        rc_19_h, rc_19, rc_19_b, rc_19_c,
-        rc_19_d, rc_19_e, rc_19_f, rc_19_g,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 5: Compute slope^2
     mul_252_evaluate(
         div_res, div_res, mul_res_0, *k_mul_0, carry_mul_0,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        rc_19_h, rc_19, rc_19_b, rc_19_c,
-        rc_19_d, rc_19_e, rc_19_f, rc_19_g,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 6: Compute x3 = slope^2 - sum_x = slope^2 - (x1 + x2)
     sub_252_evaluate(
         mul_res_0, add_res_0, sub_res_2, *sub_p_bit_3,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 7: Compute x1 - x3
     sub_252_evaluate(
         x1, sub_res_2, sub_res_3, *sub_p_bit_4,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 8: Compute slope * (x1 - x3)
     mul_252_evaluate(
         div_res, sub_res_3, mul_res_1, *k_mul_1, carry_mul_1,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        rc_19_h, rc_19, rc_19_b, rc_19_c,
-        rc_19_d, rc_19_e, rc_19_f, rc_19_g,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Step 9: Compute y3 = slope * (x1 - x3) - y1
     sub_252_evaluate(
         mul_res_1, y1, sub_res_4, *sub_p_bit_5,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        cuda_evaluator
+        common_lookup_elements, cuda_evaluator
     );
 
     // Result: sub_res_2 = x3, sub_res_4 = y3

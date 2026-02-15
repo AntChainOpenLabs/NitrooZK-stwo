@@ -639,8 +639,7 @@ __global__ void evaluate_add_mod_builtin_pre_kernel(
         c3_limb_8_col249,
         c3_limb_9_col250,
         c3_limb_10_col251,
-        add_mod_eval->memory_address_to_id_lookup_elements,
-        add_mod_eval->memory_id_to_big_lookup_elements,
+        add_mod_eval->common_lookup_elements,
         &cuda_evaluator1
     );
 

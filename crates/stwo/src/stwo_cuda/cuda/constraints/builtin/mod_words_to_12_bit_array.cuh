@@ -23,7 +23,7 @@ DEVICE_FORCEINLINE void mod_words_to_12_bit_array_evaluate(
     m31 limb1b_0_col0, m31 limb2b_0_col1, m31 limb5b_0_col2, m31 limb6b_0_col3, m31 limb9b_0_col4,
     m31 limb1b_1_col5, m31 limb2b_1_col6, m31 limb5b_1_col7, m31 limb6b_1_col8, m31 limb9b_1_col9,
     // Lookup elements
-    RangeCheck_3_6_6_3 range_check_3_6_6_3_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     // Output array (16 elements)
     m31 *output,
     EvaluatorT *cuda_evaluator
@@ -39,9 +39,8 @@ DEVICE_FORCEINLINE void mod_words_to_12_bit_array_evaluate(
 
     // RangeCheck_3_6_6_3 lookup 1
     {
-        m31 values[4] = {limb1a_0, limb1b_0_col0, limb2a_0, limb2b_0_col1};
-        RelationEntry<4> entry(range_check_3_6_6_3_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->add_to_relation<4>(entry);
+        m31 values[5] = {RANGE_CHECK_3_6_6_3_RELATION_ID, limb1a_0, limb1b_0_col0, limb2a_0, limb2b_0_col1};
+        cuda_evaluator->template add_to_relation<5>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // limb5a_0 = input_limb_5 - limb5b_0 * 8
@@ -51,9 +50,8 @@ DEVICE_FORCEINLINE void mod_words_to_12_bit_array_evaluate(
 
     // RangeCheck_3_6_6_3 lookup 2
     {
-        m31 values[4] = {limb5a_0, limb5b_0_col2, limb6a_0, limb6b_0_col3};
-        RelationEntry<4> entry(range_check_3_6_6_3_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->add_to_relation<4>(entry);
+        m31 values[5] = {RANGE_CHECK_3_6_6_3_RELATION_ID, limb5a_0, limb5b_0_col2, limb6a_0, limb6b_0_col3};
+        cuda_evaluator->template add_to_relation<5>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // limb9a_0 = input_limb_9 - limb9b_0 * 8
@@ -66,9 +64,8 @@ DEVICE_FORCEINLINE void mod_words_to_12_bit_array_evaluate(
 
     // RangeCheck_3_6_6_3 lookup 3
     {
-        m31 values[4] = {limb1a_1, limb1b_1_col5, limb2a_1, limb2b_1_col6};
-        RelationEntry<4> entry(range_check_3_6_6_3_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->add_to_relation<4>(entry);
+        m31 values[5] = {RANGE_CHECK_3_6_6_3_RELATION_ID, limb1a_1, limb1b_1_col5, limb2a_1, limb2b_1_col6};
+        cuda_evaluator->template add_to_relation<5>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // limb5a_1 = input_limb_33 - limb5b_1 * 8
@@ -78,9 +75,8 @@ DEVICE_FORCEINLINE void mod_words_to_12_bit_array_evaluate(
 
     // RangeCheck_3_6_6_3 lookup 4
     {
-        m31 values[4] = {limb5a_1, limb5b_1_col7, limb6a_1, limb6b_1_col8};
-        RelationEntry<4> entry(range_check_3_6_6_3_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->add_to_relation<4>(entry);
+        m31 values[5] = {RANGE_CHECK_3_6_6_3_RELATION_ID, limb5a_1, limb5b_1_col7, limb6a_1, limb6b_1_col8};
+        cuda_evaluator->template add_to_relation<5>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // limb9a_1 = input_limb_37 - limb9b_1 * 8
@@ -88,9 +84,8 @@ DEVICE_FORCEINLINE void mod_words_to_12_bit_array_evaluate(
 
     // RangeCheck_3_6_6_3 lookup 5
     {
-        m31 values[4] = {limb9a_0, limb9b_0_col4, limb9b_1_col9, limb9a_1};
-        RelationEntry<4> entry(range_check_3_6_6_3_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator->add_to_relation<4>(entry);
+        m31 values[5] = {RANGE_CHECK_3_6_6_3_RELATION_ID, limb9a_0, limb9b_0_col4, limb9b_1_col9, limb9a_1};
+        cuda_evaluator->template add_to_relation<5>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // Compute output limbs

@@ -98,10 +98,7 @@ DEVICE_FORCEINLINE void poseidon_partial_round_evaluate(
     m31 p_coef_col31,
 
     // Lookup elements
-    Cube252 cube_252_lookup_elements,
-    RangeCheck_4_4_4_4 range_check_4_4_4_4_lookup_elements,
-    RangeCheck_4_4 range_check_4_4_lookup_elements,
-    RangeCheckFelt252Width27 range_check_felt_252_width_27_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     // Evaluator
     EvaluatorT *cuda_evaluator
@@ -130,12 +127,10 @@ DEVICE_FORCEINLINE void poseidon_partial_round_evaluate(
         values[18] = cube_252_output_limb_8;
         values[19] = cube_252_output_limb_9;
 
-        RelationEntry<20> entry(
-            cube_252_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<20>(entry);
+        m31 values_ext[21];
+        values_ext[0] = CUBE_252_RELATION_ID;
+        for (int i = 0; i < 20; i++) values_ext[i+1] = values[i];
+        cuda_evaluator->add_to_relation<21>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values_ext);
     }
 
     // Step 2: LinearCombinationN6Coefs4231M11
@@ -169,8 +164,7 @@ DEVICE_FORCEINLINE void poseidon_partial_round_evaluate(
         combination_limb_9_col19,
         p_coef_col20,
         // Lookup elements
-        range_check_4_4_4_4_lookup_elements,
-        range_check_4_4_lookup_elements,
+        common_lookup_elements,
         // Evaluator
         cuda_evaluator
     );
@@ -189,12 +183,10 @@ DEVICE_FORCEINLINE void poseidon_partial_round_evaluate(
         values[8] = combination_limb_8_col18;
         values[9] = combination_limb_9_col19;
 
-        RelationEntry<10> entry(
-            range_check_felt_252_width_27_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<10>(entry);
+        m31 values_ext[11];
+        values_ext[0] = RANGE_CHECK_252_WIDTH_27_RELATION_ID;
+        for (int i = 0; i < 10; i++) values_ext[i+1] = values[i];
+        cuda_evaluator->add_to_relation<11>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values_ext);
     }
 
     // Step 4: LinearCombinationN1Coefs2

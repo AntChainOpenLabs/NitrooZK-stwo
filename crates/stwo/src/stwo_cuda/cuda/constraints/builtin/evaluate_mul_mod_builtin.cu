@@ -771,8 +771,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         c3_limb_8_col249,
         c3_limb_9_col250,
         c3_limb_10_col251,
-        mul_mod_eval->memory_address_to_id_lookup_elements,
-        mul_mod_eval->memory_id_to_big_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         &cuda_evaluator1
     );
 
@@ -780,194 +779,194 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_0_col252;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_1_col253;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_2_col254;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_3_col255;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_4_col256;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_5_col257;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_6_col258;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_7_col259;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_8_col260;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_9_col261;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_10_col262;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_11_col263;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_12_col264;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_13_col265;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_14_col266;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_15_col267;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_16_col268;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_17_col269;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_18_col270;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_19_col271;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_20_col272;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_21_col273;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_22_col274;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_23_col275;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_24_col276;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_25_col277;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_26_col278;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_27_col279;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_28_col280;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_29_col281;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_30_col282;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
     {
         m31 values[1];
         values[0] = ab_minus_c_div_p_limb_31_col283;
-        RelationEntry<1> entry(mul_mod_eval->range_check_12_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc12_vals[2] = {RANGE_CHECK_12_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc12_vals);
     }
 
     // ModWordsTo12BitArray call 1: p0+p1 -> p_12bit_0
@@ -981,7 +980,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         p1_limb_8_col22, p1_limb_9_col23, p1_limb_10_col24,
         limb1b_0_col284, limb2b_0_col285, limb5b_0_col286, limb6b_0_col287, limb9b_0_col288,
         limb1b_1_col289, limb2b_1_col290, limb5b_1_col291, limb6b_1_col292, limb9b_1_col293,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         p_12bit_0, &cuda_evaluator1
     );
 
@@ -996,7 +995,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         p3_limb_8_col46, p3_limb_9_col47, p3_limb_10_col48,
         limb1b_0_col294, limb2b_0_col295, limb5b_0_col296, limb6b_0_col297, limb9b_0_col298,
         limb1b_1_col299, limb2b_1_col300, limb5b_1_col301, limb6b_1_col302, limb9b_1_col303,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         p_12bit_1, &cuda_evaluator1
     );
 
@@ -1011,7 +1010,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         a1_limb_8_col129, a1_limb_9_col130, a1_limb_10_col131,
         limb1b_0_col304, limb2b_0_col305, limb5b_0_col306, limb6b_0_col307, limb9b_0_col308,
         limb1b_1_col309, limb2b_1_col310, limb5b_1_col311, limb6b_1_col312, limb9b_1_col313,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         a_12bit_0, &cuda_evaluator1
     );
 
@@ -1026,7 +1025,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         a3_limb_8_col153, a3_limb_9_col154, a3_limb_10_col155,
         limb1b_0_col314, limb2b_0_col315, limb5b_0_col316, limb6b_0_col317, limb9b_0_col318,
         limb1b_1_col319, limb2b_1_col320, limb5b_1_col321, limb6b_1_col322, limb9b_1_col323,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         a_12bit_1, &cuda_evaluator1
     );
 
@@ -1041,7 +1040,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         b1_limb_8_col177, b1_limb_9_col178, b1_limb_10_col179,
         limb1b_0_col324, limb2b_0_col325, limb5b_0_col326, limb6b_0_col327, limb9b_0_col328,
         limb1b_1_col329, limb2b_1_col330, limb5b_1_col331, limb6b_1_col332, limb9b_1_col333,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         b_12bit_0, &cuda_evaluator1
     );
 
@@ -1056,7 +1055,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         b3_limb_8_col201, b3_limb_9_col202, b3_limb_10_col203,
         limb1b_0_col334, limb2b_0_col335, limb5b_0_col336, limb6b_0_col337, limb9b_0_col338,
         limb1b_1_col339, limb2b_1_col340, limb5b_1_col341, limb6b_1_col342, limb9b_1_col343,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         b_12bit_1, &cuda_evaluator1
     );
 
@@ -1071,7 +1070,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         c1_limb_8_col225, c1_limb_9_col226, c1_limb_10_col227,
         limb1b_0_col344, limb2b_0_col345, limb5b_0_col346, limb6b_0_col347, limb9b_0_col348,
         limb1b_1_col349, limb2b_1_col350, limb5b_1_col351, limb6b_1_col352, limb9b_1_col353,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         c_12bit_0, &cuda_evaluator1
     );
 
@@ -1086,7 +1085,7 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         c3_limb_8_col249, c3_limb_9_col250, c3_limb_10_col251,
         limb1b_0_col354, limb2b_0_col355, limb5b_0_col356, limb6b_0_col357, limb9b_0_col358,
         limb1b_1_col359, limb2b_1_col360, limb5b_1_col361, limb6b_1_col362, limb9b_1_col363,
-        mul_mod_eval->range_check_3_6_6_3_lookup_elements,
+        mul_mod_eval->common_lookup_elements,
         c_12bit_1, &cuda_evaluator1
     );
 
@@ -1224,8 +1223,8 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         m31 diff = add(sub(m31(0), c_12bit[0]), sub(ab_product[0], qp_product[0]));
         cuda_evaluator1.add_constraint(sub(carry[0], mul(diff, M31_524288)));
         m31 values[1] = {add(carry[0], M31_131072)};
-        RelationEntry<1> entry(mul_mod_eval->range_check_18_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc18_vals[2] = {RANGE_CHECK_18_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc18_vals);
     }
 
     // carry_1 to carry_31 constraint (uses c_12bit[1-31])
@@ -1233,8 +1232,8 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         m31 diff = add(sub(carry[i-1], c_12bit[i]), sub(ab_product[i], qp_product[i]));
         cuda_evaluator1.add_constraint(sub(carry[i], mul(diff, M31_524288)));
         m31 values[1] = {add(carry[i], M31_131072)};
-        RelationEntry<1> entry(mul_mod_eval->range_check_18_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc18_vals[2] = {RANGE_CHECK_18_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc18_vals);
     }
 
     // carry_32 to carry_61 constraint (no c_12bit entry, because c only has 32 limbs)
@@ -1242,8 +1241,8 @@ __global__ void evaluate_mul_mod_builtin_pre_kernel(
         m31 diff = add(carry[i-1], sub(ab_product[i], qp_product[i]));
         cuda_evaluator1.add_constraint(sub(carry[i], mul(diff, M31_524288)));
         m31 values[1] = {add(carry[i], M31_131072)};
-        RelationEntry<1> entry(mul_mod_eval->range_check_18_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
-        cuda_evaluator1.add_to_relation<1>(entry);
+        m31 rc18_vals[2] = {RANGE_CHECK_18_RELATION_ID, values[0]};
+        cuda_evaluator1.add_to_relation<2>(mul_mod_eval->common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc18_vals);
     }
 
     // final limb constraint: (ab_product[62] + carry[61]) - qp_product[62] = 0

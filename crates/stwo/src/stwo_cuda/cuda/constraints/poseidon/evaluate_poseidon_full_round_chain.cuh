@@ -6,14 +6,11 @@
 #include "relations.cuh"
 
 // Poseidon Full Round Chain evaluator structure
-// Must match Rust layout: eval_id, claim (log_size), lookup_elements...
+// Must match Rust layout: eval_id, claim (log_size), common_lookup_elements
 struct PoseidonFullRoundChain_Eval {
     unsigned eval_id;
     unsigned log_size;  // Claim struct
-    Cube252 cube_252_lookup_elements;
-    PoseidonRoundKeys poseidon_round_keys_lookup_elements;
-    RangeCheck_3_3_3_3_3 range_check_3_3_3_3_3_lookup_elements;
-    PoseidonFullRoundChain poseidon_full_round_chain_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 // Standard extern "C" entry point declaration

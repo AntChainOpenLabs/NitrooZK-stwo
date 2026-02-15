@@ -75,10 +75,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
     m31* out_limbs, // [32]
 
     // Lookup tables
-    RangeCheck_7_2_5 range_check_7_2_5_lookup_elements,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
-    VerifyBitwiseXor_8 verify_bitwise_xor_8_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     // evaluator
     EvaluatorT* cuda_evaluator
 ) {
@@ -120,7 +117,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         state_0_id_col5,
         &read_blake_word_output_tmp_f95c3_8_limb_0, &read_blake_word_output_tmp_f95c3_8_limb_1,
 
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     m31 read_blake_word_output_tmp_f95c3_17_limb_0, read_blake_word_output_tmp_f95c3_17_limb_1;
@@ -129,7 +126,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         low_16_bits_col6, high_16_bits_col7, low_7_ms_bits_col8, high_14_ms_bits_col9, high_5_ms_bits_col10,
         state_1_id_col11,
         &read_blake_word_output_tmp_f95c3_17_limb_0, &read_blake_word_output_tmp_f95c3_17_limb_1,
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     m31 read_blake_word_output_tmp_f95c3_26_limb_0, read_blake_word_output_tmp_f95c3_26_limb_1;
@@ -138,7 +135,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         low_16_bits_col12, high_16_bits_col13, low_7_ms_bits_col14, high_14_ms_bits_col15, high_5_ms_bits_col16,
         state_2_id_col17,
         &read_blake_word_output_tmp_f95c3_26_limb_0, &read_blake_word_output_tmp_f95c3_26_limb_1,
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     m31 read_blake_word_output_tmp_f95c3_35_limb_0, read_blake_word_output_tmp_f95c3_35_limb_1;
@@ -148,7 +145,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         state_3_id_col23,
         &read_blake_word_output_tmp_f95c3_35_limb_0, &read_blake_word_output_tmp_f95c3_35_limb_1,
 
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     m31 read_blake_word_output_tmp_f95c3_44_limb_0, read_blake_word_output_tmp_f95c3_44_limb_1;
@@ -158,7 +155,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         state_4_id_col29,
         &read_blake_word_output_tmp_f95c3_44_limb_0, &read_blake_word_output_tmp_f95c3_44_limb_1,
 
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     m31 read_blake_word_output_tmp_f95c3_53_limb_0, read_blake_word_output_tmp_f95c3_53_limb_1;
@@ -168,7 +165,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         state_5_id_col35,
         &read_blake_word_output_tmp_f95c3_53_limb_0, &read_blake_word_output_tmp_f95c3_53_limb_1,
 
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     m31 read_blake_word_output_tmp_f95c3_62_limb_0, read_blake_word_output_tmp_f95c3_62_limb_1;
@@ -178,7 +175,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         state_6_id_col41,
         &read_blake_word_output_tmp_f95c3_62_limb_0, &read_blake_word_output_tmp_f95c3_62_limb_1,
 
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     m31 read_blake_word_output_tmp_f95c3_71_limb_0, read_blake_word_output_tmp_f95c3_71_limb_1;
@@ -188,7 +185,7 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
         state_7_id_col47,
         &read_blake_word_output_tmp_f95c3_71_limb_0, &read_blake_word_output_tmp_f95c3_71_limb_1,
 
-        range_check_7_2_5_lookup_elements, memory_address_to_id_lookup_elements, memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -210,25 +207,25 @@ DEVICE_FORCEINLINE void evaluate_create_blake_round_input(
     bitwise_xor_numbits8_32R8_evaluate(
         split_16_low_part_size_8_output_tmp_f95c3_73_limb_0, M31_127,
         xor_col50,
-        verify_bitwise_xor_8_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     bitwise_xor_numbits8_32R8_evaluate(
         ms_8_bits_col48, M31_82,
         xor_col51,
-        verify_bitwise_xor_8_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     bitwise_xor_numbits8_32R8_evaluate(
         split_16_low_part_size_8_output_tmp_f95c3_75_limb_0, M31_14,
         xor_col52,
-        verify_bitwise_xor_8_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     bitwise_xor_numbits8_32R8_evaluate(
         ms_8_bits_col49, M31_81,
         xor_col53,
-        verify_bitwise_xor_8_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 

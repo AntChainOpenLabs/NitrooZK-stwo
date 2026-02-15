@@ -71,17 +71,12 @@ __global__ void evaluate_range_check_4_4_4_4_pre_kernel(
     m31 v3 = cuda_evaluator0.next_trace_mask();
     m31 multiplicity = cuda_evaluator1.next_trace_mask();
 
-    m31 values[4] = {v0, v1, v2, v3};
+    m31 values[5] = {RANGE_CHECK_4_4_4_4_RELATION_ID, v0, v1, v2, v3};
 
     m31 neg_mult = neg(multiplicity);
     qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
 
-    RelationEntry<4> entry(
-        range_eval->range_check_4_4_4_4_lookup_elements,
-        multiplicity_ext,
-        values
-    );
-    cuda_evaluator1.add_to_relation<4>(entry);
+    cuda_evaluator1.add_to_relation<5>(range_eval->common_lookup_elements, multiplicity_ext, values);
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;
     numerators[row] = cuda_evaluator1.row_res;

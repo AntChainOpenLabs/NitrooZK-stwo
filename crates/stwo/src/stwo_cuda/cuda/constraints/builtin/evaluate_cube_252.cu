@@ -126,25 +126,6 @@ __global__ void evaluate_cube_252_pre_kernel(
     // Constraint 0: enabler^2 = enabler
     cuda_evaluator1.add_constraint(sub(mul(enabler, enabler), enabler));
 
-    // Get lookup elements from eval struct
-    const RangeCheck_9_9& rc_9_9 = cube_eval->range_check_9_9_lookup_elements;
-    const RangeCheck_9_9_B& rc_9_9_b = cube_eval->range_check_9_9_b_lookup_elements;
-    const RangeCheck_9_9_C& rc_9_9_c = cube_eval->range_check_9_9_c_lookup_elements;
-    const RangeCheck_9_9_D& rc_9_9_d = cube_eval->range_check_9_9_d_lookup_elements;
-    const RangeCheck_9_9_E& rc_9_9_e = cube_eval->range_check_9_9_e_lookup_elements;
-    const RangeCheck_9_9_F& rc_9_9_f = cube_eval->range_check_9_9_f_lookup_elements;
-    const RangeCheck_9_9_G& rc_9_9_g = cube_eval->range_check_9_9_g_lookup_elements;
-    const RangeCheck_9_9_H& rc_9_9_h = cube_eval->range_check_9_9_h_lookup_elements;
-    const RangeCheck_19_H& rc_19_h = cube_eval->range_check_19_h_lookup_elements;
-    const RangeCheck_19& rc_19 = cube_eval->range_check_19_lookup_elements;
-    const RangeCheck_19_B& rc_19_b = cube_eval->range_check_19_b_lookup_elements;
-    const RangeCheck_19_C& rc_19_c = cube_eval->range_check_19_c_lookup_elements;
-    const RangeCheck_19_D& rc_19_d = cube_eval->range_check_19_d_lookup_elements;
-    const RangeCheck_19_E& rc_19_e = cube_eval->range_check_19_e_lookup_elements;
-    const RangeCheck_19_F& rc_19_f = cube_eval->range_check_19_f_lookup_elements;
-    const RangeCheck_19_G& rc_19_g = cube_eval->range_check_19_g_lookup_elements;
-    const Cube252& cube_252 = cube_eval->cube_252_lookup_elements;
-
     // Step 1: Felt252UnpackFrom27RangeCheckOutput
     // This computes the derived limbs and range checks all 28 limbs
     m31 computed_limbs[10];  // Output: limbs 2,5,8,11,14,17,20,23,26,27
@@ -159,8 +140,7 @@ __global__ void evaluate_cube_252_pre_kernel(
         unpacked_limb_18, unpacked_limb_19,
         unpacked_limb_21, unpacked_limb_22,
         unpacked_limb_24, unpacked_limb_25,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
+        cube_eval->common_lookup_elements,
         computed_limbs,
         &cuda_evaluator1
     );
@@ -204,10 +184,7 @@ __global__ void evaluate_cube_252_pre_kernel(
         mul_res1,   // result = x^2
         k1,
         carry1,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        rc_19_h, rc_19, rc_19_b, rc_19_c,
-        rc_19_d, rc_19_e, rc_19_f, rc_19_g,
+        cube_eval->common_lookup_elements,
         &cuda_evaluator1
     );
 
@@ -218,10 +195,7 @@ __global__ void evaluate_cube_252_pre_kernel(
         mul_res2,   // result = x^3
         k2,
         carry2,
-        rc_9_9, rc_9_9_b, rc_9_9_c, rc_9_9_d,
-        rc_9_9_e, rc_9_9_f, rc_9_9_g, rc_9_9_h,
-        rc_19_h, rc_19, rc_19_b, rc_19_c,
-        rc_19_d, rc_19_e, rc_19_f, rc_19_g,
+        cube_eval->common_lookup_elements,
         &cuda_evaluator1
     );
 
@@ -230,39 +204,41 @@ __global__ void evaluate_cube_252_pre_kernel(
     // - 10 input limbs
     // - 10 packed output limbs (each packed from 3 consecutive result limbs)
     {
-        m31 values[20];
+        m31 values[21];
 
-        // First 10: input limbs
-        values[0] = input[0];
-        values[1] = input[1];
-        values[2] = input[2];
-        values[3] = input[3];
-        values[4] = input[4];
-        values[5] = input[5];
-        values[6] = input[6];
-        values[7] = input[7];
-        values[8] = input[8];
-        values[9] = input[9];
+        // RELATION_ID first
+        values[0] = CUBE_252_RELATION_ID;
+
+        // Next 10: input limbs
+        values[1] = input[0];
+        values[2] = input[1];
+        values[3] = input[2];
+        values[4] = input[3];
+        values[5] = input[4];
+        values[6] = input[5];
+        values[7] = input[6];
+        values[8] = input[7];
+        values[9] = input[8];
+        values[10] = input[9];
 
         // Next 10: packed output limbs from mul_res2
         // Each is: limb[3i] + limb[3i+1]*512 + limb[3i+2]*262144
         // For last one (index 9), it's just limb[27]
-        values[10] = add(add(mul_res2[0], mul(mul_res2[1], M31_512)), mul(mul_res2[2], M31_262144));
-        values[11] = add(add(mul_res2[3], mul(mul_res2[4], M31_512)), mul(mul_res2[5], M31_262144));
-        values[12] = add(add(mul_res2[6], mul(mul_res2[7], M31_512)), mul(mul_res2[8], M31_262144));
-        values[13] = add(add(mul_res2[9], mul(mul_res2[10], M31_512)), mul(mul_res2[11], M31_262144));
-        values[14] = add(add(mul_res2[12], mul(mul_res2[13], M31_512)), mul(mul_res2[14], M31_262144));
-        values[15] = add(add(mul_res2[15], mul(mul_res2[16], M31_512)), mul(mul_res2[17], M31_262144));
-        values[16] = add(add(mul_res2[18], mul(mul_res2[19], M31_512)), mul(mul_res2[20], M31_262144));
-        values[17] = add(add(mul_res2[21], mul(mul_res2[22], M31_512)), mul(mul_res2[23], M31_262144));
-        values[18] = add(add(mul_res2[24], mul(mul_res2[25], M31_512)), mul(mul_res2[26], M31_262144));
-        values[19] = mul_res2[27];
+        values[11] = add(add(mul_res2[0], mul(mul_res2[1], M31_512)), mul(mul_res2[2], M31_262144));
+        values[12] = add(add(mul_res2[3], mul(mul_res2[4], M31_512)), mul(mul_res2[5], M31_262144));
+        values[13] = add(add(mul_res2[6], mul(mul_res2[7], M31_512)), mul(mul_res2[8], M31_262144));
+        values[14] = add(add(mul_res2[9], mul(mul_res2[10], M31_512)), mul(mul_res2[11], M31_262144));
+        values[15] = add(add(mul_res2[12], mul(mul_res2[13], M31_512)), mul(mul_res2[14], M31_262144));
+        values[16] = add(add(mul_res2[15], mul(mul_res2[16], M31_512)), mul(mul_res2[17], M31_262144));
+        values[17] = add(add(mul_res2[18], mul(mul_res2[19], M31_512)), mul(mul_res2[20], M31_262144));
+        values[18] = add(add(mul_res2[21], mul(mul_res2[22], M31_512)), mul(mul_res2[23], M31_262144));
+        values[19] = add(add(mul_res2[24], mul(mul_res2[25], M31_512)), mul(mul_res2[26], M31_262144));
+        values[20] = mul_res2[27];
 
         // Multiplicity is -enabler
         qm31 neg_enabler = qm31{{neg(enabler), 0}, {0, 0}};
 
-        RelationEntry<20> entry(cube_252, neg_enabler, values);
-        cuda_evaluator1.template add_to_relation<20>(entry);
+        cuda_evaluator1.template add_to_relation<21>(cube_eval->common_lookup_elements, neg_enabler, values);
     }
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;

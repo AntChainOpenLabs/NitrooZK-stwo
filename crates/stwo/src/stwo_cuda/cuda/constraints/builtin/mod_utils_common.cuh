@@ -19,18 +19,13 @@ DEVICE_FORCEINLINE void evaluate_mem_cond_verify_equal_known_id(
     m31 expected_id,
     m31 cond,
     m31 id_col0,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     // ReadId::evaluate: memory_address_to_id lookup.
     {
-        m31 values[2] = {addr, id_col0};
-        RelationEntry<2> entry(
-            memory_address_to_id_lookup_elements,
-            qm31{{1, 0}, {0, 0}},
-            values
-        );
-        cuda_evaluator->add_to_relation<2>(entry);
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, addr, id_col0};
+        cuda_evaluator->template add_to_relation<3>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, values);
     }
 
     // (id_col0 - expected_id) * cond = 0
@@ -295,8 +290,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
     m31 c3_limb_8_col249,
     m31 c3_limb_9_col250,
     m31 c3_limb_10_col251,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
     m31 M31_1 = m31(1);
@@ -344,8 +338,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p0_limb_8_col10,
         p0_limb_9_col11,
         p0_limb_10_col12,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -362,8 +355,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p1_limb_8_col22,
         p1_limb_9_col23,
         p1_limb_10_col24,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -380,8 +372,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p2_limb_8_col34,
         p2_limb_9_col35,
         p2_limb_10_col36,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -398,8 +389,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p3_limb_8_col46,
         p3_limb_9_col47,
         p3_limb_10_col48,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -414,8 +404,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         values_ptr_limb_3_col53,
         partial_limb_msb_col54,
         dummy_vec_29,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_29<EvaluatorT>(
@@ -427,8 +416,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         offsets_ptr_limb_3_col59,
         partial_limb_msb_col60,
         dummy_vec_29,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_29<EvaluatorT>(
@@ -440,8 +428,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         offsets_ptr_prev_limb_3_col65,
         partial_limb_msb_col66,
         dummy_vec_29,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_29<EvaluatorT>(
@@ -453,8 +440,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         n_limb_3_col71,
         partial_limb_msb_col72,
         dummy_vec_29,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_29<EvaluatorT>(
@@ -466,8 +452,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         n_prev_limb_3_col77,
         partial_limb_msb_col78,
         dummy_vec_29,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -534,7 +519,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         values_ptr_id_col49,
         block_reset_condition,
         values_ptr_prev_id_col79,
-        memory_address_to_id_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_mem_cond_verify_equal_known_id<EvaluatorT>(
@@ -542,7 +527,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p0_id_col1,
         block_reset_condition,
         p_prev0_id_col80,
-        memory_address_to_id_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_mem_cond_verify_equal_known_id<EvaluatorT>(
@@ -550,7 +535,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p1_id_col13,
         block_reset_condition,
         p_prev1_id_col81,
-        memory_address_to_id_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_mem_cond_verify_equal_known_id<EvaluatorT>(
@@ -558,7 +543,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p2_id_col25,
         block_reset_condition,
         p_prev2_id_col82,
-        memory_address_to_id_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_mem_cond_verify_equal_known_id<EvaluatorT>(
@@ -566,7 +551,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         p3_id_col37,
         block_reset_condition,
         p_prev3_id_col83,
-        memory_address_to_id_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -595,8 +580,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         remainder_bits_col90,
         partial_limb_msb_col91,
         read_small_output_tmp_78,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_small<EvaluatorT>(
@@ -610,8 +594,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         remainder_bits_col98,
         partial_limb_msb_col99,
         read_small_output_tmp_88,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_small<EvaluatorT>(
@@ -625,8 +608,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         remainder_bits_col106,
         partial_limb_msb_col107,
         read_small_output_tmp_98,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -658,8 +640,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         a0_limb_8_col117,
         a0_limb_9_col118,
         a0_limb_10_col119,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -676,8 +657,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         a1_limb_8_col129,
         a1_limb_9_col130,
         a1_limb_10_col131,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -694,8 +674,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         a2_limb_8_col141,
         a2_limb_9_col142,
         a2_limb_10_col143,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -712,8 +691,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         a3_limb_8_col153,
         a3_limb_9_col154,
         a3_limb_10_col155,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -731,8 +709,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         b0_limb_8_col165,
         b0_limb_9_col166,
         b0_limb_10_col167,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -749,8 +726,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         b1_limb_8_col177,
         b1_limb_9_col178,
         b1_limb_10_col179,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -767,8 +743,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         b2_limb_8_col189,
         b2_limb_9_col190,
         b2_limb_10_col191,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -785,8 +760,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         b3_limb_8_col201,
         b3_limb_9_col202,
         b3_limb_10_col203,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -804,8 +778,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         c0_limb_8_col213,
         c0_limb_9_col214,
         c0_limb_10_col215,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -822,8 +795,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         c1_limb_8_col225,
         c1_limb_9_col226,
         c1_limb_10_col227,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -840,8 +812,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         c2_limb_8_col237,
         c2_limb_9_col238,
         c2_limb_10_col239,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
     evaluate_read_positive_num_bits_99<EvaluatorT>(
@@ -858,8 +829,7 @@ DEVICE_FORCEINLINE void mod_utils_evaluate(
         c3_limb_8_col249,
         c3_limb_9_col250,
         c3_limb_10_col251,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 }

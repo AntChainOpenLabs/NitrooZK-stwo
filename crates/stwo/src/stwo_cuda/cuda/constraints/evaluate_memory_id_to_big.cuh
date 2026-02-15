@@ -18,25 +18,13 @@ struct MemoryIdToBig_BigEval {
     unsigned eval_id;
     unsigned log_n_rows;
     unsigned offset;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    RangeCheck_9_9 range_check_9_9_lookup_elements;
-    RangeCheck_9_9_B range_check_9_9_b_lookup_elements;
-    RangeCheck_9_9_C range_check_9_9_c_lookup_elements;
-    RangeCheck_9_9_D range_check_9_9_d_lookup_elements;
-    RangeCheck_9_9_E range_check_9_9_e_lookup_elements;
-    RangeCheck_9_9_F range_check_9_9_f_lookup_elements;
-    RangeCheck_9_9_G range_check_9_9_g_lookup_elements;
-    RangeCheck_9_9_H range_check_9_9_h_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 struct MemoryIdToBig_SmallEval {
     unsigned eval_id;
     unsigned log_n_rows;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    RangeCheck_9_9 range_check_9_9_relation;
-    RangeCheck_9_9_B range_check_9_9_b_relation;
-    RangeCheck_9_9_C range_check_9_9_c_relation;
-    RangeCheck_9_9_D range_check_9_9_d_relation;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

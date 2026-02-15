@@ -80,17 +80,12 @@ __global__ void evaluate_memory_address_to_id_pre_kernel(
         unsigned offset = i * (1u << memory_eval->log_size);
         m31 address = add(seq_plus_one, m31(offset));
 
-        // Add relation entry with (address, id) and -multiplicity
-        m31 values[2] = {address, id};
+        // Add relation entry with (RELATION_ID, address, id) and -multiplicity
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, address, id};
         m31 neg_mult = neg(multiplicity);
         qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
 
-        RelationEntry<2> entry(
-            memory_eval->memory_address_to_id_lookup_elements,
-            multiplicity_ext,
-            values
-        );
-        cuda_evaluator1.add_to_relation<2>(entry);
+        cuda_evaluator1.add_to_relation<3>(memory_eval->common_lookup_elements, multiplicity_ext, values);
     }
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;

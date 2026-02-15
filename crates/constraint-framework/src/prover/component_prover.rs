@@ -15,7 +15,7 @@ use stwo::prover::backend::simd::column::VeryPackedSecureColumnByCoords;
 use stwo::prover::backend::simd::m31::LOG_N_LANES;
 use stwo::prover::backend::simd::very_packed_m31::{VeryPackedBaseField, LOG_N_VERY_PACKED_ELEMS};
 use stwo::prover::backend::simd::SimdBackend;
-use stwo::prover::backend::CpuBackend;
+use stwo::prover::backend::{Column, CpuBackend};
 use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
 use stwo::prover::poly::BitReversedOrder;
 use stwo::prover::secure_column::SecureColumnByCoords;
@@ -25,7 +25,7 @@ use stwo::stwo_cuda::bindings::CudaSecureField;
 use tracing::{span, Level};
 
 use super::{CpuDomainEvaluator, SimdDomainEvaluator};
-use crate::{FrameworkComponent, FrameworkEval, PREPROCESSED_TRACE_IDX};
+use crate::{fnv1a_eval_id_gen, FrameworkComponent, FrameworkEval, PREPROCESSED_TRACE_IDX};
 
 const CHUNK_SIZE: usize = 1;
 
@@ -307,8 +307,6 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
             .map(|i| coset_vanishing(trace_domain.coset(), eval_domain.at(i)).inverse())
             .collect_vec();
         bit_reverse(&mut denom_inv);
-
-        let gpu_denom_inv = BaseFieldVec::from_vec(denom_inv);
         span.exit();
 
         let span = span!(Level::INFO, "Accumulator").entered();
@@ -317,6 +315,73 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
         let [mut accum] =
             evaluation_accumulator.columns([(eval_domain.log_size(), self.n_constraints())]);
         accum.random_coeff_powers.reverse();
+
+        // CPU fallback mode: evaluate constraints on CPU instead of CUDA.
+        // CUDA_CPU_FALLBACK=1 → all components use CPU
+        // CUDA_CPU_FALLBACK=component_name → only that component uses CUDA, rest use CPU
+        // CUDA_ONLY=component_name → only that component uses CUDA, rest use CPU
+        let use_cpu = match std::env::var("CUDA_CPU_FALLBACK").ok() {
+            Some(val) if val == "1" || val.is_empty() => true,
+            Some(component_name) => {
+                // Use CPU for all EXCEPT the named component
+                self.eval.cuda_eval_name() != component_name.as_str()
+            }
+            None => match std::env::var("CUDA_ONLY").ok() {
+                Some(only_list) => {
+                    // Use CUDA only for the listed components (comma-separated), CPU for rest
+                    !only_list.split(',').any(|name| name.trim() == self.eval.cuda_eval_name())
+                }
+                None => match std::env::var("CUDA_EXCEPT").ok() {
+                    Some(except_list) => {
+                        // Use CPU for the listed components (comma-separated), CUDA for rest
+                        except_list.split(',').any(|name| name.trim() == self.eval.cuda_eval_name())
+                    }
+                    None => false,
+                },
+            },
+        };
+        if use_cpu {
+            let _span = span!(Level::INFO, "CPU fallback evaluation").entered();
+            tracing::info!(
+                component = self.eval.cuda_eval_name(),
+                "Using CPU fallback for constraint evaluation"
+            );
+
+            // Download GPU trace columns to CPU.
+            let cpu_trace = trace.as_cols_ref().map_cols(|c| {
+                CircleEvaluation::<CpuBackend, BaseField, BitReversedOrder>::new(
+                    c.domain,
+                    c.values.to_cpu(),
+                )
+            });
+            let cpu_trace_refs = cpu_trace.as_cols_ref();
+
+            // Download current accumulator state from GPU.
+            let accum_cpu = accum.col.to_cpu();
+
+            // Evaluate on CPU.
+            let result = accumulate_pointwise_cpu(
+                self,
+                cpu_trace_refs,
+                eval_domain.log_size(),
+                trace_domain.log_size(),
+                denom_inv,
+                &accum.random_coeff_powers,
+                &accum_cpu,
+            );
+
+            // Upload result back to GPU.
+            for (i, cpu_col) in result.columns.into_iter().enumerate() {
+                accum.col.columns[i] = BaseFieldVec::from_vec(cpu_col);
+            }
+            span.exit();
+            return;
+        }
+
+        // Clone data needed for potential CPU auto-fallback (if CUDA kernel is missing).
+        let denom_inv_backup = denom_inv.clone();
+        let random_coeff_powers_backup = accum.random_coeff_powers.clone();
+        let gpu_denom_inv = BaseFieldVec::from_vec(denom_inv);
         let random_coeff_powers = SecureFieldVec::from_vec(accum.random_coeff_powers);
 
         let trace0_evaluations_vec = trace[0]
@@ -339,9 +404,32 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
         span.exit();
 
         let span = span!(Level::INFO, "GPU evaluate_constraint_quotients_on_domain").entered();
-        unsafe {
-            let eval_ptr = &self.eval as *const _ as *mut std::os::raw::c_void;
+        let cuda_handled = unsafe {
+            // Prepend eval_id (FNV1a hash of component name) before the Eval struct data.
+            // The CUDA dispatcher reads eval_id from offset 0 to select the correct kernel.
+            let eval_id = fnv1a_eval_id_gen(self.eval.cuda_eval_name());
+            let eval_bytes = std::slice::from_raw_parts(
+                &self.eval as *const _ as *const u8,
+                std::mem::size_of::<E>(),
+            );
+            let mut cuda_eval_buffer = Vec::with_capacity(4 + eval_bytes.len());
+            cuda_eval_buffer.extend_from_slice(&eval_id.to_ne_bytes());
+            cuda_eval_buffer.extend_from_slice(eval_bytes);
+            let eval_ptr = cuda_eval_buffer.as_ptr() as *mut std::os::raw::c_void;
             let logup_counts = self.logup_counts().values().sum::<usize>() as u32 / (1 << eval_log_size);
+
+            tracing::info!(
+                component = self.eval.cuda_eval_name(),
+                eval_id = format!("{:#x}", eval_id),
+                n_constraints = self.n_constraints(),
+                logup_counts = logup_counts,
+                trace0_len = trace0_evaluations_vec.len(),
+                trace1_len = trace1_evaluations_vec.len(),
+                trace2_len = trace2_evaluations_vec.len(),
+                domain_log_size = trace_domain.log_size(),
+                eval_domain_log_size = eval_domain.log_size(),
+                "CUDA dispatch"
+            );
 
             bindings::evaluate_constraint_quotients_on_domain(
                 accum.col.columns[0].device_ptr,
@@ -364,9 +452,47 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
                 CudaSecureField::from(self.claimed_sum / BaseField::from_u32_unchecked(1 << eval_log_size)),
                 true,   // should_accumulate: true for proving
                 false,  // use_assert_evaluator: false for proving
-            );
+            )
         };
         span.exit();
+
+        if !cuda_handled {
+            // CUDA dispatch doesn't have a kernel for this component yet.
+            // Fall back to CPU evaluation automatically.
+            let _span = span!(Level::INFO, "CPU auto-fallback (no CUDA kernel)").entered();
+            tracing::warn!(
+                component = self.eval.cuda_eval_name(),
+                "No CUDA kernel available, using CPU fallback"
+            );
+
+            // Download GPU trace columns to CPU.
+            let cpu_trace = trace.as_cols_ref().map_cols(|c| {
+                CircleEvaluation::<CpuBackend, BaseField, BitReversedOrder>::new(
+                    c.domain,
+                    c.values.to_cpu(),
+                )
+            });
+            let cpu_trace_refs = cpu_trace.as_cols_ref();
+
+            // Download current accumulator state from GPU.
+            let accum_cpu = accum.col.to_cpu();
+
+            // Evaluate on CPU using the backed-up data.
+            let result = accumulate_pointwise_cpu(
+                self,
+                cpu_trace_refs,
+                eval_domain.log_size(),
+                trace_domain.log_size(),
+                denom_inv_backup,
+                &random_coeff_powers_backup,
+                &accum_cpu,
+            );
+
+            // Upload result back to GPU.
+            for (i, cpu_col) in result.columns.into_iter().enumerate() {
+                accum.col.columns[i] = BaseFieldVec::from_vec(cpu_col);
+            }
+        }
         return;
     }
 }

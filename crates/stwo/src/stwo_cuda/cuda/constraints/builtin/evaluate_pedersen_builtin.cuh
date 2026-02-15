@@ -43,11 +43,7 @@ struct PedersenBuiltin_Claim {
 struct PedersenBuiltin_Eval {
     unsigned eval_id;
     PedersenBuiltin_Claim claim;
-    RangeCheck_5_4 range_check_5_4_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    RangeCheck_8 range_check_8_lookup_elements;
-    PartialEcMul partial_ec_mul_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

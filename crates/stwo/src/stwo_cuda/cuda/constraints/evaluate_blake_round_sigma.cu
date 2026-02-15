@@ -80,7 +80,8 @@ __global__ void evaluate_blake_round_sigma_pre_kernel(
     );
     m31 multiplicity = cuda_evaluator1.next_trace_mask();
 
-    m31 values[17] = {
+    m31 values[18] = {
+        BLAKE_ROUND_SIGMA_RELATION_ID,
         seq,
         blakesigma_0,
         blakesigma_1,
@@ -100,8 +101,7 @@ __global__ void evaluate_blake_round_sigma_pre_kernel(
         blakesigma_15
     };
 
-    RelationEntry entry = RelationEntry<17>(eval->blake_round_sigma_lookup_elements, qm31{{(P - multiplicity), 0}, {0, 0}}, values);
-    cuda_evaluator1.add_to_relation<17>(entry);
+    cuda_evaluator1.add_to_relation<18>(eval->common_lookup_elements, qm31{{(P - multiplicity), 0}, {0, 0}}, values);
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;
     numerators[row] = cuda_evaluator1.row_res;

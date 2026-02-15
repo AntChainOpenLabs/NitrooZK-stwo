@@ -66,10 +66,7 @@ DEVICE_FORCEINLINE void evaluate_decode_blake_opcode(
     m31* decode_blake_opcode_output_limb5,
     m31* decode_blake_opcode_output_limb6,
     // lookup tables
-    VerifyInstruction verify_instruction_lookup_elements,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
-    RangeCheck_7_2_5 range_check_7_2_5_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     // evaluator
     EvaluatorT* cuda_evaluator
 ) {
@@ -94,7 +91,7 @@ DEVICE_FORCEINLINE void evaluate_decode_blake_opcode(
         ap_update_add_1_col6,
         opcode_extension_col7,
         decode_instruction_472fe_output,
-        verify_instruction_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -131,8 +128,7 @@ DEVICE_FORCEINLINE void evaluate_decode_blake_opcode(
         op0_limb_3_col13,
         partial_limb_msb_col14,
         read_positive_num_bits_29_output_tmp_47e62_13_limb,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -159,8 +155,7 @@ DEVICE_FORCEINLINE void evaluate_decode_blake_opcode(
         op1_limb_3_col20,
         partial_limb_msb_col21,
         read_positive_num_bits_29_output_tmp_47e62_16_limb,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -175,8 +170,7 @@ DEVICE_FORCEINLINE void evaluate_decode_blake_opcode(
         ap_limb_3_col26,
         partial_limb_msb_col27,
         read_positive_num_bits_29_output_tmp_47e62_19_limb,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -202,9 +196,7 @@ DEVICE_FORCEINLINE void evaluate_decode_blake_opcode(
         high_5_ms_bits_col33,
         dst_id_col34,
         &read_blake_word_output_tmp_47e62_28_limb_0, &read_blake_word_output_tmp_47e62_28_limb_1,
-        range_check_7_2_5_lookup_elements,
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 

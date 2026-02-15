@@ -1,9 +1,7 @@
 #ifndef EVALUATE_ASSERT_EQ_OPCODE_IMM_H
 #define EVALUATE_ASSERT_EQ_OPCODE_IMM_H
 
-
-#include "fields.cuh"
-#include "relations.cuh"
+#include "constraints/relations.cuh"
 
 struct AssertEqImmClaim {
     unsigned log_size;
@@ -12,9 +10,7 @@ struct AssertEqImmClaim {
 struct AssertEqImmEval {
     unsigned eval_id;
     AssertEqImmClaim Claim;
-    VerifyInstruction verify_instruction_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    Opcodes opcode_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

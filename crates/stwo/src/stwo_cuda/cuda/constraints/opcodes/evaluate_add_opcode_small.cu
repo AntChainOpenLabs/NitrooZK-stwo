@@ -104,7 +104,7 @@ __global__ void evaluate_add_opcode_small_pre_kernel(
         op1_base_fp_col9,
         ap_update_add_1_col10,
         decode_instruction_bc3cd_output_tmp_756b7_10,
-        add_opcode_small_eval->verify_instruction_lookup_elements,
+        add_opcode_small_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -158,8 +158,7 @@ __global__ void evaluate_add_opcode_small_pre_kernel(
         remainder_bits_col20,
         partial_limb_msb_col21,
         read_small_output_tmp_756b7_16,
-        add_opcode_small_eval->memory_address_to_id_lookup_elements,
-        add_opcode_small_eval->memory_id_to_big_lookup_elements,
+        add_opcode_small_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -174,8 +173,7 @@ __global__ void evaluate_add_opcode_small_pre_kernel(
         remainder_bits_col28,
         partial_limb_msb_col29,
         read_small_output_tmp_756b7_22,
-        add_opcode_small_eval->memory_address_to_id_lookup_elements,
-        add_opcode_small_eval->memory_id_to_big_lookup_elements,
+        add_opcode_small_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -190,8 +188,7 @@ __global__ void evaluate_add_opcode_small_pre_kernel(
         remainder_bits_col36,
         partial_limb_msb_col37,
         read_small_output_tmp_756b7_28,
-        add_opcode_small_eval->memory_address_to_id_lookup_elements,
-        add_opcode_small_eval->memory_id_to_big_lookup_elements,
+        add_opcode_small_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -205,26 +202,28 @@ __global__ void evaluate_add_opcode_small_pre_kernel(
 
     // lookup
     {
-        m31 values[3] = {input_pc_col0, input_ap_col1, input_fp_col2};
-        RelationEntry<3> entry(
-            add_opcode_small_eval->opcode_lookup_elements,
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
+            input_pc_col0, input_ap_col1, input_fp_col2
+        };
+        cuda_evaluator.add_to_relation<4>(
+            add_opcode_small_eval->common_lookup_elements,
             qm31{enabler},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             add(add(input_pc_col0, M31_1), op1_imm_col8),
             add(input_ap_col1, ap_update_add_1_col10),
             input_fp_col2
         };
-        RelationEntry<3> entry(
-            add_opcode_small_eval->opcode_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            add_opcode_small_eval->common_lookup_elements,
             qm31{{neg(enabler), 0}, {0, 0}},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;

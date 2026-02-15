@@ -14,11 +14,7 @@ struct VerifyInstruction_Claim {
 struct VerifyInstruction_Eval {
     unsigned eval_id;
     VerifyInstruction_Claim Claim;
-    RangeCheck_7_2_5 range_check_7_2_5_lookup_elements;
-    RangeCheck_4_3 range_check_4_3_lookup_elements;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    VerifyInstruction verify_instruction_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

@@ -15,10 +15,7 @@ struct BitwiseBuiltin_Claim {
 struct BitwiseBuiltin_Eval {
     unsigned eval_id;
     BitwiseBuiltin_Claim Claim;
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    VerifyBitwiseXor_9 verify_bitwise_xor_9_lookup_elements;
-    VerifyBitwiseXor_8 verify_bitwise_xor_8_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

@@ -48,18 +48,18 @@ DEVICE_FORCEINLINE void evaluate_qm31_read_reduced(
 
     // ReadId: MemoryAddressToId
     {
-        m31 values[2] = {base_addr, id_col0};
-        RelationEntry<2> entry(
-            qm31_eval->memory_address_to_id_lookup_elements,
+        m31 values[3] = {MEMORY_ADDRESS_TO_ID_RELATION_ID, base_addr, id_col0};
+        cuda_evaluator->add_to_relation<3>(
+            qm31_eval->common_lookup_elements,
             qm31{{1, 0}, {0, 0}},
             values
         );
-        cuda_evaluator->add_to_relation<2>(entry);
     }
 
     // ReadPositiveKnownIdNumBits144: MemoryIdToBig (id + 16 limbs + zeros)
     {
-        m31 values[29] = {
+        m31 values[30] = {
+            MEMORY_ID_TO_BIG_RELATION_ID,
             id_col0,
             value_limb_0_col1,  value_limb_1_col2,  value_limb_2_col3,  value_limb_3_col4,
             value_limb_4_col5,  value_limb_5_col6,  value_limb_6_col7,  value_limb_7_col8,
@@ -67,28 +67,27 @@ DEVICE_FORCEINLINE void evaluate_qm31_read_reduced(
             value_limb_12_col13, value_limb_13_col14, value_limb_14_col15, value_limb_15_col16,
             M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0, M31_0
         };
-        RelationEntry<29> entry(
-            qm31_eval->memory_id_to_big_lookup_elements,
+        cuda_evaluator->add_to_relation<30>(
+            qm31_eval->common_lookup_elements,
             qm31{{1, 0}, {0, 0}},
             values
         );
-        cuda_evaluator->add_to_relation<29>(entry);
     }
 
     // RangeCheck_4_4_4_4
     {
-        m31 values[4] = {
+        m31 values[5] = {
+            RANGE_CHECK_4_4_4_4_RELATION_ID,
             value_limb_3_col4,
             value_limb_7_col8,
             value_limb_11_col12,
             value_limb_15_col16
         };
-        RelationEntry<4> entry(
-            qm31_eval->range_check_4_4_4_4_lookup_elements,
+        cuda_evaluator->add_to_relation<5>(
+            qm31_eval->common_lookup_elements,
             qm31{{1, 0}, {0, 0}},
             values
         );
-        cuda_evaluator->add_to_relation<4>(entry);
     }
 
     // delta_ab != 0
@@ -274,7 +273,7 @@ __global__ void evaluate_qm_31_add_mul_opcode_pre_kernel(
         res_add_col10,
         ap_update_add_1_col11,
         decode_out,
-        qm31_eval->verify_instruction_lookup_elements,
+        qm31_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -480,29 +479,28 @@ __global__ void evaluate_qm_31_add_mul_opcode_pre_kernel(
 
     // Opcodes relation entries
     {
-        m31 values[3] = {input_pc_col0, input_ap_col1, input_fp_col2};
-        RelationEntry<3> entry(
-            qm31_eval->opcodes_lookup_elements,
+        m31 values[4] = {OPCODES_RELATION_ID, input_pc_col0, input_ap_col1, input_fp_col2};
+        cuda_evaluator.add_to_relation<4>(
+            qm31_eval->common_lookup_elements,
             qm31{{enabler, 0}, {0, 0}},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             add(add(input_pc_col0, M31_1), op1_imm_col8),
             add(input_ap_col1, ap_update_add_1_col11),
             input_fp_col2
         };
         qm31 minus_enabler = (enabler == 0) ? qm31{{0, 0}, {0, 0}}
                                             : qm31{{sub(P, enabler), 0}, {0, 0}};
-        RelationEntry<3> entry(
-            qm31_eval->opcodes_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            qm31_eval->common_lookup_elements,
             minus_enabler,
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;

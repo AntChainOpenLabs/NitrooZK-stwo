@@ -10,7 +10,7 @@
 
 struct RangeCheck_19_B_Eval {
     unsigned eval_id;
-    RangeCheck_19_B range_check_19_b_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

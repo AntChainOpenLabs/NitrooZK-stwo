@@ -18,9 +18,7 @@ DEVICE_FORCEINLINE void verify_blake_word_evaluate(
     m31 high_5_ms_bits_col2,
     m31 id_col3,
 
-    RangeCheck_7_2_5 range_check_7_2_5_lookup_elements,
-    MemoryAddressToId memory_address_to_id_lookup_elements,
-    MemoryIdToBig memory_id_to_big_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
@@ -29,13 +27,13 @@ DEVICE_FORCEINLINE void verify_blake_word_evaluate(
     const m31 M31_4 = {4};
     const m31 M31_512 = {512};
 
-    m31 values_0[3] = {
+    m31 values_0[4] = {
+        RANGE_CHECK_7_2_5_RELATION_ID,
         low_7_ms_bits_col0,
         sub(verify_blake_word_input_limb_2, mul(high_14_ms_bits_col1, M31_4)),
         high_5_ms_bits_col2
     };
-    RelationEntry entry_0 = RelationEntry<3>(range_check_7_2_5_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
-    cuda_evaluator->add_to_relation<3>(entry_0);
+    cuda_evaluator->add_to_relation<4>(common_lookup_elements, qm31{{1,0}, {0,0}}, values_0);
 
     mem_verify_evaluate (
         verify_blake_word_input_limb_0,
@@ -69,8 +67,7 @@ DEVICE_FORCEINLINE void verify_blake_word_evaluate(
         M31_0,
         id_col3,
 
-        memory_address_to_id_lookup_elements,
-        memory_id_to_big_lookup_elements,
+        common_lookup_elements,
 
         cuda_evaluator
     );

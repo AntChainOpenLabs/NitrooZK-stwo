@@ -65,22 +65,76 @@ __global__ void evaluate_range_check_9_9_pre_kernel(
         logup_counts
     );
 
-    // Two [9,9] preprocessed columns + multiplicity
+    // Two [9,9] preprocessed columns
     m31 v0 = cuda_evaluator0.next_trace_mask();
     m31 v1 = cuda_evaluator0.next_trace_mask();
-    m31 multiplicity = cuda_evaluator1.next_trace_mask();
 
-    m31 values[2] = {v0, v1};
+    // 8 multiplicity trace columns (was 1 in legacy)
+    m31 multiplicity_0 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_1 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_2 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_3 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_4 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_5 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_6 = cuda_evaluator1.next_trace_mask();
+    m31 multiplicity_7 = cuda_evaluator1.next_trace_mask();
 
-    m31 neg_mult = neg(multiplicity);
-    qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+    // 8 add_to_relation calls, one per multiplicity, each with a different RELATION_ID
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_0);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
 
-    RelationEntry<2> entry(
-        range_eval->range_check_9_9_lookup_elements,
-        multiplicity_ext,
-        values
-    );
-    cuda_evaluator1.add_to_relation<2>(entry);
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_B_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_1);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
+
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_C_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_2);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
+
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_D_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_3);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
+
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_E_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_4);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
+
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_F_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_5);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
+
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_G_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_6);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
+
+    {
+        m31 values[3] = {RANGE_CHECK_9_9_H_RELATION_ID, v0, v1};
+        m31 neg_mult = neg(multiplicity_7);
+        qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
+        cuda_evaluator1.add_to_relation<3>(range_eval->common_lookup_elements, multiplicity_ext, values);
+    }
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;
     numerators[row] = cuda_evaluator1.row_res;
@@ -112,7 +166,7 @@ void evaluate_range_check_9_9(
     RangeCheck_9_9_Eval *range_eval = (RangeCheck_9_9_Eval *) eval;
     unsigned int eval_domain_size = 1u << eval_domain_log_size;
 
-    // trace0: 2 preprocessed columns, trace1: multiplicity
+    // trace0: 2 preprocessed columns, trace1: 8 multiplicity columns
     m31 **device_trace0_evaluations =
         clone_to_device<m31 *>(trace0_evaluations, trace0_evaluations_len);
     m31 **device_trace1_evaluations =
@@ -241,4 +295,3 @@ void evaluate_range_check_9_9(
     cuda_free_memory(d_intermediate_fractions);
     cuda_free_memory(constraint_index_array);
 }
-

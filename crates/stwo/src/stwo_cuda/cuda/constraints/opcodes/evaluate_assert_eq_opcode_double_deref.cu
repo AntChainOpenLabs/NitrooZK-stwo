@@ -86,7 +86,7 @@ __global__ void evaluate_assert_eq_double_deref_pre_kernel(
         op0_base_fp_col7,
         ap_update_add_1_col8,
         decode_instruction_cb32b_output_tmp_b1151_8,
-        assert_eq_double_deref_eval->verify_instruction_lookup_elements,
+        assert_eq_double_deref_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -122,8 +122,7 @@ __global__ void evaluate_assert_eq_double_deref_pre_kernel(
         mem1_base_limb_3_col15,
         partial_limb_msb_col16,
         read_positive_num_bits_29_output_tmp_b1151_11,
-        assert_eq_double_deref_eval->memory_address_to_id_lookup_elements,
-        assert_eq_double_deref_eval->memory_id_to_big_lookup_elements,
+        assert_eq_double_deref_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -148,33 +147,35 @@ __global__ void evaluate_assert_eq_double_deref_pre_kernel(
         mem_verify_equal_inputs[0],
         mem_verify_equal_inputs[1],
         dst_id_col17,
-        assert_eq_double_deref_eval->memory_address_to_id_lookup_elements,
+        assert_eq_double_deref_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
     // --- Lookup: opcodes_0 ---
     {
-        m31 values[3] = {input_pc_col0, input_ap_col1, input_fp_col2};
-        RelationEntry<3> entry(
-            assert_eq_double_deref_eval->opcode_lookup_elements,
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
+            input_pc_col0, input_ap_col1, input_fp_col2
+        };
+        cuda_evaluator.add_to_relation<4>(
+            assert_eq_double_deref_eval->common_lookup_elements,
             qm31{enabler},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
     // --- Lookup: opcodes_1 ---
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             add(input_pc_col0, M31_1),
             add(input_ap_col1, ap_update_add_1_col8),
             input_fp_col2
         };
-        RelationEntry<3> entry(
-            assert_eq_double_deref_eval->opcode_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            assert_eq_double_deref_eval->common_lookup_elements,
             qm31{{neg(enabler), 0}, {0, 0}},
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;

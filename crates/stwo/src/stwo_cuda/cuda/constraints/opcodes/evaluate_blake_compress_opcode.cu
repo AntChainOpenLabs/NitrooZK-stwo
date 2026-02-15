@@ -297,10 +297,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         &decode_blake_opcode_output_tmp_53f39_29_limb_4,
         &decode_blake_opcode_output_tmp_53f39_29_limb_5,
         &decode_blake_opcode_output_tmp_53f39_29_limb_6,
-        blake_compress_opcode_eval->verify_instruction_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
     // ==== CreateBlakeRoundInput ====
@@ -320,15 +317,13 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         state_6_id_col79, low_16_bits_col80, high_16_bits_col81, low_7_ms_bits_col82, high_14_ms_bits_col83, high_5_ms_bits_col84,
         state_7_id_col85, ms_8_bits_col86, ms_8_bits_col87, xor_col88, xor_col89, xor_col90, xor_col91,
         create_blake_round_input_output_tmp_53f39_114_limb,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
-        blake_compress_opcode_eval->verify_bitwise_xor_8_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
-    // ==== RelationEntry for blake_round_lookup_elements ====
+    // ==== RelationEntry for blake_round ====
     {
-        m31 values[35] = {
+        m31 values[36] = {
+            BLAKE_ROUND_RELATION_ID,
             seq, M31_0,
             low_16_bits_col38, high_16_bits_col39,
             low_16_bits_col44, high_16_bits_col45,
@@ -343,15 +338,15 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
             M31_26764, M31_39685, create_blake_round_input_output_tmp_53f39_114_limb[28], create_blake_round_input_output_tmp_53f39_114_limb[29],
             M31_52505, M31_23520, decode_blake_opcode_output_tmp_53f39_29_limb_1
         };
-        RelationEntry<35> entry(
-            blake_compress_opcode_eval->blake_round_lookup_elements,
+        cuda_evaluator1.add_to_relation<36>(
+            blake_compress_opcode_eval->common_lookup_elements,
             qm31{P - 1, 0 , 0 , 0},
             values
         );
-        cuda_evaluator1.add_to_relation<35>(entry);
     }
     {
-        m31 values[35] = {
+        m31 values[36] = {
+            BLAKE_ROUND_RELATION_ID,
             seq, M31_10,
             blake_round_output_limb_0_col92, blake_round_output_limb_1_col93, blake_round_output_limb_2_col94,
             blake_round_output_limb_3_col95, blake_round_output_limb_4_col96, blake_round_output_limb_5_col97, blake_round_output_limb_6_col98,
@@ -363,12 +358,11 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
             blake_round_output_limb_26_col118, blake_round_output_limb_27_col119, blake_round_output_limb_28_col120, blake_round_output_limb_29_col121,
             blake_round_output_limb_30_col122, blake_round_output_limb_31_col123, blake_round_output_limb_32_col124
         };
-        RelationEntry<35> entry(
-            blake_compress_opcode_eval->blake_round_lookup_elements,
+        cuda_evaluator1.add_to_relation<36>(
+            blake_compress_opcode_eval->common_lookup_elements,
             qm31{1},
             values
         );
-        cuda_evaluator1.add_to_relation<35>(entry);
     }
     // ==== CreateBlakeOutput ====
     m31 create_blake_output_output_tmp_53f39_133_limb[16];
@@ -399,7 +393,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         triple_xor_32_output_5_limb_0_col135, triple_xor_32_output_5_limb_1_col136,
         triple_xor_32_output_6_limb_0_col137, triple_xor_32_output_6_limb_1_col138,
         triple_xor_32_output_7_limb_0_col139, triple_xor_32_output_7_limb_1_col140,
-        blake_compress_opcode_eval->triple_xor_32_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1,
         create_blake_output_output_tmp_53f39_133_limb
     );
@@ -413,9 +407,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_0_col142,
         high_5_ms_bits_0_col143,
         new_state_0_id_col144,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
     // 1
@@ -427,9 +419,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_1_col146,
         high_5_ms_bits_1_col147,
         new_state_1_id_col148,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
     // 2
@@ -441,9 +431,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_2_col150,
         high_5_ms_bits_2_col151,
         new_state_2_id_col152,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
     // 3
@@ -455,9 +443,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_3_col154,
         high_5_ms_bits_3_col155,
         new_state_3_id_col156,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
     // 4
@@ -469,9 +455,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_4_col158,
         high_5_ms_bits_4_col159,
         new_state_4_id_col160,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
    // 5
@@ -483,9 +467,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_5_col162,
         high_5_ms_bits_5_col163,
         new_state_5_id_col164,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
    // 6
@@ -497,9 +479,7 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_6_col166,
         high_5_ms_bits_6_col167,
         new_state_6_id_col168,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
     // 7
@@ -511,29 +491,25 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         high_14_ms_bits_7_col170,
         high_5_ms_bits_7_col171,
         new_state_7_id_col172,
-        blake_compress_opcode_eval->range_check_7_2_5_lookup_elements,
-        blake_compress_opcode_eval->memory_address_to_id_lookup_elements,
-        blake_compress_opcode_eval->memory_id_to_big_lookup_elements,
+        blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
-    // ==== opcodes_lookup_elements: relation add ====
+    // ==== opcodes: relation add ====
     {
-        m31 values[3] = {input_pc_col0, input_ap_col1, input_fp_col2};
-        RelationEntry<3> entry(
-            blake_compress_opcode_eval->opcodes_lookup_elements,
+        m31 values[4] = {OPCODES_RELATION_ID, input_pc_col0, input_ap_col1, input_fp_col2};
+        cuda_evaluator1.add_to_relation<4>(
+            blake_compress_opcode_eval->common_lookup_elements,
             qm31{enabler, 0, 0, 0},
             values
         );
-        cuda_evaluator1.add_to_relation<3>(entry);
     }
     {
-        m31 values[3] = {add(input_pc_col0, M31_1), add(input_ap_col1, ap_update_add_1_col9), input_fp_col2};
-        RelationEntry<3> entry(
-            blake_compress_opcode_eval->opcodes_lookup_elements,
+        m31 values[4] = {OPCODES_RELATION_ID, add(input_pc_col0, M31_1), add(input_ap_col1, ap_update_add_1_col9), input_fp_col2};
+        cuda_evaluator1.add_to_relation<4>(
+            blake_compress_opcode_eval->common_lookup_elements,
             qm31{{neg(enabler), 0}, {0, 0}},  // negative multiplicity using neg() for proper M31 field negation
             values
         );
-        cuda_evaluator1.add_to_relation<3>(entry);
     }
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;

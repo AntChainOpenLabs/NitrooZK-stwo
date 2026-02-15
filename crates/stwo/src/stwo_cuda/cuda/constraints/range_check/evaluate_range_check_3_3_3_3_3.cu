@@ -87,18 +87,13 @@ __global__ void evaluate_range_check_3_3_3_3_3_pre_kernel(
     m31 range4 = cuda_evaluator0.next_trace_mask();
     m31 multiplicity = cuda_evaluator1.next_trace_mask();
 
-    m31 values[5] = {range0, range1, range2, range3, range4};
+    m31 values[6] = {RANGE_CHECK_3_3_3_3_3_RELATION_ID, range0, range1, range2, range3, range4};
 
     // CPU side uses -E::EF::from(multiplicity)
     m31 neg_mult = neg(multiplicity);
     qm31 multiplicity_ext = {{neg_mult, 0}, {0, 0}};
 
-    RelationEntry<5> entry(
-        range_eval->range_check_3_3_3_3_3_lookup_elements,
-        multiplicity_ext,
-        values
-    );
-    cuda_evaluator1.add_to_relation<5>(entry);
+    cuda_evaluator1.add_to_relation<6>(range_eval->common_lookup_elements, multiplicity_ext, values);
 
     constraint_index_array[row] = cuda_evaluator1.constraint_index;
     numerators[row] = cuda_evaluator1.row_res;

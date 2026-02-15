@@ -14,14 +14,7 @@ struct RangeCheckFelt252Width27_Claim {
 struct RangeCheckFelt252Width27_Eval {
     unsigned eval_id;
     RangeCheckFelt252Width27_Claim Claim;
-    RangeCheck_9_9 range_check_9_9_lookup_elements;
-    RangeCheck_18 range_check_18_lookup_elements;
-    RangeCheck_9_9_B range_check_9_9_b_lookup_elements;
-    RangeCheck_18_B range_check_18_b_lookup_elements;
-    RangeCheck_9_9_C range_check_9_9_c_lookup_elements;
-    RangeCheck_9_9_D range_check_9_9_d_lookup_elements;
-    RangeCheck_9_9_E range_check_9_9_e_lookup_elements;
-    RangeCheckFelt252Width27 range_check_felt_252_width_27_lookup_elements;
+    CommonLookupElements common_lookup_elements;
 };
 
 extern "C"

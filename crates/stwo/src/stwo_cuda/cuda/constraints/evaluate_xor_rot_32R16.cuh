@@ -24,16 +24,16 @@ DEVICE_FORCEINLINE void bitwise_xor_numbits8_32R16_evaluate(
     m31 bitwise_xor_num_bits_8_input_limb_0,
     m31 bitwise_xor_num_bits_8_input_limb_1,
     m31 xor_col0,
-    VerifyBitwiseXor_8 verify_bitwise_xor_8_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
-    m31 values[3] = {
+    m31 values[4] = {
+        VERIFY_BITWISE_XOR_8_RELATION_ID,
         bitwise_xor_num_bits_8_input_limb_0,
         bitwise_xor_num_bits_8_input_limb_1,
         xor_col0
     };
-    RelationEntry entry = RelationEntry<3>(verify_bitwise_xor_8_lookup_elements, qm31{{1,0}, {0,0}}, values);
-    cuda_evaluator->add_to_relation<3>(entry);
+    cuda_evaluator->add_to_relation<4>(common_lookup_elements, qm31{{1,0}, {0,0}}, values);
 }
 
 template<typename EvaluatorT>
@@ -41,16 +41,16 @@ DEVICE_FORCEINLINE void bitwise_xor_numbits8_b_32R16_evaluate(
     m31 bitwise_xor_num_bits_8_input_limb_0,
     m31 bitwise_xor_num_bits_8_input_limb_1,
     m31 xor_col0,
-    VerifyBitwiseXor_8_B verify_bitwise_xor_8_b_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
     EvaluatorT *cuda_evaluator
 ) {
-    m31 values[3] = {
+    m31 values[4] = {
+        VERIFY_BITWISE_XOR_8_B_RELATION_ID,
         bitwise_xor_num_bits_8_input_limb_0,
         bitwise_xor_num_bits_8_input_limb_1,
         xor_col0
     };
-    RelationEntry entry = RelationEntry<3>(verify_bitwise_xor_8_b_lookup_elements, qm31{{1,0}, {0,0}}, values);
-    cuda_evaluator->add_to_relation<3>(entry);
+    cuda_evaluator->add_to_relation<4>(common_lookup_elements, qm31{{1,0}, {0,0}}, values);
 }
 
 template<typename EvaluatorT>
@@ -71,8 +71,7 @@ DEVICE_FORCEINLINE void xor_rot_32R16_evaluate(
     m31 *xor_rot_16_output_tmp_813a9_16_limb_0,
     m31 *xor_rot_16_output_tmp_813a9_16_limb_1,
 
-    VerifyBitwiseXor_8 verify_bitwise_xor_8_lookup_elements,
-    VerifyBitwiseXor_8_B verify_bitwise_xor_8_b_lookup_elements,
+    const CommonLookupElements& common_lookup_elements,
 
     EvaluatorT *cuda_evaluator
 ) {
@@ -123,7 +122,7 @@ DEVICE_FORCEINLINE void xor_rot_32R16_evaluate(
         split_16_low_part_size_8_output_tmp_813a9_1_limb_0,
         split_16_low_part_size_8_output_tmp_813a9_5_limb_0,
         xor_col4,
-        verify_bitwise_xor_8_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -131,7 +130,7 @@ DEVICE_FORCEINLINE void xor_rot_32R16_evaluate(
         ms_8_bits_col0,
         ms_8_bits_col2,
         xor_col5,
-        verify_bitwise_xor_8_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -139,7 +138,7 @@ DEVICE_FORCEINLINE void xor_rot_32R16_evaluate(
         split_16_low_part_size_8_output_tmp_813a9_3_limb_0,
         split_16_low_part_size_8_output_tmp_813a9_7_limb_0,
         xor_col6,
-        verify_bitwise_xor_8_b_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 
@@ -147,7 +146,7 @@ DEVICE_FORCEINLINE void xor_rot_32R16_evaluate(
         ms_8_bits_col1,
         ms_8_bits_col3,
         xor_col7,
-        verify_bitwise_xor_8_b_lookup_elements,
+        common_lookup_elements,
         cuda_evaluator
     );
 

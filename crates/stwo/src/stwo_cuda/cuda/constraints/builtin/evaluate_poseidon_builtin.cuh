@@ -21,16 +21,8 @@ struct PoseidonBuiltin_Eval {
         uint32_t poseidon_builtin_segment_start;
     } claim;
 
-    // Relation lookup elements (in same order as Rust struct)
-    MemoryAddressToId memory_address_to_id_lookup_elements;
-    MemoryIdToBig memory_id_to_big_lookup_elements;
-    PoseidonFullRoundChain poseidon_full_round_chain_lookup_elements;
-    RangeCheckFelt252Width27 range_check_felt_252_width_27_lookup_elements;
-    Cube252 cube_252_lookup_elements;
-    RangeCheck_3_3_3_3_3 range_check_3_3_3_3_3_lookup_elements;
-    RangeCheck_4_4_4_4 range_check_4_4_4_4_lookup_elements;
-    RangeCheck_4_4 range_check_4_4_lookup_elements;
-    Poseidon3PartialRoundsChain poseidon_3_partial_rounds_chain_lookup_elements;
+    // Relation lookup elements
+    CommonLookupElements common_lookup_elements;
 };
 
 // Host function declaration

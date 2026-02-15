@@ -102,7 +102,7 @@ __global__ void evaluate_jnz_opcode_pre_kernel(
         dst_base_fp_col4,
         ap_update_add_1_col5,
         decode_output,
-        jnz_opcode_eval->verify_instruction_lookup_elements,
+        jnz_opcode_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -147,8 +147,7 @@ __global__ void evaluate_jnz_opcode_pre_kernel(
         dst_limb_26_col34,
         dst_limb_27_col35,
         read_dst_output,
-        jnz_opcode_eval->memory_address_to_id_lookup_elements,
-        jnz_opcode_eval->memory_id_to_big_lookup_elements,
+        jnz_opcode_eval->common_lookup_elements,
         &cuda_evaluator
     );
 
@@ -186,17 +185,17 @@ __global__ void evaluate_jnz_opcode_pre_kernel(
 
     // Add first opcodes relation entry (positive)
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             input_pc_col0,
             input_ap_col1,
             input_fp_col2
         };
-        RelationEntry<3> entry(
-            jnz_opcode_eval->opcode_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            jnz_opcode_eval->common_lookup_elements,
             qm31{enabler, 0, 0, 0},  // positive multiplicity
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     // Add second opcodes relation entry (negative)
@@ -205,18 +204,17 @@ __global__ void evaluate_jnz_opcode_pre_kernel(
     // next_ap = input_ap + ap_update_add_1
     // next_fp = input_fp (unchanged)
     {
-        m31 values[3] = {
+        m31 values[4] = {
+            OPCODES_RELATION_ID,
             add(input_pc_col0, M31_2),
             add(input_ap_col1, ap_update_add_1_col5),
             input_fp_col2
         };
-        // Negate the multiplicity for the second entry
-        RelationEntry<3> entry(
-            jnz_opcode_eval->opcode_lookup_elements,
+        cuda_evaluator.add_to_relation<4>(
+            jnz_opcode_eval->common_lookup_elements,
             qm31{{neg(enabler), 0}, {0, 0}},  // negative multiplicity
             values
         );
-        cuda_evaluator.add_to_relation<3>(entry);
     }
 
     constraint_index_array[row] = cuda_evaluator.constraint_index;
