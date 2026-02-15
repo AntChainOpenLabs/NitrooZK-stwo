@@ -31,6 +31,9 @@
 // Pedersen context components
 #include "constraints/pedersen/evaluate_partial_ec_mul.cuh"
 #include "constraints/pedersen/evaluate_pedersen_points_table.cuh"
+#include "constraints/pedersen/evaluate_pedersen_aggregator.cuh"
+#include "constraints/pedersen/evaluate_partial_ec_mul_window_bits_18.cuh"
+#include "constraints/pedersen/evaluate_pedersen_points_table_window_bits_18.cuh"
 // Poseidon context components
 #include "constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cuh"
 #include "constraints/poseidon/evaluate_poseidon_aggregator.cuh"
@@ -289,6 +292,9 @@ static bool dispatch_single_eval(
         // Pedersen context components
         DISPATCH_EVAL_WITH_BOOLS("partial_ec_mul", "call cuda eval stwo-cairo partial_ec_mul", evaluate_partial_ec_mul);
         DISPATCH_EVAL_WITH_BOOLS("pedersen_points_table", "call cuda eval stwo-cairo pedersen_points_table", evaluate_pedersen_points_table);
+        DISPATCH_EVAL_WITH_BOOLS("pedersen_aggregator_window_bits_18", "call cuda eval stwo-cairo pedersen_aggregator_window_bits_18", evaluate_pedersen_aggregator_window_bits_18);
+        DISPATCH_EVAL_WITH_BOOLS("partial_ec_mul_window_bits_18", "call cuda eval stwo-cairo partial_ec_mul_window_bits_18", evaluate_partial_ec_mul_window_bits_18);
+        DISPATCH_EVAL_WITH_BOOLS("pedersen_points_table_window_bits_18", "call cuda eval stwo-cairo pedersen_points_table_window_bits_18", evaluate_pedersen_points_table_window_bits_18);
         // Poseidon context components
         DISPATCH_EVAL_WITH_BOOLS("poseidon_3_partial_rounds_chain", "call cuda eval stwo-cairo poseidon_3_partial_rounds_chain", evaluate_poseidon_3_partial_rounds_chain);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_aggregator", "call cuda eval stwo-cairo poseidon_aggregator", evaluate_poseidon_aggregator);

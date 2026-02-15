@@ -124,6 +124,9 @@ add_library(
         #pedersen
         constraints/pedersen/evaluate_pedersen_points_table.cu
         constraints/pedersen/evaluate_partial_ec_mul.cu
+        constraints/pedersen/evaluate_pedersen_aggregator.cu
+        constraints/pedersen/evaluate_partial_ec_mul_window_bits_18.cu
+        constraints/pedersen/evaluate_pedersen_points_table_window_bits_18.cu
         pedersen_table_init.cu
         #poseidon
         constraints/poseidon/evaluate_poseidon_aggregator.cu

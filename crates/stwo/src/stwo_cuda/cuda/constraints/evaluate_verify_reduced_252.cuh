@@ -34,10 +34,10 @@ Relations:
 
 Constraint Count:
 - 2 boolean constraints
-- 5 conditional zero constraints (if MS is max)
+- 1 summed conditional zero constraint (if MS is max, sum of limbs 22-26 = 0)
 - 1 rc_input constraint
-- 21 conditional zero constraints (if both MS and mid are max)
-- Total: 29 constraints
+- 1 summed conditional zero constraint (if both MS and mid are max, sum of limbs 0-20 = 0)
+- Total: 5 constraints
 
 Key Algorithm:
 This ensures that the 252-bit number is properly reduced modulo the field prime.
@@ -120,30 +120,14 @@ DEVICE_FORCEINLINE void verify_reduced_252_evaluate(
     cuda_evaluator->add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc_value_0);
 
     // ===================== If MS limb is max, high limbs (22-26) must be 0 =====================
-    // These constraints ensure that if ms_limb_is_max = 1, then limbs 22-26 are all zero
-    // Constraint: ms_limb_is_max * limb_22 = 0
+    // Constraint: ms_limb_is_max * (limb_22 + limb_23 + limb_24 + limb_25 + limb_26) = 0
     cuda_evaluator->add_constraint(
-        mul(ms_limb_is_max_col0, verify_reduced_252_input_limb_22)
-    );
-
-    // Constraint: ms_limb_is_max * limb_23 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_limb_is_max_col0, verify_reduced_252_input_limb_23)
-    );
-
-    // Constraint: ms_limb_is_max * limb_24 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_limb_is_max_col0, verify_reduced_252_input_limb_24)
-    );
-
-    // Constraint: ms_limb_is_max * limb_25 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_limb_is_max_col0, verify_reduced_252_input_limb_25)
-    );
-
-    // Constraint: ms_limb_is_max * limb_26 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_limb_is_max_col0, verify_reduced_252_input_limb_26)
+        mul(ms_limb_is_max_col0,
+            add(add(add(add(verify_reduced_252_input_limb_22,
+                            verify_reduced_252_input_limb_23),
+                        verify_reduced_252_input_limb_24),
+                    verify_reduced_252_input_limb_25),
+                verify_reduced_252_input_limb_26))
     );
 
     // ===================== rc_input constraint =====================
@@ -162,111 +146,35 @@ DEVICE_FORCEINLINE void verify_reduced_252_evaluate(
     cuda_evaluator->add_to_relation<2>(common_lookup_elements, qm31{{1, 0}, {0, 0}}, rc_value_1);
 
     // ===================== If MS and mid limbs are max, low limbs (0-20) must be 0 =====================
-    // These constraints ensure that if ms_and_mid_limbs_are_max = 1, then limbs 0-20 are all zero
-    // Constraint: ms_and_mid_limbs_are_max * limb_0 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_0)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_1 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_1)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_2 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_2)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_3 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_3)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_4 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_4)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_5 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_5)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_6 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_6)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_7 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_7)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_8 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_8)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_9 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_9)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_10 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_10)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_11 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_11)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_12 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_12)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_13 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_13)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_14 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_14)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_15 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_15)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_16 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_16)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_17 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_17)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_18 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_18)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_19 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_19)
-    );
-
-    // Constraint: ms_and_mid_limbs_are_max * limb_20 = 0
-    cuda_evaluator->add_constraint(
-        mul(ms_and_mid_limbs_are_max_col1, verify_reduced_252_input_limb_20)
-    );
+    // Constraint: ms_and_mid_limbs_are_max * (limb_0 + limb_1 + ... + limb_20) = 0
+    {
+        m31 sum_low = add(add(add(add(add(add(add(add(add(add(
+                        add(add(add(add(add(add(add(add(add(add(
+                            verify_reduced_252_input_limb_0,
+                            verify_reduced_252_input_limb_1),
+                            verify_reduced_252_input_limb_2),
+                            verify_reduced_252_input_limb_3),
+                            verify_reduced_252_input_limb_4),
+                            verify_reduced_252_input_limb_5),
+                            verify_reduced_252_input_limb_6),
+                            verify_reduced_252_input_limb_7),
+                            verify_reduced_252_input_limb_8),
+                            verify_reduced_252_input_limb_9),
+                            verify_reduced_252_input_limb_10),
+                            verify_reduced_252_input_limb_11),
+                            verify_reduced_252_input_limb_12),
+                            verify_reduced_252_input_limb_13),
+                            verify_reduced_252_input_limb_14),
+                            verify_reduced_252_input_limb_15),
+                            verify_reduced_252_input_limb_16),
+                            verify_reduced_252_input_limb_17),
+                            verify_reduced_252_input_limb_18),
+                            verify_reduced_252_input_limb_19),
+                            verify_reduced_252_input_limb_20);
+        cuda_evaluator->add_constraint(
+            mul(ms_and_mid_limbs_are_max_col1, sum_low)
+        );
+    }
 }
 
 #endif // EVALUATE_VERIFY_REDUCED_252_CONSTRAINT_H
