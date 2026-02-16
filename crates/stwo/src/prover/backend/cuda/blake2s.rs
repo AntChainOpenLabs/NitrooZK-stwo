@@ -1,8 +1,6 @@
 use std::ffi::c_void;
 
 use crate::prover::backend::{Col, Column, ColumnOps, CpuBackend};
-use crate::prover::backend::simd::column::BaseColumn;
-use crate::prover::backend::simd::SimdBackend;
 use crate::core::vcs::blake2_hash::{Blake2sHash, reduce_to_m31};
 use crate::core::vcs::blake2_merkle::{Blake2sMerkleHasher, Blake2sM31MerkleHasher};
 use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleHasherGeneric;
@@ -145,22 +143,95 @@ impl<const IS_M31_OUTPUT: bool> MerkleOpsLifted<Blake2sMerkleHasherGeneric<IS_M3
             return result;
         }
 
-        // Slow path: columns of different sizes → use SIMD backend (much faster than scalar CPU)
-        let simd_cols: Vec<BaseColumn> = columns
-            .iter()
-            .map(|c| {
-                if c.len() == 0 {
-                    BaseColumn::from_cpu(&[])
-                } else {
-                    BaseColumn::from_cpu(&c.to_cpu())
+        // GPU path for heterogeneous columns using incremental state management.
+        // Uses blake2s_alloc_init_states / blake2s_lift_states / blake2s_update_columns /
+        // blake2s_finalize_all CUDA kernels to process column groups of different sizes
+        // entirely on GPU without any CPU/SIMD fallback.
+
+        // Sort columns by size (ascending) and group by log_size.
+        let mut sorted_cols: Vec<(u32, &BaseFieldVec)> =
+            columns.iter().map(|c| (c.len().ilog2(), *c)).collect();
+        sorted_cols.sort_by_key(|(log_size, _)| *log_size);
+
+        let mut groups: Vec<(u32, Vec<*const u32>)> = Vec::new();
+        let mut current_log_size = sorted_cols[0].0;
+        let mut current_ptrs: Vec<*const u32> = vec![sorted_cols[0].1.device_ptr];
+        for &(log_size, col) in &sorted_cols[1..] {
+            if log_size == current_log_size {
+                current_ptrs.push(col.device_ptr);
+            } else {
+                groups.push((current_log_size, std::mem::take(&mut current_ptrs)));
+                current_log_size = log_size;
+                current_ptrs.push(col.device_ptr);
+            }
+        }
+        groups.push((current_log_size, current_ptrs));
+
+        unsafe {
+            // Initialize Blake2s states (start with 2 states, matching lifted algorithm).
+            let mut states: *mut c_void = bindings::blake2s_alloc_init_states(2);
+            let mut prev_log_size: u32 = 1;
+            let mut current_size: u32 = 2;
+
+            for (log_size, col_ptrs) in &groups {
+                let log_size = *log_size;
+                let new_size = 1u32 << log_size;
+
+                // Lift states to match the current column group's size.
+                if log_size > prev_log_size {
+                    let log_ratio = log_size - prev_log_size;
+                    let mut next_states: *mut c_void = std::ptr::null_mut();
+                    bindings::blake2s_lift_states(
+                        states,
+                        current_size,
+                        &mut next_states,
+                        new_size,
+                        log_ratio,
+                    );
+                    bindings::cuda_free_memory(states as *const c_void);
+                    states = next_states;
+                    current_size = new_size;
                 }
-            })
-            .collect();
-        let simd_col_refs: Vec<&BaseColumn> = simd_cols.iter().collect();
-        let simd_result = <SimdBackend as MerkleOpsLifted<
-            Blake2sMerkleHasherGeneric<IS_M31_OUTPUT>,
-        >>::build_leaves(&simd_col_refs, lifting_log_size);
-        Blake2sHashVec::from_vec(simd_result)
+
+                // Update states with this group's column data.
+                bindings::blake2s_update_columns(
+                    states,
+                    current_size,
+                    col_ptrs.as_ptr(),
+                    col_ptrs.len() as u32,
+                );
+
+                prev_log_size = log_size;
+            }
+
+            // Final lift to lifting_log_size if columns don't reach it.
+            let final_size = 1u32 << lifting_log_size;
+            if lifting_log_size > prev_log_size {
+                let log_ratio = lifting_log_size - prev_log_size;
+                let mut next_states: *mut c_void = std::ptr::null_mut();
+                bindings::blake2s_lift_states(
+                    states,
+                    current_size,
+                    &mut next_states,
+                    final_size,
+                    log_ratio,
+                );
+                bindings::cuda_free_memory(states as *const c_void);
+                states = next_states;
+            }
+
+            // Finalize all states into output hashes.
+            let result = Blake2sHashVec::new_uninitialized(final_size as usize);
+            bindings::blake2s_finalize_all(
+                states,
+                result.device_ptr as *mut Blake2sHash,
+                final_size,
+                IS_M31_OUTPUT,
+            );
+            bindings::cuda_free_memory(states as *const c_void);
+
+            result
+        }
     }
 
     fn build_next_layer(prev_layer: &Col<Self, Blake2sHash>) -> Col<Self, Blake2sHash> {
@@ -275,6 +346,89 @@ mod tests {
                     .collect()
             })
             .collect()
+    }
+
+    #[test]
+    fn test_build_leaves_heterogeneous_vs_cpu() {
+        use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleHasher as LiftedBlake2s;
+        use crate::prover::vcs_lifted::ops::MerkleOpsLifted;
+
+        // Columns with different sizes: 2^4, 2^6, 2^8, 2^10
+        let lifting_log_size = 10u32;
+        let cpu_cols: Vec<Vec<BaseField>> = vec![
+            (0..1 << 4).map(|i| M31::from(i * 3)).collect(),
+            (0..1 << 6).map(|i| M31::from(i * 7)).collect(),
+            (0..1 << 8).map(|i| M31::from(i * 11)).collect(),
+            (0..1 << 10).map(|i| M31::from(i * 13)).collect(),
+        ];
+        let gpu_cols: Vec<BaseFieldVec> = gpu_columns_from(&cpu_cols);
+
+        let cpu_col_refs: Vec<&Vec<BaseField>> = cpu_cols.iter().collect();
+        let expected = <CpuBackend as MerkleOpsLifted<LiftedBlake2s>>::build_leaves(
+            &cpu_col_refs,
+            lifting_log_size,
+        );
+        let gpu_col_refs: Vec<&BaseFieldVec> = gpu_cols.iter().collect();
+        let result = <CudaBackend as MerkleOpsLifted<LiftedBlake2s>>::build_leaves(
+            &gpu_col_refs,
+            lifting_log_size,
+        );
+
+        assert_eq!(result.to_cpu(), expected);
+    }
+
+    #[test]
+    fn test_build_leaves_same_size_vs_cpu() {
+        use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleHasher as LiftedBlake2s;
+        use crate::prover::vcs_lifted::ops::MerkleOpsLifted;
+
+        // All columns same size = lifting_log_size (exercises fused kernel path)
+        let lifting_log_size = 12u32;
+        let size = 1 << lifting_log_size;
+        let cpu_cols: Vec<Vec<BaseField>> = (0..20)
+            .map(|col| (0..size).map(|i| M31::from(i * (col + 1))).collect())
+            .collect();
+        let gpu_cols: Vec<BaseFieldVec> = gpu_columns_from(&cpu_cols);
+
+        let cpu_col_refs: Vec<&Vec<BaseField>> = cpu_cols.iter().collect();
+        let expected = <CpuBackend as MerkleOpsLifted<LiftedBlake2s>>::build_leaves(
+            &cpu_col_refs,
+            lifting_log_size,
+        );
+        let gpu_col_refs: Vec<&BaseFieldVec> = gpu_cols.iter().collect();
+        let result = <CudaBackend as MerkleOpsLifted<LiftedBlake2s>>::build_leaves(
+            &gpu_col_refs,
+            lifting_log_size,
+        );
+
+        assert_eq!(result.to_cpu(), expected);
+    }
+
+    #[test]
+    fn test_build_leaves_with_extra_lifting_vs_cpu() {
+        use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleHasher as LiftedBlake2s;
+        use crate::prover::vcs_lifted::ops::MerkleOpsLifted;
+
+        // Columns smaller than lifting_log_size (exercises final lift step)
+        let lifting_log_size = 12u32;
+        let cpu_cols: Vec<Vec<BaseField>> = vec![
+            (0..1 << 4).map(|i| M31::from(i * 5)).collect(),
+            (0..1 << 8).map(|i| M31::from(i * 9)).collect(),
+        ];
+        let gpu_cols: Vec<BaseFieldVec> = gpu_columns_from(&cpu_cols);
+
+        let cpu_col_refs: Vec<&Vec<BaseField>> = cpu_cols.iter().collect();
+        let expected = <CpuBackend as MerkleOpsLifted<LiftedBlake2s>>::build_leaves(
+            &cpu_col_refs,
+            lifting_log_size,
+        );
+        let gpu_col_refs: Vec<&BaseFieldVec> = gpu_cols.iter().collect();
+        let result = <CudaBackend as MerkleOpsLifted<LiftedBlake2s>>::build_leaves(
+            &gpu_col_refs,
+            lifting_log_size,
+        );
+
+        assert_eq!(result.to_cpu(), expected);
     }
 
     #[test]
