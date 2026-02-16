@@ -1,6 +1,8 @@
 use std::ffi::c_void;
 
 use crate::prover::backend::{Col, Column, ColumnOps, CpuBackend};
+use crate::prover::backend::simd::column::BaseColumn;
+use crate::prover::backend::simd::SimdBackend;
 use crate::core::vcs::blake2_hash::{Blake2sHash, reduce_to_m31};
 use crate::core::vcs::blake2_merkle::{Blake2sMerkleHasher, Blake2sM31MerkleHasher};
 use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleHasherGeneric;
@@ -143,23 +145,22 @@ impl<const IS_M31_OUTPUT: bool> MerkleOpsLifted<Blake2sMerkleHasherGeneric<IS_M3
             return result;
         }
 
-        // Slow path: columns of different sizes → fall back to CPU
-        let cpu_cols: Vec<Vec<crate::core::fields::m31::BaseField>> = columns
+        // Slow path: columns of different sizes → use SIMD backend (much faster than scalar CPU)
+        let simd_cols: Vec<BaseColumn> = columns
             .iter()
             .map(|c| {
                 if c.len() == 0 {
-                    vec![]
+                    BaseColumn::from_cpu(&[])
                 } else {
-                    c.to_cpu()
+                    BaseColumn::from_cpu(&c.to_cpu())
                 }
             })
             .collect();
-        let cpu_col_refs: Vec<&Vec<crate::core::fields::m31::BaseField>> =
-            cpu_cols.iter().collect();
-        let cpu_result = <CpuBackend as MerkleOpsLifted<
+        let simd_col_refs: Vec<&BaseColumn> = simd_cols.iter().collect();
+        let simd_result = <SimdBackend as MerkleOpsLifted<
             Blake2sMerkleHasherGeneric<IS_M31_OUTPUT>,
-        >>::build_leaves(&cpu_col_refs, lifting_log_size);
-        Blake2sHashVec::from_vec(cpu_result)
+        >>::build_leaves(&simd_col_refs, lifting_log_size);
+        Blake2sHashVec::from_vec(simd_result)
     }
 
     fn build_next_layer(prev_layer: &Col<Self, Blake2sHash>) -> Col<Self, Blake2sHash> {
