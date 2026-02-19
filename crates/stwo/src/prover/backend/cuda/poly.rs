@@ -410,7 +410,8 @@ impl PolyOps for CudaBackend {
         let new_size = 1 << log_size;
         assert!(
             new_size >= poly.coeffs.len(),
-            "New size must be larger than the old size"
+            "New size must be larger than the old size: new_size={new_size} (log_size={log_size}), poly.coeffs.len()={}",
+            poly.coeffs.len()
         );
 
         let mut new_coeffs = BaseFieldVec::new_zeroes(new_size);

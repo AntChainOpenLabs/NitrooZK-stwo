@@ -286,11 +286,41 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
             .any(|c| c.evals.domain.log_size() != eval_domain.log_size());
         span.exit();
 
+        if !need_to_extend {
+            // Check: all domains match
+            let first_log = component_polys.iter().flatten().next().map(|c| c.evals.domain.log_size());
+            eprintln!(
+                "[EXTEND OK] component={} eval_domain_log_size={} col_domain_log_size={:?}",
+                self.eval.cuda_eval_name(),
+                eval_domain.log_size(),
+                first_log,
+            );
+        }
+
         let span = span!(Level::INFO, "Check & Extension").entered();
         let trace: TreeVec<
             Vec<Cow<'_, CircleEvaluation<CudaBackend, BaseField, BitReversedOrder>>>,
         > = if need_to_extend {
             let _span = span!(Level::INFO, "Extension").entered();
+            // Debug: print mismatched column sizes
+            for (tree_idx, tree_cols) in component_polys.iter().enumerate() {
+                for (col_idx, col) in tree_cols.iter().enumerate() {
+                    let col_log_size = col.evals.domain.log_size();
+                    if col_log_size != eval_domain.log_size() {
+                        let coeffs_len = col.coeffs.as_ref().map(|c| c.coeffs.len()).unwrap_or(0);
+                        eprintln!(
+                            "[EXTEND DEBUG] component={} eval_log_size={} eval_domain_log_size={} tree={} col={} col_domain_log_size={} coeffs_len={}",
+                            self.eval.cuda_eval_name(),
+                            eval_log_size,
+                            eval_domain.log_size(),
+                            tree_idx,
+                            col_idx,
+                            col_log_size,
+                            coeffs_len,
+                        );
+                    }
+                }
+            }
             let twiddles = CudaBackend::precompute_twiddles(eval_domain.half_coset);
             component_polys
                 .as_cols_ref()

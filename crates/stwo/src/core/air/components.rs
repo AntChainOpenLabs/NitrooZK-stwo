@@ -59,13 +59,13 @@ impl Components<'_> {
         max_log_degree_bound: u32,
     ) -> SecureField {
         let mut evaluation_accumulator = PointEvaluationAccumulator::new(random_coeff);
-        for component in &self.components {
+        for component in self.components.iter() {
             component.evaluate_constraint_quotients_at_point(
                 point,
                 mask_values,
                 &mut evaluation_accumulator,
                 max_log_degree_bound,
-            )
+            );
         }
         evaluation_accumulator.finalize()
     }

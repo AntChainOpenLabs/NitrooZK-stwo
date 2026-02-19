@@ -33,6 +33,11 @@ impl PointEvaluationAccumulator {
     pub const fn finalize(self) -> SecureField {
         self.accumulation
     }
+
+    /// Returns the current accumulation value (for debugging).
+    pub fn current(&self) -> SecureField {
+        self.accumulation
+    }
 }
 
 #[cfg(test)]
