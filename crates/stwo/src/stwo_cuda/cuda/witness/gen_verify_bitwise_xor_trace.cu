@@ -300,7 +300,8 @@ void verify_bitwise_xor_12_mults_init(
 // Computes a, b, c from row index using preprocessed BitwiseXor pattern
 template <int N_BITS>
 __global__ void verify_bitwise_xor_interaction_trace_col_gen_kernel(
-    LookupElementsBasic<3> *lookup_elements,
+    LookupElementsBasic<4> *lookup_elements,
+    m31 relation_id,
     m31 *multiplicities,
     unsigned trace_size,
     qm31 *denom_ptr,
@@ -321,9 +322,9 @@ __global__ void verify_bitwise_xor_interaction_trace_col_gen_kernel(
         m31 mult = multiplicities[row];
         qm31 numerator = qm31{cm31{P - mult, 0}, cm31{0, 0}};
 
-        // denominator = lookup_elements.combine([a, b, c])
-        m31 values[3] = {a, b, c};
-        qm31 denom = lookup_elements->combine(values, 3);
+        // denominator = lookup_elements.combine([relation_id, a, b, c])
+        m31 values[4] = {relation_id, a, b, c};
+        qm31 denom = lookup_elements->combine(values, 4);
 
         logup_col_write_frac(row, numerator, denom, denom_ptr, numerator0, numerator1, numerator2, numerator3);
     }
@@ -442,8 +443,8 @@ void verify_bitwise_xor_4_interaction_trace(
     unsigned trace_size = 1 << log_size;
 
     // Copy lookup elements to device
-    LookupElementsBasic<3> *device_lookup_elements = cuda_malloc<LookupElementsBasic<3>>(1);
-    cuda_mem_copy_host_to_device<LookupElementsBasic<3>>((LookupElementsBasic<3>*)lookup_elements, device_lookup_elements, 1);
+    LookupElementsBasic<4> *device_lookup_elements = cuda_malloc<LookupElementsBasic<4>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<4>>((LookupElementsBasic<4>*)lookup_elements, device_lookup_elements, 1);
 
     // Allocate temporary buffers
     qm31 *device_logup_denom = cuda_malloc<qm31>(trace_size);
@@ -461,6 +462,7 @@ void verify_bitwise_xor_4_interaction_trace(
     // Step 1: Generate logup fractions
     verify_bitwise_xor_interaction_trace_col_gen_kernel<VERIFY_BITWISE_4_N_BITS><<<num_blocks, block_dim>>>(
         device_lookup_elements,
+        VERIFY_BITWISE_XOR_4_RELATION_ID,
         multiplicities,
         trace_size,
         device_logup_denom,
@@ -539,8 +541,8 @@ void verify_bitwise_xor_7_interaction_trace(
 
     unsigned trace_size = 1 << log_size;
 
-    LookupElementsBasic<3> *device_lookup_elements = cuda_malloc<LookupElementsBasic<3>>(1);
-    cuda_mem_copy_host_to_device<LookupElementsBasic<3>>((LookupElementsBasic<3>*)lookup_elements, device_lookup_elements, 1);
+    LookupElementsBasic<4> *device_lookup_elements = cuda_malloc<LookupElementsBasic<4>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<4>>((LookupElementsBasic<4>*)lookup_elements, device_lookup_elements, 1);
 
     qm31 *device_logup_denom = cuda_malloc<qm31>(trace_size);
     qm31 *denom_inv = cuda_malloc<qm31>(trace_size);
@@ -556,6 +558,7 @@ void verify_bitwise_xor_7_interaction_trace(
 
     verify_bitwise_xor_interaction_trace_col_gen_kernel<VERIFY_BITWISE_7_N_BITS><<<num_blocks, block_dim>>>(
         device_lookup_elements,
+        VERIFY_BITWISE_XOR_7_RELATION_ID,
         multiplicities,
         trace_size,
         device_logup_denom,
@@ -628,8 +631,8 @@ void verify_bitwise_xor_8_interaction_trace(
 
     unsigned trace_size = 1 << log_size;
 
-    LookupElementsBasic<3> *device_lookup_elements = cuda_malloc<LookupElementsBasic<3>>(1);
-    cuda_mem_copy_host_to_device<LookupElementsBasic<3>>((LookupElementsBasic<3>*)lookup_elements, device_lookup_elements, 1);
+    LookupElementsBasic<4> *device_lookup_elements = cuda_malloc<LookupElementsBasic<4>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<4>>((LookupElementsBasic<4>*)lookup_elements, device_lookup_elements, 1);
 
     qm31 *device_logup_denom = cuda_malloc<qm31>(trace_size);
     qm31 *denom_inv = cuda_malloc<qm31>(trace_size);
@@ -645,6 +648,7 @@ void verify_bitwise_xor_8_interaction_trace(
 
     verify_bitwise_xor_interaction_trace_col_gen_kernel<VERIFY_BITWISE_8_N_BITS><<<num_blocks, block_dim>>>(
         device_lookup_elements,
+        VERIFY_BITWISE_XOR_8_RELATION_ID,
         multiplicities,
         trace_size,
         device_logup_denom,
@@ -717,8 +721,8 @@ void verify_bitwise_xor_8_b_interaction_trace(
 
     unsigned trace_size = 1 << log_size;
 
-    LookupElementsBasic<3> *device_lookup_elements = cuda_malloc<LookupElementsBasic<3>>(1);
-    cuda_mem_copy_host_to_device<LookupElementsBasic<3>>((LookupElementsBasic<3>*)lookup_elements, device_lookup_elements, 1);
+    LookupElementsBasic<4> *device_lookup_elements = cuda_malloc<LookupElementsBasic<4>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<4>>((LookupElementsBasic<4>*)lookup_elements, device_lookup_elements, 1);
 
     qm31 *device_logup_denom = cuda_malloc<qm31>(trace_size);
     qm31 *denom_inv = cuda_malloc<qm31>(trace_size);
@@ -735,6 +739,7 @@ void verify_bitwise_xor_8_b_interaction_trace(
     // Use VERIFY_BITWISE_8_N_BITS since 8_b has the same bit width as 8
     verify_bitwise_xor_interaction_trace_col_gen_kernel<VERIFY_BITWISE_8_N_BITS><<<num_blocks, block_dim>>>(
         device_lookup_elements,
+        VERIFY_BITWISE_XOR_8_B_RELATION_ID,
         multiplicities,
         trace_size,
         device_logup_denom,
@@ -807,8 +812,8 @@ void verify_bitwise_xor_9_interaction_trace(
 
     unsigned trace_size = 1 << log_size;
 
-    LookupElementsBasic<3> *device_lookup_elements = cuda_malloc<LookupElementsBasic<3>>(1);
-    cuda_mem_copy_host_to_device<LookupElementsBasic<3>>((LookupElementsBasic<3>*)lookup_elements, device_lookup_elements, 1);
+    LookupElementsBasic<4> *device_lookup_elements = cuda_malloc<LookupElementsBasic<4>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<4>>((LookupElementsBasic<4>*)lookup_elements, device_lookup_elements, 1);
 
     qm31 *device_logup_denom = cuda_malloc<qm31>(trace_size);
     qm31 *denom_inv = cuda_malloc<qm31>(trace_size);
@@ -824,6 +829,7 @@ void verify_bitwise_xor_9_interaction_trace(
 
     verify_bitwise_xor_interaction_trace_col_gen_kernel<VERIFY_BITWISE_9_N_BITS><<<num_blocks, block_dim>>>(
         device_lookup_elements,
+        VERIFY_BITWISE_XOR_9_RELATION_ID,
         multiplicities,
         trace_size,
         device_logup_denom,
@@ -891,9 +897,9 @@ void verify_bitwise_xor_9_interaction_trace(
 // For column pair (i0=2p, i1=2p+1), computes the logup fraction:
 //   numerator = p0 * (-mults1[row]) + p1 * (-mults0[row])
 //   denominator = p1 * p0
-// where p0 = combine([a0,b0,c0]), p1 = combine([a1,b1,c1]).
+// where p0 = combine([relation_id, a0,b0,c0]), p1 = combine([relation_id, a1,b1,c1]).
 __global__ void verify_bitwise_xor_12_interaction_trace_col_gen_kernel(
-    LookupElementsBasic<3> *lookup_elements,
+    LookupElementsBasic<4> *lookup_elements,
     m31 *mults0_ptr,
     m31 *mults1_ptr,
     unsigned ah0,
@@ -922,11 +928,11 @@ __global__ void verify_bitwise_xor_12_interaction_trace_col_gen_kernel(
         m31 b1 = m31{(bh1 << VERIFY_BITWISE_12_LIMB_BITS) | bl};
         m31 c1 = m31{((ah1 << VERIFY_BITWISE_12_LIMB_BITS) | al) ^ ((bh1 << VERIFY_BITWISE_12_LIMB_BITS) | bl)};
 
-        // combine([a, b, c]) for both lookups
-        m31 values0[3] = {a0, b0, c0};
-        m31 values1[3] = {a1, b1, c1};
-        qm31 p0 = lookup_elements->combine(values0, 3);
-        qm31 p1 = lookup_elements->combine(values1, 3);
+        // combine([relation_id, a, b, c]) for both lookups
+        m31 values0[4] = {VERIFY_BITWISE_XOR_12_RELATION_ID, a0, b0, c0};
+        m31 values1[4] = {VERIFY_BITWISE_XOR_12_RELATION_ID, a1, b1, c1};
+        qm31 p0 = lookup_elements->combine(values0, 4);
+        qm31 p1 = lookup_elements->combine(values1, 4);
 
         // numerator = p0 * (-mults1[row]) + p1 * (-mults0[row])
         m31 m0 = mults0_ptr[row];
@@ -999,8 +1005,8 @@ void verify_bitwise_xor_12_interaction_trace(
     unsigned trace_size = 1 << log_size;
 
     // Copy lookup elements to device
-    LookupElementsBasic<3> *device_lookup_elements = cuda_malloc<LookupElementsBasic<3>>(1);
-    cuda_mem_copy_host_to_device<LookupElementsBasic<3>>((LookupElementsBasic<3>*)lookup_elements, device_lookup_elements, 1);
+    LookupElementsBasic<4> *device_lookup_elements = cuda_malloc<LookupElementsBasic<4>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<4>>((LookupElementsBasic<4>*)lookup_elements, device_lookup_elements, 1);
 
     // Allocate temporary buffers (reused across all 8 pairs)
     qm31 *device_logup_denom = cuda_malloc<qm31>(trace_size);
