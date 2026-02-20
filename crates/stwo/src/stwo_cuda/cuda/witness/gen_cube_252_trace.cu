@@ -218,8 +218,8 @@ __device__ void double_karatsuba_n7_product(const m31* a, const m31* b, int64_t*
 #define M31_32 ((m31)32u)
 #define M31_64 ((m31)64u)
 #define M31_512 ((m31)512u)         // For packing limbs in cube_252_0 lookup
-#define M31_131072 ((m31)131072u)   // For carry values in rc_19 lookups (2^17)
-#define M31_262144 ((m31)262144u)   // For k values in rc_19 lookups (2^18)
+#define M31_524288 ((m31)524288u)   // For carry and k values in rc_19/rc_20 lookups (2^19)
+#define M31_262144 ((m31)262144u)   // For limb packing: 27-bit width = 9+9+9, shift = 2^18
 
 // Correct M31 multiplication using proper Mersenne prime reduction
 // The standard mul() function in fields.cu has a bug for large products
@@ -651,62 +651,62 @@ __global__ void cube_252_trace_kernel(
     // Populate rc_19 lookups from first mul (k1 and carry1)
     // Following SIMD pattern from cube_252.rs lines 1605-1740
     // ========================================================================
-    // rc_19_h_0: k1 + 262144
-    lookup.rc_19_h_0[0][row] = add(k1, M31_262144);
+    // rc_19_h_0: k1 + 524288
+    lookup.rc_19_h_0[0][row] = add(k1, M31_524288);
     // rc_19_0: carry1[0] + 131072
-    lookup.rc_19_0[0][row] = add(carry1[0], M31_131072);
+    lookup.rc_19_0[0][row] = add(carry1[0], M31_524288);
     // rc_19_b_0: carry1[1] + 131072
-    lookup.rc_19_b_0[0][row] = add(carry1[1], M31_131072);
+    lookup.rc_19_b_0[0][row] = add(carry1[1], M31_524288);
     // rc_19_c_0: carry1[2] + 131072
-    lookup.rc_19_c_0[0][row] = add(carry1[2], M31_131072);
+    lookup.rc_19_c_0[0][row] = add(carry1[2], M31_524288);
     // rc_19_d_0: carry1[3] + 131072
-    lookup.rc_19_d_0[0][row] = add(carry1[3], M31_131072);
+    lookup.rc_19_d_0[0][row] = add(carry1[3], M31_524288);
     // rc_19_e_0: carry1[4] + 131072
-    lookup.rc_19_e_0[0][row] = add(carry1[4], M31_131072);
+    lookup.rc_19_e_0[0][row] = add(carry1[4], M31_524288);
     // rc_19_f_0: carry1[5] + 131072
-    lookup.rc_19_f_0[0][row] = add(carry1[5], M31_131072);
+    lookup.rc_19_f_0[0][row] = add(carry1[5], M31_524288);
     // rc_19_g_0: carry1[6] + 131072
-    lookup.rc_19_g_0[0][row] = add(carry1[6], M31_131072);
+    lookup.rc_19_g_0[0][row] = add(carry1[6], M31_524288);
     // rc_19_h_1: carry1[7] + 131072
-    lookup.rc_19_h_1[0][row] = add(carry1[7], M31_131072);
+    lookup.rc_19_h_1[0][row] = add(carry1[7], M31_524288);
     // rc_19_1: carry1[8] + 131072
-    lookup.rc_19_1[0][row] = add(carry1[8], M31_131072);
+    lookup.rc_19_1[0][row] = add(carry1[8], M31_524288);
     // rc_19_b_1: carry1[9] + 131072
-    lookup.rc_19_b_1[0][row] = add(carry1[9], M31_131072);
+    lookup.rc_19_b_1[0][row] = add(carry1[9], M31_524288);
     // rc_19_c_1: carry1[10] + 131072
-    lookup.rc_19_c_1[0][row] = add(carry1[10], M31_131072);
+    lookup.rc_19_c_1[0][row] = add(carry1[10], M31_524288);
     // rc_19_d_1: carry1[11] + 131072
-    lookup.rc_19_d_1[0][row] = add(carry1[11], M31_131072);
+    lookup.rc_19_d_1[0][row] = add(carry1[11], M31_524288);
     // rc_19_e_1: carry1[12] + 131072
-    lookup.rc_19_e_1[0][row] = add(carry1[12], M31_131072);
+    lookup.rc_19_e_1[0][row] = add(carry1[12], M31_524288);
     // rc_19_f_1: carry1[13] + 131072
-    lookup.rc_19_f_1[0][row] = add(carry1[13], M31_131072);
+    lookup.rc_19_f_1[0][row] = add(carry1[13], M31_524288);
     // rc_19_g_1: carry1[14] + 131072
-    lookup.rc_19_g_1[0][row] = add(carry1[14], M31_131072);
+    lookup.rc_19_g_1[0][row] = add(carry1[14], M31_524288);
     // rc_19_h_2: carry1[15] + 131072
-    lookup.rc_19_h_2[0][row] = add(carry1[15], M31_131072);
+    lookup.rc_19_h_2[0][row] = add(carry1[15], M31_524288);
     // rc_19_2: carry1[16] + 131072
-    lookup.rc_19_2[0][row] = add(carry1[16], M31_131072);
+    lookup.rc_19_2[0][row] = add(carry1[16], M31_524288);
     // rc_19_b_2: carry1[17] + 131072
-    lookup.rc_19_b_2[0][row] = add(carry1[17], M31_131072);
+    lookup.rc_19_b_2[0][row] = add(carry1[17], M31_524288);
     // rc_19_c_2: carry1[18] + 131072
-    lookup.rc_19_c_2[0][row] = add(carry1[18], M31_131072);
+    lookup.rc_19_c_2[0][row] = add(carry1[18], M31_524288);
     // rc_19_d_2: carry1[19] + 131072
-    lookup.rc_19_d_2[0][row] = add(carry1[19], M31_131072);
+    lookup.rc_19_d_2[0][row] = add(carry1[19], M31_524288);
     // rc_19_e_2: carry1[20] + 131072
-    lookup.rc_19_e_2[0][row] = add(carry1[20], M31_131072);
+    lookup.rc_19_e_2[0][row] = add(carry1[20], M31_524288);
     // rc_19_f_2: carry1[21] + 131072
-    lookup.rc_19_f_2[0][row] = add(carry1[21], M31_131072);
+    lookup.rc_19_f_2[0][row] = add(carry1[21], M31_524288);
     // rc_19_g_2: carry1[22] + 131072
-    lookup.rc_19_g_2[0][row] = add(carry1[22], M31_131072);
+    lookup.rc_19_g_2[0][row] = add(carry1[22], M31_524288);
     // rc_19_h_3: carry1[23] + 131072
-    lookup.rc_19_h_3[0][row] = add(carry1[23], M31_131072);
+    lookup.rc_19_h_3[0][row] = add(carry1[23], M31_524288);
     // rc_19_3: carry1[24] + 131072
-    lookup.rc_19_3[0][row] = add(carry1[24], M31_131072);
+    lookup.rc_19_3[0][row] = add(carry1[24], M31_524288);
     // rc_19_b_3: carry1[25] + 131072
-    lookup.rc_19_b_3[0][row] = add(carry1[25], M31_131072);
+    lookup.rc_19_b_3[0][row] = add(carry1[25], M31_524288);
     // rc_19_c_3: carry1[26] + 131072
-    lookup.rc_19_c_3[0][row] = add(carry1[26], M31_131072);
+    lookup.rc_19_c_3[0][row] = add(carry1[26], M31_524288);
 
     // Convert x³ to 28 x 9-bit limbs (second mul result)
     m31 x3[28];
@@ -798,62 +798,62 @@ __global__ void cube_252_trace_kernel(
     // Populate rc_19 lookups from second mul (k2 and carry2)
     // Following SIMD pattern from cube_252.rs lines 2884-3019
     // ========================================================================
-    // rc_19_h_4: k2 + 262144
-    lookup.rc_19_h_4[0][row] = add(k2, M31_262144);
+    // rc_19_h_4: k2 + 524288
+    lookup.rc_19_h_4[0][row] = add(k2, M31_524288);
     // rc_19_4: carry2[0] + 131072
-    lookup.rc_19_4[0][row] = add(carry2[0], M31_131072);
+    lookup.rc_19_4[0][row] = add(carry2[0], M31_524288);
     // rc_19_b_4: carry2[1] + 131072
-    lookup.rc_19_b_4[0][row] = add(carry2[1], M31_131072);
+    lookup.rc_19_b_4[0][row] = add(carry2[1], M31_524288);
     // rc_19_c_4: carry2[2] + 131072
-    lookup.rc_19_c_4[0][row] = add(carry2[2], M31_131072);
+    lookup.rc_19_c_4[0][row] = add(carry2[2], M31_524288);
     // rc_19_d_3: carry2[3] + 131072
-    lookup.rc_19_d_3[0][row] = add(carry2[3], M31_131072);
+    lookup.rc_19_d_3[0][row] = add(carry2[3], M31_524288);
     // rc_19_e_3: carry2[4] + 131072
-    lookup.rc_19_e_3[0][row] = add(carry2[4], M31_131072);
+    lookup.rc_19_e_3[0][row] = add(carry2[4], M31_524288);
     // rc_19_f_3: carry2[5] + 131072
-    lookup.rc_19_f_3[0][row] = add(carry2[5], M31_131072);
+    lookup.rc_19_f_3[0][row] = add(carry2[5], M31_524288);
     // rc_19_g_3: carry2[6] + 131072
-    lookup.rc_19_g_3[0][row] = add(carry2[6], M31_131072);
+    lookup.rc_19_g_3[0][row] = add(carry2[6], M31_524288);
     // rc_19_h_5: carry2[7] + 131072
-    lookup.rc_19_h_5[0][row] = add(carry2[7], M31_131072);
+    lookup.rc_19_h_5[0][row] = add(carry2[7], M31_524288);
     // rc_19_5: carry2[8] + 131072
-    lookup.rc_19_5[0][row] = add(carry2[8], M31_131072);
+    lookup.rc_19_5[0][row] = add(carry2[8], M31_524288);
     // rc_19_b_5: carry2[9] + 131072
-    lookup.rc_19_b_5[0][row] = add(carry2[9], M31_131072);
+    lookup.rc_19_b_5[0][row] = add(carry2[9], M31_524288);
     // rc_19_c_5: carry2[10] + 131072
-    lookup.rc_19_c_5[0][row] = add(carry2[10], M31_131072);
+    lookup.rc_19_c_5[0][row] = add(carry2[10], M31_524288);
     // rc_19_d_4: carry2[11] + 131072
-    lookup.rc_19_d_4[0][row] = add(carry2[11], M31_131072);
+    lookup.rc_19_d_4[0][row] = add(carry2[11], M31_524288);
     // rc_19_e_4: carry2[12] + 131072
-    lookup.rc_19_e_4[0][row] = add(carry2[12], M31_131072);
+    lookup.rc_19_e_4[0][row] = add(carry2[12], M31_524288);
     // rc_19_f_4: carry2[13] + 131072
-    lookup.rc_19_f_4[0][row] = add(carry2[13], M31_131072);
+    lookup.rc_19_f_4[0][row] = add(carry2[13], M31_524288);
     // rc_19_g_4: carry2[14] + 131072
-    lookup.rc_19_g_4[0][row] = add(carry2[14], M31_131072);
+    lookup.rc_19_g_4[0][row] = add(carry2[14], M31_524288);
     // rc_19_h_6: carry2[15] + 131072
-    lookup.rc_19_h_6[0][row] = add(carry2[15], M31_131072);
+    lookup.rc_19_h_6[0][row] = add(carry2[15], M31_524288);
     // rc_19_6: carry2[16] + 131072
-    lookup.rc_19_6[0][row] = add(carry2[16], M31_131072);
+    lookup.rc_19_6[0][row] = add(carry2[16], M31_524288);
     // rc_19_b_6: carry2[17] + 131072
-    lookup.rc_19_b_6[0][row] = add(carry2[17], M31_131072);
+    lookup.rc_19_b_6[0][row] = add(carry2[17], M31_524288);
     // rc_19_c_6: carry2[18] + 131072
-    lookup.rc_19_c_6[0][row] = add(carry2[18], M31_131072);
+    lookup.rc_19_c_6[0][row] = add(carry2[18], M31_524288);
     // rc_19_d_5: carry2[19] + 131072
-    lookup.rc_19_d_5[0][row] = add(carry2[19], M31_131072);
+    lookup.rc_19_d_5[0][row] = add(carry2[19], M31_524288);
     // rc_19_e_5: carry2[20] + 131072
-    lookup.rc_19_e_5[0][row] = add(carry2[20], M31_131072);
+    lookup.rc_19_e_5[0][row] = add(carry2[20], M31_524288);
     // rc_19_f_5: carry2[21] + 131072
-    lookup.rc_19_f_5[0][row] = add(carry2[21], M31_131072);
+    lookup.rc_19_f_5[0][row] = add(carry2[21], M31_524288);
     // rc_19_g_5: carry2[22] + 131072
-    lookup.rc_19_g_5[0][row] = add(carry2[22], M31_131072);
+    lookup.rc_19_g_5[0][row] = add(carry2[22], M31_524288);
     // rc_19_h_7: carry2[23] + 131072
-    lookup.rc_19_h_7[0][row] = add(carry2[23], M31_131072);
+    lookup.rc_19_h_7[0][row] = add(carry2[23], M31_524288);
     // rc_19_7: carry2[24] + 131072
-    lookup.rc_19_7[0][row] = add(carry2[24], M31_131072);
+    lookup.rc_19_7[0][row] = add(carry2[24], M31_524288);
     // rc_19_b_7: carry2[25] + 131072
-    lookup.rc_19_b_7[0][row] = add(carry2[25], M31_131072);
+    lookup.rc_19_b_7[0][row] = add(carry2[25], M31_524288);
     // rc_19_c_7: carry2[26] + 131072
-    lookup.rc_19_c_7[0][row] = add(carry2[26], M31_131072);
+    lookup.rc_19_c_7[0][row] = add(carry2[26], M31_524288);
 
     // Write enabler to column 140 (1 for valid rows)
     trace_columns[140][row] = (m31){1};
@@ -981,76 +981,76 @@ __global__ void cube_252_trace_kernel(
     sub_inputs.rc_9_9_h[5][row] = x3[15];  // rc_9_9_h_2[1]
 
     // rc_19 (8 lookups × 1 element = 8 pointers)
-    sub_inputs.rc_19[0][row] = add(carry1[0], M31_131072);  // rc_19_0
-    sub_inputs.rc_19[1][row] = add(carry1[8], M31_131072);  // rc_19_1
-    sub_inputs.rc_19[2][row] = add(carry1[16], M31_131072); // rc_19_2
-    sub_inputs.rc_19[3][row] = add(carry1[24], M31_131072); // rc_19_3
-    sub_inputs.rc_19[4][row] = add(carry2[0], M31_131072);  // rc_19_4
-    sub_inputs.rc_19[5][row] = add(carry2[8], M31_131072);  // rc_19_5
-    sub_inputs.rc_19[6][row] = add(carry2[16], M31_131072); // rc_19_6
-    sub_inputs.rc_19[7][row] = add(carry2[24], M31_131072); // rc_19_7
+    sub_inputs.rc_19[0][row] = add(carry1[0], M31_524288);  // rc_19_0
+    sub_inputs.rc_19[1][row] = add(carry1[8], M31_524288);  // rc_19_1
+    sub_inputs.rc_19[2][row] = add(carry1[16], M31_524288); // rc_19_2
+    sub_inputs.rc_19[3][row] = add(carry1[24], M31_524288); // rc_19_3
+    sub_inputs.rc_19[4][row] = add(carry2[0], M31_524288);  // rc_19_4
+    sub_inputs.rc_19[5][row] = add(carry2[8], M31_524288);  // rc_19_5
+    sub_inputs.rc_19[6][row] = add(carry2[16], M31_524288); // rc_19_6
+    sub_inputs.rc_19[7][row] = add(carry2[24], M31_524288); // rc_19_7
 
     // rc_19_b (8 lookups × 1 element = 8 pointers)
-    sub_inputs.rc_19_b[0][row] = add(carry1[1], M31_131072);  // rc_19_b_0
-    sub_inputs.rc_19_b[1][row] = add(carry1[9], M31_131072);  // rc_19_b_1
-    sub_inputs.rc_19_b[2][row] = add(carry1[17], M31_131072); // rc_19_b_2
-    sub_inputs.rc_19_b[3][row] = add(carry1[25], M31_131072); // rc_19_b_3
-    sub_inputs.rc_19_b[4][row] = add(carry2[1], M31_131072);  // rc_19_b_4
-    sub_inputs.rc_19_b[5][row] = add(carry2[9], M31_131072);  // rc_19_b_5
-    sub_inputs.rc_19_b[6][row] = add(carry2[17], M31_131072); // rc_19_b_6
-    sub_inputs.rc_19_b[7][row] = add(carry2[25], M31_131072); // rc_19_b_7
+    sub_inputs.rc_19_b[0][row] = add(carry1[1], M31_524288);  // rc_19_b_0
+    sub_inputs.rc_19_b[1][row] = add(carry1[9], M31_524288);  // rc_19_b_1
+    sub_inputs.rc_19_b[2][row] = add(carry1[17], M31_524288); // rc_19_b_2
+    sub_inputs.rc_19_b[3][row] = add(carry1[25], M31_524288); // rc_19_b_3
+    sub_inputs.rc_19_b[4][row] = add(carry2[1], M31_524288);  // rc_19_b_4
+    sub_inputs.rc_19_b[5][row] = add(carry2[9], M31_524288);  // rc_19_b_5
+    sub_inputs.rc_19_b[6][row] = add(carry2[17], M31_524288); // rc_19_b_6
+    sub_inputs.rc_19_b[7][row] = add(carry2[25], M31_524288); // rc_19_b_7
 
     // rc_19_c (8 lookups × 1 element = 8 pointers)
-    sub_inputs.rc_19_c[0][row] = add(carry1[2], M31_131072);  // rc_19_c_0
-    sub_inputs.rc_19_c[1][row] = add(carry1[10], M31_131072); // rc_19_c_1
-    sub_inputs.rc_19_c[2][row] = add(carry1[18], M31_131072); // rc_19_c_2
-    sub_inputs.rc_19_c[3][row] = add(carry1[26], M31_131072); // rc_19_c_3
-    sub_inputs.rc_19_c[4][row] = add(carry2[2], M31_131072);  // rc_19_c_4
-    sub_inputs.rc_19_c[5][row] = add(carry2[10], M31_131072); // rc_19_c_5
-    sub_inputs.rc_19_c[6][row] = add(carry2[18], M31_131072); // rc_19_c_6
-    sub_inputs.rc_19_c[7][row] = add(carry2[26], M31_131072); // rc_19_c_7
+    sub_inputs.rc_19_c[0][row] = add(carry1[2], M31_524288);  // rc_19_c_0
+    sub_inputs.rc_19_c[1][row] = add(carry1[10], M31_524288); // rc_19_c_1
+    sub_inputs.rc_19_c[2][row] = add(carry1[18], M31_524288); // rc_19_c_2
+    sub_inputs.rc_19_c[3][row] = add(carry1[26], M31_524288); // rc_19_c_3
+    sub_inputs.rc_19_c[4][row] = add(carry2[2], M31_524288);  // rc_19_c_4
+    sub_inputs.rc_19_c[5][row] = add(carry2[10], M31_524288); // rc_19_c_5
+    sub_inputs.rc_19_c[6][row] = add(carry2[18], M31_524288); // rc_19_c_6
+    sub_inputs.rc_19_c[7][row] = add(carry2[26], M31_524288); // rc_19_c_7
 
     // rc_19_d (6 lookups × 1 element = 6 pointers)
-    sub_inputs.rc_19_d[0][row] = add(carry1[3], M31_131072);  // rc_19_d_0
-    sub_inputs.rc_19_d[1][row] = add(carry1[11], M31_131072); // rc_19_d_1
-    sub_inputs.rc_19_d[2][row] = add(carry1[19], M31_131072); // rc_19_d_2
-    sub_inputs.rc_19_d[3][row] = add(carry2[3], M31_131072);  // rc_19_d_3
-    sub_inputs.rc_19_d[4][row] = add(carry2[11], M31_131072); // rc_19_d_4
-    sub_inputs.rc_19_d[5][row] = add(carry2[19], M31_131072); // rc_19_d_5
+    sub_inputs.rc_19_d[0][row] = add(carry1[3], M31_524288);  // rc_19_d_0
+    sub_inputs.rc_19_d[1][row] = add(carry1[11], M31_524288); // rc_19_d_1
+    sub_inputs.rc_19_d[2][row] = add(carry1[19], M31_524288); // rc_19_d_2
+    sub_inputs.rc_19_d[3][row] = add(carry2[3], M31_524288);  // rc_19_d_3
+    sub_inputs.rc_19_d[4][row] = add(carry2[11], M31_524288); // rc_19_d_4
+    sub_inputs.rc_19_d[5][row] = add(carry2[19], M31_524288); // rc_19_d_5
 
     // rc_19_e (6 lookups × 1 element = 6 pointers)
-    sub_inputs.rc_19_e[0][row] = add(carry1[4], M31_131072);  // rc_19_e_0
-    sub_inputs.rc_19_e[1][row] = add(carry1[12], M31_131072); // rc_19_e_1
-    sub_inputs.rc_19_e[2][row] = add(carry1[20], M31_131072); // rc_19_e_2
-    sub_inputs.rc_19_e[3][row] = add(carry2[4], M31_131072);  // rc_19_e_3
-    sub_inputs.rc_19_e[4][row] = add(carry2[12], M31_131072); // rc_19_e_4
-    sub_inputs.rc_19_e[5][row] = add(carry2[20], M31_131072); // rc_19_e_5
+    sub_inputs.rc_19_e[0][row] = add(carry1[4], M31_524288);  // rc_19_e_0
+    sub_inputs.rc_19_e[1][row] = add(carry1[12], M31_524288); // rc_19_e_1
+    sub_inputs.rc_19_e[2][row] = add(carry1[20], M31_524288); // rc_19_e_2
+    sub_inputs.rc_19_e[3][row] = add(carry2[4], M31_524288);  // rc_19_e_3
+    sub_inputs.rc_19_e[4][row] = add(carry2[12], M31_524288); // rc_19_e_4
+    sub_inputs.rc_19_e[5][row] = add(carry2[20], M31_524288); // rc_19_e_5
 
     // rc_19_f (6 lookups × 1 element = 6 pointers)
-    sub_inputs.rc_19_f[0][row] = add(carry1[5], M31_131072);  // rc_19_f_0
-    sub_inputs.rc_19_f[1][row] = add(carry1[13], M31_131072); // rc_19_f_1
-    sub_inputs.rc_19_f[2][row] = add(carry1[21], M31_131072); // rc_19_f_2
-    sub_inputs.rc_19_f[3][row] = add(carry2[5], M31_131072);  // rc_19_f_3
-    sub_inputs.rc_19_f[4][row] = add(carry2[13], M31_131072); // rc_19_f_4
-    sub_inputs.rc_19_f[5][row] = add(carry2[21], M31_131072); // rc_19_f_5
+    sub_inputs.rc_19_f[0][row] = add(carry1[5], M31_524288);  // rc_19_f_0
+    sub_inputs.rc_19_f[1][row] = add(carry1[13], M31_524288); // rc_19_f_1
+    sub_inputs.rc_19_f[2][row] = add(carry1[21], M31_524288); // rc_19_f_2
+    sub_inputs.rc_19_f[3][row] = add(carry2[5], M31_524288);  // rc_19_f_3
+    sub_inputs.rc_19_f[4][row] = add(carry2[13], M31_524288); // rc_19_f_4
+    sub_inputs.rc_19_f[5][row] = add(carry2[21], M31_524288); // rc_19_f_5
 
     // rc_19_g (6 lookups × 1 element = 6 pointers)
-    sub_inputs.rc_19_g[0][row] = add(carry1[6], M31_131072);  // rc_19_g_0
-    sub_inputs.rc_19_g[1][row] = add(carry1[14], M31_131072); // rc_19_g_1
-    sub_inputs.rc_19_g[2][row] = add(carry1[22], M31_131072); // rc_19_g_2
-    sub_inputs.rc_19_g[3][row] = add(carry2[6], M31_131072);  // rc_19_g_3
-    sub_inputs.rc_19_g[4][row] = add(carry2[14], M31_131072); // rc_19_g_4
-    sub_inputs.rc_19_g[5][row] = add(carry2[22], M31_131072); // rc_19_g_5
+    sub_inputs.rc_19_g[0][row] = add(carry1[6], M31_524288);  // rc_19_g_0
+    sub_inputs.rc_19_g[1][row] = add(carry1[14], M31_524288); // rc_19_g_1
+    sub_inputs.rc_19_g[2][row] = add(carry1[22], M31_524288); // rc_19_g_2
+    sub_inputs.rc_19_g[3][row] = add(carry2[6], M31_524288);  // rc_19_g_3
+    sub_inputs.rc_19_g[4][row] = add(carry2[14], M31_524288); // rc_19_g_4
+    sub_inputs.rc_19_g[5][row] = add(carry2[22], M31_524288); // rc_19_g_5
 
     // rc_19_h (8 lookups × 1 element = 8 pointers)
-    sub_inputs.rc_19_h[0][row] = add(k1, M31_262144);         // rc_19_h_0 (k1 + 262144)
-    sub_inputs.rc_19_h[1][row] = add(carry1[7], M31_131072);  // rc_19_h_1
-    sub_inputs.rc_19_h[2][row] = add(carry1[15], M31_131072); // rc_19_h_2
-    sub_inputs.rc_19_h[3][row] = add(carry1[23], M31_131072); // rc_19_h_3
-    sub_inputs.rc_19_h[4][row] = add(k2, M31_262144);         // rc_19_h_4 (k2 + 262144)
-    sub_inputs.rc_19_h[5][row] = add(carry2[7], M31_131072);  // rc_19_h_5
-    sub_inputs.rc_19_h[6][row] = add(carry2[15], M31_131072); // rc_19_h_6
-    sub_inputs.rc_19_h[7][row] = add(carry2[23], M31_131072); // rc_19_h_7
+    sub_inputs.rc_19_h[0][row] = add(k1, M31_524288);         // rc_19_h_0 (k1 + 524288)
+    sub_inputs.rc_19_h[1][row] = add(carry1[7], M31_524288);  // rc_19_h_1
+    sub_inputs.rc_19_h[2][row] = add(carry1[15], M31_524288); // rc_19_h_2
+    sub_inputs.rc_19_h[3][row] = add(carry1[23], M31_524288); // rc_19_h_3
+    sub_inputs.rc_19_h[4][row] = add(k2, M31_524288);         // rc_19_h_4 (k2 + 524288)
+    sub_inputs.rc_19_h[5][row] = add(carry2[7], M31_524288);  // rc_19_h_5
+    sub_inputs.rc_19_h[6][row] = add(carry2[15], M31_524288); // rc_19_h_6
+    sub_inputs.rc_19_h[7][row] = add(carry2[23], M31_524288); // rc_19_h_7
 }
 
 // ============================================================================
@@ -1592,8 +1592,7 @@ __global__ void cube_252_compute_fractions_kernel(
     // Enabler (140)
     m31 enabler = trace_columns[140][row];
 
-    // M31 constants for rc_19 lookups are defined as macros at the top of the file
-    // M31_131072 for carry values, M31_262144 for k values
+    // M31 constants for rc_19/rc_20 lookups: M31_524288 (2^19) for both carry and k values
 
     // ========================================================================
     // LogUp columns 0-13: Range check 9_9 pairs for input unpacking
@@ -1761,10 +1760,10 @@ __global__ void cube_252_compute_fractions_kernel(
     // LogUp columns 14-27: Range check 19 pairs for first mul carries
     // ========================================================================
 
-    // Col 14: rc_19_h_0 [k1 + 262144] + rc_19_0 [carry1[0] + 131072]
+    // Col 14: rc_19_h_0 [k1 + 524288] + rc_19_0 [carry1[0] + 524288]
     {
-        m31 vals0[1] = {add(k1, M31_262144)};
-        m31 vals1[1] = {add(carry1[0], M31_131072)};
+        m31 vals0[1] = {add(k1, M31_524288)};
+        m31 vals1[1] = {add(carry1[0], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1774,8 +1773,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 15: rc_19_b_0 [carry1[1] + 131072] + rc_19_c_0 [carry1[2] + 131072]
     {
-        m31 vals0[1] = {add(carry1[1], M31_131072)};
-        m31 vals1[1] = {add(carry1[2], M31_131072)};
+        m31 vals0[1] = {add(carry1[1], M31_524288)};
+        m31 vals1[1] = {add(carry1[2], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1785,8 +1784,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 16: rc_19_d_0 [carry1[3] + 131072] + rc_19_e_0 [carry1[4] + 131072]
     {
-        m31 vals0[1] = {add(carry1[3], M31_131072)};
-        m31 vals1[1] = {add(carry1[4], M31_131072)};
+        m31 vals0[1] = {add(carry1[3], M31_524288)};
+        m31 vals1[1] = {add(carry1[4], M31_524288)};
         qm31 denom0 = rc_19_d_le->combine(vals0, 1);
         qm31 denom1 = rc_19_e_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1796,8 +1795,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 17: rc_19_f_0 [carry1[5] + 131072] + rc_19_g_0 [carry1[6] + 131072]
     {
-        m31 vals0[1] = {add(carry1[5], M31_131072)};
-        m31 vals1[1] = {add(carry1[6], M31_131072)};
+        m31 vals0[1] = {add(carry1[5], M31_524288)};
+        m31 vals1[1] = {add(carry1[6], M31_524288)};
         qm31 denom0 = rc_19_f_le->combine(vals0, 1);
         qm31 denom1 = rc_19_g_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1807,8 +1806,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 18: rc_19_h_1 [carry1[7] + 131072] + rc_19_1 [carry1[8] + 131072]
     {
-        m31 vals0[1] = {add(carry1[7], M31_131072)};
-        m31 vals1[1] = {add(carry1[8], M31_131072)};
+        m31 vals0[1] = {add(carry1[7], M31_524288)};
+        m31 vals1[1] = {add(carry1[8], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1818,8 +1817,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 19: rc_19_b_1 [carry1[9] + 131072] + rc_19_c_1 [carry1[10] + 131072]
     {
-        m31 vals0[1] = {add(carry1[9], M31_131072)};
-        m31 vals1[1] = {add(carry1[10], M31_131072)};
+        m31 vals0[1] = {add(carry1[9], M31_524288)};
+        m31 vals1[1] = {add(carry1[10], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1829,8 +1828,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 20: rc_19_d_1 [carry1[11] + 131072] + rc_19_e_1 [carry1[12] + 131072]
     {
-        m31 vals0[1] = {add(carry1[11], M31_131072)};
-        m31 vals1[1] = {add(carry1[12], M31_131072)};
+        m31 vals0[1] = {add(carry1[11], M31_524288)};
+        m31 vals1[1] = {add(carry1[12], M31_524288)};
         qm31 denom0 = rc_19_d_le->combine(vals0, 1);
         qm31 denom1 = rc_19_e_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1840,8 +1839,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 21: rc_19_f_1 [carry1[13] + 131072] + rc_19_g_1 [carry1[14] + 131072]
     {
-        m31 vals0[1] = {add(carry1[13], M31_131072)};
-        m31 vals1[1] = {add(carry1[14], M31_131072)};
+        m31 vals0[1] = {add(carry1[13], M31_524288)};
+        m31 vals1[1] = {add(carry1[14], M31_524288)};
         qm31 denom0 = rc_19_f_le->combine(vals0, 1);
         qm31 denom1 = rc_19_g_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1851,8 +1850,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 22: rc_19_h_2 [carry1[15] + 131072] + rc_19_2 [carry1[16] + 131072]
     {
-        m31 vals0[1] = {add(carry1[15], M31_131072)};
-        m31 vals1[1] = {add(carry1[16], M31_131072)};
+        m31 vals0[1] = {add(carry1[15], M31_524288)};
+        m31 vals1[1] = {add(carry1[16], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1862,8 +1861,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 23: rc_19_b_2 [carry1[17] + 131072] + rc_19_c_2 [carry1[18] + 131072]
     {
-        m31 vals0[1] = {add(carry1[17], M31_131072)};
-        m31 vals1[1] = {add(carry1[18], M31_131072)};
+        m31 vals0[1] = {add(carry1[17], M31_524288)};
+        m31 vals1[1] = {add(carry1[18], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1873,8 +1872,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 24: rc_19_d_2 [carry1[19] + 131072] + rc_19_e_2 [carry1[20] + 131072]
     {
-        m31 vals0[1] = {add(carry1[19], M31_131072)};
-        m31 vals1[1] = {add(carry1[20], M31_131072)};
+        m31 vals0[1] = {add(carry1[19], M31_524288)};
+        m31 vals1[1] = {add(carry1[20], M31_524288)};
         qm31 denom0 = rc_19_d_le->combine(vals0, 1);
         qm31 denom1 = rc_19_e_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1884,8 +1883,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 25: rc_19_f_2 [carry1[21] + 131072] + rc_19_g_2 [carry1[22] + 131072]
     {
-        m31 vals0[1] = {add(carry1[21], M31_131072)};
-        m31 vals1[1] = {add(carry1[22], M31_131072)};
+        m31 vals0[1] = {add(carry1[21], M31_524288)};
+        m31 vals1[1] = {add(carry1[22], M31_524288)};
         qm31 denom0 = rc_19_f_le->combine(vals0, 1);
         qm31 denom1 = rc_19_g_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1895,8 +1894,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 26: rc_19_h_3 [carry1[23] + 131072] + rc_19_3 [carry1[24] + 131072]
     {
-        m31 vals0[1] = {add(carry1[23], M31_131072)};
-        m31 vals1[1] = {add(carry1[24], M31_131072)};
+        m31 vals0[1] = {add(carry1[23], M31_524288)};
+        m31 vals1[1] = {add(carry1[24], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -1906,8 +1905,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 27: rc_19_b_3 [carry1[25] + 131072] + rc_19_c_3 [carry1[26] + 131072]
     {
-        m31 vals0[1] = {add(carry1[25], M31_131072)};
-        m31 vals1[1] = {add(carry1[26], M31_131072)};
+        m31 vals0[1] = {add(carry1[25], M31_524288)};
+        m31 vals1[1] = {add(carry1[26], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2000,10 +1999,10 @@ __global__ void cube_252_compute_fractions_kernel(
     // LogUp columns 35-48: Range check 19 pairs for second mul carries
     // ========================================================================
 
-    // Col 35: rc_19_h_4 [k2 + 262144] + rc_19_4 [carry2[0] + 131072]
+    // Col 35: rc_19_h_4 [k2 + 524288] + rc_19_4 [carry2[0] + 524288]
     {
-        m31 vals0[1] = {add(k2, M31_262144)};
-        m31 vals1[1] = {add(carry2[0], M31_131072)};
+        m31 vals0[1] = {add(k2, M31_524288)};
+        m31 vals1[1] = {add(carry2[0], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2013,8 +2012,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 36: rc_19_b_4 [carry2[1] + 131072] + rc_19_c_4 [carry2[2] + 131072]
     {
-        m31 vals0[1] = {add(carry2[1], M31_131072)};
-        m31 vals1[1] = {add(carry2[2], M31_131072)};
+        m31 vals0[1] = {add(carry2[1], M31_524288)};
+        m31 vals1[1] = {add(carry2[2], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2024,8 +2023,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 37: rc_19_d_3 [carry2[3] + 131072] + rc_19_e_3 [carry2[4] + 131072]
     {
-        m31 vals0[1] = {add(carry2[3], M31_131072)};
-        m31 vals1[1] = {add(carry2[4], M31_131072)};
+        m31 vals0[1] = {add(carry2[3], M31_524288)};
+        m31 vals1[1] = {add(carry2[4], M31_524288)};
         qm31 denom0 = rc_19_d_le->combine(vals0, 1);
         qm31 denom1 = rc_19_e_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2035,8 +2034,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 38: rc_19_f_3 [carry2[5] + 131072] + rc_19_g_3 [carry2[6] + 131072]
     {
-        m31 vals0[1] = {add(carry2[5], M31_131072)};
-        m31 vals1[1] = {add(carry2[6], M31_131072)};
+        m31 vals0[1] = {add(carry2[5], M31_524288)};
+        m31 vals1[1] = {add(carry2[6], M31_524288)};
         qm31 denom0 = rc_19_f_le->combine(vals0, 1);
         qm31 denom1 = rc_19_g_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2046,8 +2045,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 39: rc_19_h_5 [carry2[7] + 131072] + rc_19_5 [carry2[8] + 131072]
     {
-        m31 vals0[1] = {add(carry2[7], M31_131072)};
-        m31 vals1[1] = {add(carry2[8], M31_131072)};
+        m31 vals0[1] = {add(carry2[7], M31_524288)};
+        m31 vals1[1] = {add(carry2[8], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2057,8 +2056,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 40: rc_19_b_5 [carry2[9] + 131072] + rc_19_c_5 [carry2[10] + 131072]
     {
-        m31 vals0[1] = {add(carry2[9], M31_131072)};
-        m31 vals1[1] = {add(carry2[10], M31_131072)};
+        m31 vals0[1] = {add(carry2[9], M31_524288)};
+        m31 vals1[1] = {add(carry2[10], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2068,8 +2067,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 41: rc_19_d_4 [carry2[11] + 131072] + rc_19_e_4 [carry2[12] + 131072]
     {
-        m31 vals0[1] = {add(carry2[11], M31_131072)};
-        m31 vals1[1] = {add(carry2[12], M31_131072)};
+        m31 vals0[1] = {add(carry2[11], M31_524288)};
+        m31 vals1[1] = {add(carry2[12], M31_524288)};
         qm31 denom0 = rc_19_d_le->combine(vals0, 1);
         qm31 denom1 = rc_19_e_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2079,8 +2078,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 42: rc_19_f_4 [carry2[13] + 131072] + rc_19_g_4 [carry2[14] + 131072]
     {
-        m31 vals0[1] = {add(carry2[13], M31_131072)};
-        m31 vals1[1] = {add(carry2[14], M31_131072)};
+        m31 vals0[1] = {add(carry2[13], M31_524288)};
+        m31 vals1[1] = {add(carry2[14], M31_524288)};
         qm31 denom0 = rc_19_f_le->combine(vals0, 1);
         qm31 denom1 = rc_19_g_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2090,8 +2089,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 43: rc_19_h_6 [carry2[15] + 131072] + rc_19_6 [carry2[16] + 131072]
     {
-        m31 vals0[1] = {add(carry2[15], M31_131072)};
-        m31 vals1[1] = {add(carry2[16], M31_131072)};
+        m31 vals0[1] = {add(carry2[15], M31_524288)};
+        m31 vals1[1] = {add(carry2[16], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2101,8 +2100,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 44: rc_19_b_6 [carry2[17] + 131072] + rc_19_c_6 [carry2[18] + 131072]
     {
-        m31 vals0[1] = {add(carry2[17], M31_131072)};
-        m31 vals1[1] = {add(carry2[18], M31_131072)};
+        m31 vals0[1] = {add(carry2[17], M31_524288)};
+        m31 vals1[1] = {add(carry2[18], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2112,8 +2111,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 45: rc_19_d_5 [carry2[19] + 131072] + rc_19_e_5 [carry2[20] + 131072]
     {
-        m31 vals0[1] = {add(carry2[19], M31_131072)};
-        m31 vals1[1] = {add(carry2[20], M31_131072)};
+        m31 vals0[1] = {add(carry2[19], M31_524288)};
+        m31 vals1[1] = {add(carry2[20], M31_524288)};
         qm31 denom0 = rc_19_d_le->combine(vals0, 1);
         qm31 denom1 = rc_19_e_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2123,8 +2122,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 46: rc_19_f_5 [carry2[21] + 131072] + rc_19_g_5 [carry2[22] + 131072]
     {
-        m31 vals0[1] = {add(carry2[21], M31_131072)};
-        m31 vals1[1] = {add(carry2[22], M31_131072)};
+        m31 vals0[1] = {add(carry2[21], M31_524288)};
+        m31 vals1[1] = {add(carry2[22], M31_524288)};
         qm31 denom0 = rc_19_f_le->combine(vals0, 1);
         qm31 denom1 = rc_19_g_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2134,8 +2133,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 47: rc_19_h_7 [carry2[23] + 131072] + rc_19_7 [carry2[24] + 131072]
     {
-        m31 vals0[1] = {add(carry2[23], M31_131072)};
-        m31 vals1[1] = {add(carry2[24], M31_131072)};
+        m31 vals0[1] = {add(carry2[23], M31_524288)};
+        m31 vals1[1] = {add(carry2[24], M31_524288)};
         qm31 denom0 = rc_19_h_le->combine(vals0, 1);
         qm31 denom1 = rc_19_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2145,8 +2144,8 @@ __global__ void cube_252_compute_fractions_kernel(
 
     // Col 48: rc_19_b_7 [carry2[25] + 131072] + rc_19_c_7 [carry2[26] + 131072]
     {
-        m31 vals0[1] = {add(carry2[25], M31_131072)};
-        m31 vals1[1] = {add(carry2[26], M31_131072)};
+        m31 vals0[1] = {add(carry2[25], M31_524288)};
+        m31 vals1[1] = {add(carry2[26], M31_524288)};
         qm31 denom0 = rc_19_b_le->combine(vals0, 1);
         qm31 denom1 = rc_19_c_le->combine(vals1, 1);
         qm31 numer = add(denom0, denom1);
@@ -2445,6 +2444,32 @@ extern "C" void generate_cube_252_interaction_trace(
     );
     cudaDeviceSynchronize();
 
+    // Free fraction temporaries — no longer needed after finalize
+    cuda_mem_pool_free(denom_ptr);
+    cuda_mem_pool_free(denom_inv);
+    cuda_mem_pool_free(numerator0);
+    cuda_mem_pool_free(numerator1);
+    cuda_mem_pool_free(numerator2);
+    cuda_mem_pool_free(numerator3);
+    // Free lookup elements — no longer needed
+    cuda_mem_pool_free(d_cube_252_le);
+    cuda_mem_pool_free(d_rc_9_9_le);
+    cuda_mem_pool_free(d_rc_9_9_b_le);
+    cuda_mem_pool_free(d_rc_9_9_c_le);
+    cuda_mem_pool_free(d_rc_9_9_d_le);
+    cuda_mem_pool_free(d_rc_9_9_e_le);
+    cuda_mem_pool_free(d_rc_9_9_f_le);
+    cuda_mem_pool_free(d_rc_9_9_g_le);
+    cuda_mem_pool_free(d_rc_9_9_h_le);
+    cuda_mem_pool_free(d_rc_19_le);
+    cuda_mem_pool_free(d_rc_19_b_le);
+    cuda_mem_pool_free(d_rc_19_c_le);
+    cuda_mem_pool_free(d_rc_19_d_le);
+    cuda_mem_pool_free(d_rc_19_e_le);
+    cuda_mem_pool_free(d_rc_19_f_le);
+    cuda_mem_pool_free(d_rc_19_g_le);
+    cuda_mem_pool_free(d_rc_19_h_le);
+
     // Phase 4: Compute cumulative sum (for claimed_sum)
     m31* d_coordinate_sums;
     d_coordinate_sums = cuda_mem_pool_allocate<m31>(4);
@@ -2475,7 +2500,7 @@ extern "C" void generate_cube_252_interaction_trace(
     );
     cudaDeviceSynchronize();
 
-    // Phase 6: Inclusive prefix sum on last column (columns 196-199)
+    // Phase 6: Inclusive prefix sum on last column
     int last_base_col = (CUBE_252_N_LOGUP_COLS - 1) * 4;
     inclusive_prefix_sum(interaction_trace_columns[last_base_col + 0], trace_size);
     inclusive_prefix_sum(interaction_trace_columns[last_base_col + 1], trace_size);
@@ -2483,31 +2508,8 @@ extern "C" void generate_cube_252_interaction_trace(
     inclusive_prefix_sum(interaction_trace_columns[last_base_col + 3], trace_size);
 
     global_timer.end("generate cube_252 interaction trace");
-    // Cleanup
+    // Cleanup (fraction temps and lookup elements already freed after Phase 3)
     cuda_mem_pool_free(d_trace_columns);
     cuda_mem_pool_free(d_interaction_traces);
-    cuda_mem_pool_free(denom_ptr);
-    cuda_mem_pool_free(denom_inv);
-    cuda_mem_pool_free(numerator0);
-    cuda_mem_pool_free(numerator1);
-    cuda_mem_pool_free(numerator2);
-    cuda_mem_pool_free(numerator3);
-    cuda_mem_pool_free(d_cube_252_le);
-    cuda_mem_pool_free(d_rc_9_9_le);
-    cuda_mem_pool_free(d_rc_9_9_b_le);
-    cuda_mem_pool_free(d_rc_9_9_c_le);
-    cuda_mem_pool_free(d_rc_9_9_d_le);
-    cuda_mem_pool_free(d_rc_9_9_e_le);
-    cuda_mem_pool_free(d_rc_9_9_f_le);
-    cuda_mem_pool_free(d_rc_9_9_g_le);
-    cuda_mem_pool_free(d_rc_9_9_h_le);
-    cuda_mem_pool_free(d_rc_19_le);
-    cuda_mem_pool_free(d_rc_19_b_le);
-    cuda_mem_pool_free(d_rc_19_c_le);
-    cuda_mem_pool_free(d_rc_19_d_le);
-    cuda_mem_pool_free(d_rc_19_e_le);
-    cuda_mem_pool_free(d_rc_19_f_le);
-    cuda_mem_pool_free(d_rc_19_g_le);
-    cuda_mem_pool_free(d_rc_19_h_le);
     cuda_mem_pool_free(d_coordinate_sums);
 }
