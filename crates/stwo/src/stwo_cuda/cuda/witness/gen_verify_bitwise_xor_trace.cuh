@@ -124,6 +124,16 @@ void verify_bitwise_xor_8_b_interaction_trace(
 );
 
 extern "C"
+void verify_bitwise_xor_8_paired_interaction_trace(
+    void *lookup_elements,
+    m31 *multiplicities_0,
+    m31 *multiplicities_1,
+    unsigned log_size,
+    m31 **interaction_traces,
+    m31 *claimed_sum
+);
+
+extern "C"
 void verify_bitwise_xor_9_interaction_trace(
     void *lookup_elements,
     m31 *multiplicities,

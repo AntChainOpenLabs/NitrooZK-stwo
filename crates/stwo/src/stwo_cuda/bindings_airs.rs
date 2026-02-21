@@ -82,6 +82,15 @@ extern "C" {
         claimed_sum: *const u32,
     );
 
+    pub fn verify_bitwise_xor_8_paired_interaction_trace(
+        lookup_elements: *mut c_void,
+        multiplicities_0: *const u32,
+        multiplicities_1: *const u32,
+        log_size: u32,
+        interaction_traces: *const *const u32,
+        claimed_sum: *mut u32,
+    );
+
     pub fn verify_bitwise_xor_8_b_interaction_trace(
         lookup_elements: *mut c_void,
         multiplicities: *const u32,

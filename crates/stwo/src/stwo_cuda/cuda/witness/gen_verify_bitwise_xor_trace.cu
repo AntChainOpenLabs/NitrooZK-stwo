@@ -890,6 +890,147 @@ void verify_bitwise_xor_9_interaction_trace(
 }
 
 // =============================================================================
+// verify_bitwise_xor_8 paired interaction trace (dual-relation: VBX-8 + VBX-8_B)
+// =============================================================================
+
+// Col-gen kernel for vbx_8 paired: combines VBX-8 and VBX-8_B into one logup column.
+// numerator = -(denom0 * mults_1 + denom1 * mults_0)
+// denominator = denom0 * denom1
+// where denom0 = combine([VERIFY_BITWISE_XOR_8_RELATION_ID, a, b, c])
+//       denom1 = combine([VERIFY_BITWISE_XOR_8_B_RELATION_ID, a, b, c])
+__global__ void verify_bitwise_xor_8_paired_interaction_trace_col_gen_kernel(
+    LookupElementsBasic<4> *lookup_elements,
+    m31 *mults0_ptr,
+    m31 *mults1_ptr,
+    unsigned trace_size,
+    qm31 *denom_ptr,
+    m31 *numerator0,
+    m31 *numerator1,
+    m31 *numerator2,
+    m31 *numerator3
+) {
+    unsigned row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < trace_size) {
+        uint32_t a_val = row >> VERIFY_BITWISE_8_N_BITS;
+        uint32_t b_val = row & ((1 << VERIFY_BITWISE_8_N_BITS) - 1);
+        uint32_t c_val = a_val ^ b_val;
+
+        m31 a = m31{a_val};
+        m31 b = m31{b_val};
+        m31 c = m31{c_val};
+
+        // combine([relation_id, a, b, c]) for both relations
+        m31 values0[4] = {VERIFY_BITWISE_XOR_8_RELATION_ID, a, b, c};
+        m31 values1[4] = {VERIFY_BITWISE_XOR_8_B_RELATION_ID, a, b, c};
+        qm31 denom0 = lookup_elements->combine(values0, 4);
+        qm31 denom1 = lookup_elements->combine(values1, 4);
+
+        // numerator = -(denom0 * mults_1 + denom1 * mults_0)
+        m31 m0 = mults0_ptr[row];
+        m31 m1 = mults1_ptr[row];
+        qm31 neg_m0 = qm31{cm31{P - m0, 0}, cm31{0, 0}};
+        qm31 neg_m1 = qm31{cm31{P - m1, 0}, cm31{0, 0}};
+        qm31 numerator = add(mul(denom0, neg_m1), mul(denom1, neg_m0));
+
+        // denominator = denom0 * denom1
+        qm31 denom = mul(denom0, denom1);
+
+        logup_col_write_frac(row, numerator, denom, denom_ptr, numerator0, numerator1, numerator2, numerator3);
+    }
+}
+
+// Host function for verify_bitwise_xor_8 paired interaction trace
+void verify_bitwise_xor_8_paired_interaction_trace(
+    void *lookup_elements,
+    m31 *multiplicities_0,
+    m31 *multiplicities_1,
+    unsigned log_size,
+    m31 **interaction_traces,
+    m31 *claimed_sum
+) {
+    timer global_timer;
+    global_timer.start("generate verify_bitwise_xor_8 paired interaction trace");
+
+    unsigned trace_size = 1 << log_size;
+
+    LookupElementsBasic<4> *device_lookup_elements = cuda_malloc<LookupElementsBasic<4>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<4>>((LookupElementsBasic<4>*)lookup_elements, device_lookup_elements, 1);
+
+    qm31 *device_logup_denom = cuda_malloc<qm31>(trace_size);
+    qm31 *denom_inv = cuda_malloc<qm31>(trace_size);
+    m31 *device_numerator0 = cuda_malloc<m31>(trace_size);
+    m31 *device_numerator1 = cuda_malloc<m31>(trace_size);
+    m31 *device_numerator2 = cuda_malloc<m31>(trace_size);
+    m31 *device_numerator3 = cuda_malloc<m31>(trace_size);
+
+    m31 **device_interaction_traces = clone_to_device<m31*>(interaction_traces, 4);
+
+    int block_dim = trace_size < VERIFY_BITWISE_XOR_INTERACTION_THREAD_COUNT_MAX ? trace_size : VERIFY_BITWISE_XOR_INTERACTION_THREAD_COUNT_MAX;
+    int num_blocks = block_dim < VERIFY_BITWISE_XOR_INTERACTION_THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;
+
+    verify_bitwise_xor_8_paired_interaction_trace_col_gen_kernel<<<num_blocks, block_dim>>>(
+        device_lookup_elements,
+        multiplicities_0,
+        multiplicities_1,
+        trace_size,
+        device_logup_denom,
+        device_numerator0,
+        device_numerator1,
+        device_numerator2,
+        device_numerator3
+    );
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+
+    verify_bitwise_xor_interaction_trace_finalize_col_kernel<<<num_blocks, block_dim>>>(
+        trace_size,
+        denom_inv,
+        device_numerator0,
+        device_numerator1,
+        device_numerator2,
+        device_numerator3,
+        device_interaction_traces
+    );
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+
+    size_t shared_size = 4 * block_dim * sizeof(m31);
+    verify_bitwise_xor_interaction_trace_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
+        trace_size,
+        device_interaction_traces,
+        claimed_sum
+    );
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+
+    verify_bitwise_xor_interaction_trace_apply_shift<<<num_blocks, block_dim>>>(
+        claimed_sum,
+        trace_size,
+        device_interaction_traces
+    );
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+
+    inclusive_prefix_sum(interaction_traces[0], trace_size);
+    inclusive_prefix_sum(interaction_traces[1], trace_size);
+    inclusive_prefix_sum(interaction_traces[2], trace_size);
+    inclusive_prefix_sum(interaction_traces[3], trace_size);
+
+    cuda_free_memory(device_lookup_elements);
+    cuda_free_memory(device_logup_denom);
+    cuda_free_memory(denom_inv);
+    cuda_free_memory(device_numerator0);
+    cuda_free_memory(device_numerator1);
+    cuda_free_memory(device_numerator2);
+    cuda_free_memory(device_numerator3);
+    cuda_free_memory(device_interaction_traces);
+
+    global_timer.end("generate verify_bitwise_xor_8 paired interaction trace");
+}
+
+// =============================================================================
 // verify_bitwise_xor_12 interaction trace (expanded 16-column layout)
 // =============================================================================
 
