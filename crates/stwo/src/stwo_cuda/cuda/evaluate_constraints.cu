@@ -36,7 +36,6 @@
 #include "constraints/pedersen/evaluate_pedersen_points_table_window_bits_18.cuh"
 // Poseidon context components
 #include "constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cuh"
-#include "constraints/poseidon/evaluate_poseidon_aggregator.cuh"
 #include "constraints/poseidon/evaluate_poseidon_full_round_chain.cuh"
 #include "constraints/poseidon/evaluate_poseidon_round_keys.cuh"
 // Range-check components
@@ -297,7 +296,6 @@ static bool dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("pedersen_points_table_window_bits_18", "call cuda eval stwo-cairo pedersen_points_table_window_bits_18", evaluate_pedersen_points_table_window_bits_18);
         // Poseidon context components
         DISPATCH_EVAL_WITH_BOOLS("poseidon_3_partial_rounds_chain", "call cuda eval stwo-cairo poseidon_3_partial_rounds_chain", evaluate_poseidon_3_partial_rounds_chain);
-        DISPATCH_EVAL_WITH_BOOLS("poseidon_aggregator", "call cuda eval stwo-cairo poseidon_aggregator", evaluate_poseidon_aggregator);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_full_round_chain", "call cuda eval stwo-cairo poseidon_full_round_chain", evaluate_poseidon_full_round_chain);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_round_keys", "call cuda eval stwo-cairo poseidon_round_keys", evaluate_poseidon_round_keys);
 

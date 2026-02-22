@@ -2841,6 +2841,14 @@ extern "C" {
     pub fn is_pedersen_table_initialized() -> bool;
     pub fn free_pedersen_table();
 
+    // Upload pedersen table from host (CPU) data to GPU.
+    // Guarantees exact match with SIMD reference path.
+    pub fn upload_pedersen_table_from_host(
+        host_columns: *const *const u32,  // 56 host-side column arrays
+        n_cols: u32,                      // number of columns (56)
+        n_rows: u32,                      // padded row count (power of 2)
+    );
+
     // Get device pointers for the pedersen table columns (must be initialized first).
     pub fn get_pedersen_table_column_ptrs(
         output_ptrs: *mut *const u32,   // Array of 56 device pointers
@@ -3718,6 +3726,112 @@ extern "C" {
         log_size: u32,                      // Log2 of table size (23)
         interaction_traces: *const *const u32, // 4 output columns (qm31 components)
         claimed_sum: *const u32,            // Output claimed sum (4 x m31)
+    );
+
+    // ========================================================================
+    // partial_ec_mul_window_bits_18 (297-col "now" architecture)
+    // ========================================================================
+
+    /// Merged CUDA trace generation for partial_ec_mul_wb18.
+    /// Generates 297-col trace, lookup_data, and sub_component_inputs in a single kernel.
+    pub fn gen_partial_ec_mul_wb18_trace(
+        traces: *const *const u32,                      // 297 trace output columns
+        // Lookup data - self-interaction
+        lookup_partial_ec_mul_0: *const *const u32,     // 73 arrays
+        lookup_partial_ec_mul_1: *const *const u32,     // 73 arrays
+        // Lookup data - pedersen_points_table
+        lookup_ppt_0: *const *const u32,                // 58 arrays
+        // Lookup data - rc_20 variants (2 elements per entry)
+        lookup_rc_20: *const *const u32,                // 12*2=24 flat ptrs
+        lookup_rc_20_b: *const *const u32,              // 12*2=24
+        lookup_rc_20_c: *const *const u32,              // 12*2=24
+        lookup_rc_20_d: *const *const u32,              // 12*2=24
+        lookup_rc_20_e: *const *const u32,              // 9*2=18
+        lookup_rc_20_f: *const *const u32,              // 9*2=18
+        lookup_rc_20_g: *const *const u32,              // 9*2=18
+        lookup_rc_20_h: *const *const u32,              // 9*2=18
+        // Lookup data - rc_9_9 variants (3 elements per entry)
+        lookup_rc_9_9: *const *const u32,               // 6*3=18 flat ptrs
+        lookup_rc_9_9_b: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_c: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_d: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_e: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_f: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_g: *const *const u32,             // 3*3=9
+        lookup_rc_9_9_h: *const *const u32,             // 3*3=9
+        // Sub-component inputs - pedersen_points_table
+        sub_inputs_ppt: *const *const u32,              // 1*1=1 flat ptrs
+        // Sub-component inputs - rc_9_9 variants (2 cols per feed)
+        sub_inputs_rc_9_9: *const *const u32,           // 6*2=12 flat ptrs
+        sub_inputs_rc_9_9_b: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_c: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_d: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_e: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_f: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_g: *const *const u32,         // 3*2=6
+        sub_inputs_rc_9_9_h: *const *const u32,         // 3*2=6
+        // Sub-component inputs - rc_20 variants (1 col per feed)
+        sub_inputs_rc_20: *const *const u32,            // 12*1=12 flat ptrs
+        sub_inputs_rc_20_b: *const *const u32,          // 12*1=12
+        sub_inputs_rc_20_c: *const *const u32,          // 12*1=12
+        sub_inputs_rc_20_d: *const *const u32,          // 12*1=12
+        sub_inputs_rc_20_e: *const *const u32,          // 9*1=9
+        sub_inputs_rc_20_f: *const *const u32,          // 9*1=9
+        sub_inputs_rc_20_g: *const *const u32,          // 9*1=9
+        sub_inputs_rc_20_h: *const *const u32,          // 9*1=9
+        // Inputs
+        inputs: *const *const u32,                      // 72 input columns
+        n_rows: u32,                                    // Number of valid rows
+        log_size: u32,                                  // Log2 of trace size
+    );
+
+    /// Generate interaction trace for partial_ec_mul_wb18 from lookup_data.
+    /// Uses all lookup data arrays to compute the 65 LogUp columns.
+    pub fn gen_partial_ec_mul_wb18_interaction_trace(
+        // Lookup elements for each relation (18 total: pem + 8 rc_20 + 8 rc_9_9 + ppt unused)
+        partial_ec_mul_lookup_elements: *mut c_void,
+        rc_20_lookup_elements: *mut c_void,
+        rc_20_b_lookup_elements: *mut c_void,
+        rc_20_c_lookup_elements: *mut c_void,
+        rc_20_d_lookup_elements: *mut c_void,
+        rc_20_e_lookup_elements: *mut c_void,
+        rc_20_f_lookup_elements: *mut c_void,
+        rc_20_g_lookup_elements: *mut c_void,
+        rc_20_h_lookup_elements: *mut c_void,
+        rc_9_9_lookup_elements: *mut c_void,
+        rc_9_9_b_lookup_elements: *mut c_void,
+        rc_9_9_c_lookup_elements: *mut c_void,
+        rc_9_9_d_lookup_elements: *mut c_void,
+        rc_9_9_e_lookup_elements: *mut c_void,
+        rc_9_9_f_lookup_elements: *mut c_void,
+        rc_9_9_g_lookup_elements: *mut c_void,
+        rc_9_9_h_lookup_elements: *mut c_void,
+        // Lookup data pointers
+        lookup_partial_ec_mul_0: *const *const u32,     // 73 arrays
+        lookup_partial_ec_mul_1: *const *const u32,     // 73 arrays
+        lookup_ppt_0: *const *const u32,                // 58 arrays
+        lookup_rc_20: *const *const u32,                // 12*2=24 flat ptrs
+        lookup_rc_20_b: *const *const u32,              // 12*2=24
+        lookup_rc_20_c: *const *const u32,              // 12*2=24
+        lookup_rc_20_d: *const *const u32,              // 12*2=24
+        lookup_rc_20_e: *const *const u32,              // 9*2=18
+        lookup_rc_20_f: *const *const u32,              // 9*2=18
+        lookup_rc_20_g: *const *const u32,              // 9*2=18
+        lookup_rc_20_h: *const *const u32,              // 9*2=18
+        lookup_rc_9_9: *const *const u32,               // 6*3=18 flat ptrs
+        lookup_rc_9_9_b: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_c: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_d: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_e: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_f: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_g: *const *const u32,             // 3*3=9
+        lookup_rc_9_9_h: *const *const u32,             // 3*3=9
+        // Sizes
+        n_rows: u32,
+        log_size: u32,
+        // Output
+        interaction_trace_columns: *const *const u32,   // 4*65 = 260 cols
+        claimed_sum: *const u32,                        // 4 u32s for qm31
     );
 
 }

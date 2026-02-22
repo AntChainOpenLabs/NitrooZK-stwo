@@ -129,7 +129,6 @@ add_library(
         constraints/pedersen/evaluate_pedersen_points_table_window_bits_18.cu
         pedersen_table_init.cu
         #poseidon
-        constraints/poseidon/evaluate_poseidon_aggregator.cu
         constraints/poseidon/evaluate_poseidon_round_keys.cu
         constraints/poseidon/evaluate_poseidon_full_round_chain.cu
         constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cu
@@ -208,6 +207,7 @@ add_library(
         witness/gen_poseidon_3_partial_rounds_chain_trace.cu
         witness/gen_range_check_felt_252_width_27_trace.cu
         witness/gen_partial_ec_mul_trace.cu
+        witness/gen_partial_ec_mul_wb18_trace.cu
         witness/gen_pedersen_partial_ec_mul_inputs.cu
         witness/gen_pedersen_points_table_trace.cu
         # NOTE: gen_pedersen_table_on_gpu.cu is excluded due to multiple definition conflicts

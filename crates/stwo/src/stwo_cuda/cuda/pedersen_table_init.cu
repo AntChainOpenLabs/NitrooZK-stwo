@@ -553,6 +553,52 @@ extern "C" void free_pedersen_table() {
     printf("[PEDERSEN_TABLE_GPU] Freed GPU memory.\n");
 }
 
+// Upload pedersen table from host (CPU) data.
+// This copies pre-computed CPU table columns to GPU, guaranteeing exact match
+// with the SIMD reference path. Each column is n_rows M31 values.
+extern "C" void upload_pedersen_table_from_host(
+    const uint32_t** host_columns,  // 56 host-side column arrays (each n_rows uint32_t)
+    uint32_t n_cols,                // number of columns (must be 56)
+    uint32_t n_rows                 // padded row count (must be power of 2)
+) {
+    if (s_pedersen_table_gpu_initialized) {
+        printf("[PEDERSEN_TABLE_GPU] Already initialized, skipping host upload.\n");
+        return;
+    }
+
+    timer global_timer;
+    global_timer.start("upload_pedersen_table_from_host");
+
+    s_pedersen_table_gpu_n_rows = n_rows;
+
+    printf("[PEDERSEN_TABLE_GPU] Uploading %u columns × %u rows from host (%zu MB)...\n",
+           n_cols, n_rows,
+           (size_t)n_rows * n_cols * sizeof(m31) / (1024 * 1024));
+
+    // Allocate GPU memory and copy each column from host
+    for (int i = 0; i < INIT_PEDERSEN_TABLE_N_COLUMNS; i++) {
+        s_pedersen_table_gpu_ptrs[i] = cuda_malloc<m31>(n_rows);
+        if (i < (int)n_cols && host_columns[i] != nullptr) {
+            ASSERT_CUDA_SUCCESS(cudaMemcpy(
+                s_pedersen_table_gpu_ptrs[i], host_columns[i],
+                n_rows * sizeof(m31), cudaMemcpyHostToDevice));
+        } else {
+            cudaMemset(s_pedersen_table_gpu_ptrs[i], 0, n_rows * sizeof(m31));
+        }
+    }
+
+    // Set global device symbol pointers
+    m31** d_columns = clone_to_device<m31*>(s_pedersen_table_gpu_ptrs, INIT_PEDERSEN_TABLE_N_COLUMNS);
+    set_global_pedersen_table_pointers_kernel<<<1, 1>>>(d_columns, n_rows);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    cuda_free_memory(d_columns);
+
+    s_pedersen_table_gpu_initialized = true;
+    global_timer.end("upload_pedersen_table_from_host");
+    printf("[PEDERSEN_TABLE_GPU] Host upload complete!\n");
+}
+
 // Debug function: get base point P0 directly from constant memory
 __global__ void debug_get_P0_kernel(uint32_t* x_out, uint32_t* y_out) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {

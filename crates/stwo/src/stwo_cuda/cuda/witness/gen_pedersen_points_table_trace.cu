@@ -26,7 +26,10 @@
 #define PPT_INTERACTION_THREAD_COUNT_MAX 256
 
 // Kernel: generate logup fractions for pedersen_points_table
-// For each row: numerator = -mults[row], denominator = lookup_elements.combine(57 values)
+// For each row: numerator = -mults[row], denominator = lookup_elements.combine(58 values)
+//
+// All traces are stored in natural order (entry k at position k).
+// The BitReversedOrder type marker is handled by the FFT during interpolation.
 __global__ void pedersen_points_table_interaction_trace_col_gen_kernel(
     LookupElementsBasic<PEDERSEN_POINTS_TABLE_N_LOOKUP_VALUES> *lookup_elements,
     m31 *multiplicities,
@@ -39,11 +42,12 @@ __global__ void pedersen_points_table_interaction_trace_col_gen_kernel(
 ) {
     unsigned row = blockIdx.x * blockDim.x + threadIdx.x;
     if (row < trace_size) {
-        // Build the 57 lookup values: [seq, p0, p1, ..., p55]
+        // Build the 58 lookup values: [relation_id, seq, p0, p1, ..., p55]
         m31 values[PEDERSEN_POINTS_TABLE_N_LOOKUP_VALUES];
-        values[0] = m31{row};  // seq = row index
+        values[0] = PEDERSEN_POINTS_TABLE_RELATION_ID;  // relation ID constant
+        values[1] = row;  // seq = table index (natural order)
         for (int i = 0; i < PEDERSEN_TABLE_N_COLUMNS; i++) {
-            values[1 + i] = g_pedersen_table_columns[i][row];
+            values[2 + i] = g_pedersen_table_columns[i][row];
         }
 
         // numerator = -multiplicities[row]
