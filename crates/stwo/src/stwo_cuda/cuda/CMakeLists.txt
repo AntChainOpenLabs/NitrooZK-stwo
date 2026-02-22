@@ -199,7 +199,6 @@ add_library(
         witness/gen_bitwise_builtin_trace.cu
         witness/gen_range_check_builtin_bits_96_trace.cu
         witness/gen_range_check_builtin_bits_128_trace.cu
-        witness/gen_pedersen_builtin_trace.cu
         witness/gen_poseidon_builtin_trace.cu
         witness/gen_verify_instruction_trace.cu
         witness/gen_cube_252_trace.cu
@@ -208,7 +207,6 @@ add_library(
         witness/gen_range_check_felt_252_width_27_trace.cu
         witness/gen_partial_ec_mul_trace.cu
         witness/gen_partial_ec_mul_wb18_trace.cu
-        witness/gen_pedersen_partial_ec_mul_inputs.cu
         witness/gen_pedersen_points_table_trace.cu
         # NOTE: gen_pedersen_table_on_gpu.cu is excluded due to multiple definition conflicts
         # with ec_ops.cuh and pedersen_table.cuh. The GPU table generation feature is experimental

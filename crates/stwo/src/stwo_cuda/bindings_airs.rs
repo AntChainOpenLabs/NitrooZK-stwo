@@ -2781,52 +2781,6 @@ extern "C" {
         log_size: u32,
     );
 
-    pub fn gen_pedersen_builtin_interaction_trace(
-        interaction_trace: *const *const u32,
-        n_interaction_columns: u32,
-
-        // Lookup data - memory_address_to_id (3 lookups)
-        lookup_memory_address_to_id_0: *const *const u32,
-        lookup_memory_address_to_id_1: *const *const u32,
-        lookup_memory_address_to_id_2: *const *const u32,
-
-        // Lookup data - memory_id_to_big (3 lookups)
-        lookup_memory_id_to_big_0: *const *const u32,
-        lookup_memory_id_to_big_1: *const *const u32,
-        lookup_memory_id_to_big_2: *const *const u32,
-
-        // Lookup data - partial_ec_mul (8 lookups)
-        lookup_partial_ec_mul_0: *const *const u32,
-        lookup_partial_ec_mul_1: *const *const u32,
-        lookup_partial_ec_mul_2: *const *const u32,
-        lookup_partial_ec_mul_3: *const *const u32,
-        lookup_partial_ec_mul_4: *const *const u32,
-        lookup_partial_ec_mul_5: *const *const u32,
-        lookup_partial_ec_mul_6: *const *const u32,
-        lookup_partial_ec_mul_7: *const *const u32,
-
-        // Lookup data - range_check_5_4 (2 lookups)
-        lookup_range_check_5_4_0: *const *const u32,
-        lookup_range_check_5_4_1: *const *const u32,
-
-        // Lookup data - range_check_8 (4 lookups)
-        lookup_range_check_8_0: *const *const u32,
-        lookup_range_check_8_1: *const *const u32,
-        lookup_range_check_8_2: *const *const u32,
-        lookup_range_check_8_3: *const *const u32,
-
-        // Lookup elements (relations)
-        memory_address_to_id: *const u32,
-        memory_id_to_big: *const u32,
-        partial_ec_mul: *const u32,
-        range_check_5_4: *const u32,
-        range_check_8: *const u32,
-
-        claimed_sum: *const u32,
-        n_rows: u32,
-        log_size: u32,
-    );
-
     // Pedersen table management - upload and free the ~1.8GB PEDERSEN_TABLE for GPU EC operations
     pub fn pedersen_table_init(
         columns: *const *const u32,  // Array of 56 column pointers (28 for x, 28 for y)
@@ -2900,65 +2854,6 @@ extern "C" {
     pub fn gen_bitwise_xor_columns_on_gpu(
         output_columns: *const *const u32,  // Array of 3 column pointers (a, b, a^b)
         n_bits: u32,                         // Number of bits (4, 7, 8, 9, or 10)
-    );
-
-    // Full GPU trace generation for pedersen_builtin (computes partial_ec_mul on GPU)
-    pub fn gen_pedersen_builtin_trace_full_gpu(
-        traces: *const *const u32,
-        n_trace_columns: u32,
-
-        // Lookup data - memory_address_to_id (3 lookups)
-        lookup_memory_address_to_id_0: *const *const u32,
-        lookup_memory_address_to_id_1: *const *const u32,
-        lookup_memory_address_to_id_2: *const *const u32,
-
-        // Lookup data - memory_id_to_big (3 lookups)
-        lookup_memory_id_to_big_0: *const *const u32,
-        lookup_memory_id_to_big_1: *const *const u32,
-        lookup_memory_id_to_big_2: *const *const u32,
-
-        // Lookup data - partial_ec_mul (8 lookups)
-        lookup_partial_ec_mul_0: *const *const u32,
-        lookup_partial_ec_mul_1: *const *const u32,
-        lookup_partial_ec_mul_2: *const *const u32,
-        lookup_partial_ec_mul_3: *const *const u32,
-        lookup_partial_ec_mul_4: *const *const u32,
-        lookup_partial_ec_mul_5: *const *const u32,
-        lookup_partial_ec_mul_6: *const *const u32,
-        lookup_partial_ec_mul_7: *const *const u32,
-
-        // Lookup data - range_check_5_4 (2 lookups)
-        lookup_range_check_5_4_0: *const *const u32,
-        lookup_range_check_5_4_1: *const *const u32,
-
-        // Lookup data - range_check_8 (4 lookups)
-        lookup_range_check_8_0: *const *const u32,
-        lookup_range_check_8_1: *const *const u32,
-        lookup_range_check_8_2: *const *const u32,
-        lookup_range_check_8_3: *const *const u32,
-
-        // Sub-component inputs
-        sub_component_inputs_memory_address_to_id: *const *const u32,
-        sub_component_inputs_memory_id_to_big: *const *const u32,
-
-        // Builtin segment info
-        segment_start: u32,
-
-        // Memory lookup tables
-        memory_address_to_id_address_to_raw_id: *const u32,
-        memory_id_to_big_transposed_big_values: *const *const u32,
-        memory_id_to_big_small_values: *const u32,
-
-        n_rows: u32,
-        log_size: u32,
-    );
-
-    // === PEDERSEN PARTIAL_EC_MUL INPUTS (GPU-side generation) ===
-    pub fn generate_pedersen_partial_ec_mul_inputs(
-        pedersen_trace: *const *const u32,      // pedersen trace column device ptrs
-        output: *const *const *const u32,       // output[30][73] column device ptrs
-        n_trace_columns: u32,                   // number of pedersen trace columns
-        n_rows: u32,
     );
 
     // === POSEIDON_BUILTIN ===
