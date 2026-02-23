@@ -3688,4 +3688,41 @@ extern "C" {
         claimed_sum: *const u32,                        // 4 u32s for qm31
     );
 
+    // ========================================================================
+    // pedersen_aggregator_window_bits_18 (206-col native CUDA)
+    // ========================================================================
+
+    /// Native CUDA trace generation for pedersen_aggregator_wb18.
+    /// Generates 206-col trace, lookup_data, and sub_component_inputs in a single kernel.
+    /// Uses the GPU-resident pedersen table directly, eliminating the CPU table.
+    pub fn gen_pedersen_aggregator_wb18_trace(
+        traces: *const *const u32,                      // 206 trace output columns
+        // Lookup data
+        lk_mem_0: *const *const u32,                    // 30 arrays (memory_id_to_big #0)
+        lk_mem_1: *const *const u32,                    // 30 arrays (memory_id_to_big #1)
+        lk_mem_2: *const *const u32,                    // 30 arrays (memory_id_to_big #2)
+        lk_rc8_0: *const *const u32,                    // 2 arrays (range_check_8 #0)
+        lk_rc8_1: *const *const u32,                    // 2 arrays (range_check_8 #1)
+        lk_rc8_2: *const *const u32,                    // 2 arrays (range_check_8 #2)
+        lk_rc8_3: *const *const u32,                    // 2 arrays (range_check_8 #3)
+        lk_pem_0: *const *const u32,                    // 73 arrays (PEM chain 0 input)
+        lk_pem_1: *const *const u32,                    // 73 arrays (PEM chain 0 output)
+        lk_pem_2: *const *const u32,                    // 73 arrays (PEM chain 1 input)
+        lk_pem_3: *const *const u32,                    // 73 arrays (PEM chain 1 output)
+        lk_agg_0: *const *const u32,                    // 4 arrays (self-lookup)
+        mults: *const u32,                              // multiplicity data
+        // Sub-component inputs
+        sub_mem: *const *const u32,                     // 3 arrays
+        sub_rc8: *const *const u32,                     // 4 arrays
+        sub_pem: *const *const u32,                     // 72 arrays (each 28*trace_size)
+        // Inputs
+        inputs: *const *const u32,                      // 3 input columns
+        // Memory state
+        transpose_big_value_ptr: *const *const u32,     // memory_id_to_big transpose ptrs
+        small_value_ptr: *const u32,                    // memory_id_to_big small values
+        // Sizes
+        n_rows: u32,
+        log_size: u32,
+    );
+
 }

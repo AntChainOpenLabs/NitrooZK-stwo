@@ -208,6 +208,7 @@ add_library(
         witness/gen_partial_ec_mul_trace.cu
         witness/gen_partial_ec_mul_wb18_trace.cu
         witness/gen_pedersen_points_table_trace.cu
+        witness/gen_pedersen_aggregator_wb18_trace.cu
         # NOTE: gen_pedersen_table_on_gpu.cu is excluded due to multiple definition conflicts
         # with ec_ops.cuh and pedersen_table.cuh. The GPU table generation feature is experimental
         # and requires header refactoring to work properly.
