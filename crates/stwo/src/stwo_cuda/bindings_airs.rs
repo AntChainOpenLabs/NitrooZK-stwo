@@ -3575,7 +3575,7 @@ extern "C" {
     // Interaction trace generation for pedersen_points_table (pure CUDA path).
     // Generates logup interaction trace using GPU-resident pedersen table columns.
     pub fn pedersen_points_table_interaction_trace(
-        lookup_elements: *mut c_void,       // LookupElementsBasic<57> from Rust
+        lookup_elements: *mut c_void,       // LookupElementsBasic<58> from Rust
         multiplicities: *const u32,         // GPU multiplicities
         log_size: u32,                      // Log2 of table size (23)
         interaction_traces: *const *const u32, // 4 output columns (qm31 components)

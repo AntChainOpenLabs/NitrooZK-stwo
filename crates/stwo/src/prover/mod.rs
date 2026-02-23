@@ -59,11 +59,14 @@ pub fn prove_ex<B: BackendForChannel<MC>, MC: MerkleChannel>(
         class = "CompositionPolynomialGeneration"
     )
     .entered();
+    let t_comp = std::time::Instant::now();
     let composition_poly = component_provers.compute_composition_polynomial(random_coeff, &trace);
     span1.exit();
+    eprintln!("[PROFILE]   prove_ex: composition gen:    {}ms", t_comp.elapsed().as_millis());
 
     // Commit on the Composition Polynomial by splitting its coeffs to two polynomialsof degree
     // half the size of the original polynomial, and commit on each half separately.
+    let t_comp = std::time::Instant::now();
     let mut tree_builder = commitment_scheme.tree_builder();
     let (left_comp_poly_half, right_comp_poly_half) = composition_poly.split_at_mid();
 
@@ -71,6 +74,7 @@ pub fn prove_ex<B: BackendForChannel<MC>, MC: MerkleChannel>(
     tree_builder.extend_polys(right_comp_poly_half.into_coordinate_polys());
     tree_builder.commit(channel);
     span.exit();
+    eprintln!("[PROFILE]   prove_ex: composition commit: {}ms", t_comp.elapsed().as_millis());
 
     // Draw OODS point.
     let oods_point = CirclePoint::<SecureField>::get_random_point(channel);
@@ -112,8 +116,10 @@ pub fn prove_ex<B: BackendForChannel<MC>, MC: MerkleChannel>(
     sample_points.push(vec![vec![oods_point]; 2 * SECURE_EXTENSION_DEGREE]);
 
     // Prove the trace and composition OODS values, and retrieve them.
+    let t_pv = std::time::Instant::now();
     let commitment_scheme_proof = commitment_scheme.prove_values(sample_points, channel);
     let proof = StarkProof(commitment_scheme_proof.proof);
+    eprintln!("[PROFILE]   prove_ex: prove_values:       {}ms", t_pv.elapsed().as_millis());
     info!(proof_size_estimate = proof.size_estimate());
 
     // Evaluate composition polynomial at OODS point and check that it matches the trace OODS
