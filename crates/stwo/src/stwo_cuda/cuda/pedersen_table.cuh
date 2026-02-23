@@ -2,10 +2,10 @@
 // The table stores pre-computed EC points for the Pedersen hash
 //
 // Table structure (matches CPU implementation):
-// - P0 section: 14 blocks × 2^18 rows for value A low bits
-// - P1 section: 16 rows for value A high bits
-// - P2 section: 14 blocks × 2^18 rows for value B low bits
-// - P3 section: 16 rows for value B high bits
+// - P0 low section:  13 windows x 2^18 rows for value A low bits
+// - P0P1 high section: 16 sub-blocks x 2^14 rows for value A high bits
+// - P2 low section:  13 windows x 2^18 rows for value B low bits
+// - P2P3 high section: 16 sub-blocks x 2^14 rows for value B high bits
 //
 // Each row contains an (x, y) point where x and y are Felt252 (252-bit field elements)
 // stored as 28 M31 limbs each (56 total columns)
@@ -16,16 +16,20 @@
 #include "fields.cuh"
 #include "ec_ops.cuh"
 
-// Table parameters (must match Rust constants)
+// Table parameters (must match Rust constants and pedersen_table_init.cu)
 #define PEDERSEN_BITS_PER_WINDOW 18
-#define PEDERSEN_NUM_WINDOWS 14  // ceil(252 / 18)
+#define PEDERSEN_NUM_LOW_WINDOWS 13  // 252 / 18 - 1 = 13 low windows per section
 #define PEDERSEN_ROWS_PER_WINDOW (1 << PEDERSEN_BITS_PER_WINDOW)  // 262144
 
-#define PEDERSEN_P0_SECTION_START 0
-#define PEDERSEN_P1_SECTION_START (PEDERSEN_P0_SECTION_START + PEDERSEN_NUM_WINDOWS * PEDERSEN_ROWS_PER_WINDOW)
-#define PEDERSEN_P2_SECTION_START (PEDERSEN_P1_SECTION_START + 16)
-#define PEDERSEN_P3_SECTION_START (PEDERSEN_P2_SECTION_START + PEDERSEN_NUM_WINDOWS * PEDERSEN_ROWS_PER_WINDOW)
-#define PEDERSEN_TABLE_N_ROWS_UNPADDED (PEDERSEN_P3_SECTION_START + 16)
+#define PEDERSEN_HIGH_BITS (PEDERSEN_BITS_PER_WINDOW - 4)  // 14
+#define PEDERSEN_HIGH_ROWS_PER_SUBBLOCK (1 << PEDERSEN_HIGH_BITS)  // 16384
+#define PEDERSEN_HIGH_NUM_SUBBLOCKS 16
+
+#define PEDERSEN_P0_LOW_START 0
+#define PEDERSEN_P0P1_HIGH_START (PEDERSEN_NUM_LOW_WINDOWS * PEDERSEN_ROWS_PER_WINDOW)  // 3407872
+#define PEDERSEN_P2_LOW_START (PEDERSEN_P0P1_HIGH_START + PEDERSEN_HIGH_NUM_SUBBLOCKS * PEDERSEN_HIGH_ROWS_PER_SUBBLOCK)  // 3670016
+#define PEDERSEN_P2P3_HIGH_START (PEDERSEN_P2_LOW_START + PEDERSEN_NUM_LOW_WINDOWS * PEDERSEN_ROWS_PER_WINDOW)  // 7077888
+#define PEDERSEN_TABLE_N_ROWS_UNPADDED (PEDERSEN_P2P3_HIGH_START + PEDERSEN_HIGH_NUM_SUBBLOCKS * PEDERSEN_HIGH_ROWS_PER_SUBBLOCK)  // 7340032
 
 // Table column count: 28 M31 limbs for x + 28 M31 limbs for y = 56 columns
 #define PEDERSEN_TABLE_N_COLUMNS 56
@@ -35,17 +39,6 @@
 // Note: Definitions are in pedersen_table_init.cu
 extern __device__ m31* g_pedersen_table_columns[PEDERSEN_TABLE_N_COLUMNS];
 extern __device__ uint32_t g_pedersen_table_n_rows;
-
-// Host-side pointers for table management (defined inline in implementation section below)
-
-// Initialize the Pedersen table on GPU
-// Called once from Rust to upload the table
-// columns: array of 56 column pointers (each column has n_rows M31 elements)
-// n_rows: number of rows in the table (must be power of 2)
-extern "C" void pedersen_table_init(m31** columns, uint32_t n_rows);
-
-// Free the Pedersen table from GPU memory
-extern "C" void pedersen_table_free();
 
 // Device function to look up a point from the table
 // table_row: row index in the table
@@ -70,51 +63,6 @@ __device__ void felt252_to_28_limbs(const felt252& value, m31* limbs);
 // Implementation
 // ============================================================================
 
-// Host-side variables for CPU upload path
-inline m31** h_pedersen_table_device_ptrs = nullptr;
-inline bool g_pedersen_table_initialized = false;
-
-// Kernel to copy table column pointers to device global variables
-static __global__ void set_pedersen_table_pointers_kernel(m31** column_ptrs, uint32_t n_rows) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        for (int i = 0; i < PEDERSEN_TABLE_N_COLUMNS; i++) {
-            g_pedersen_table_columns[i] = column_ptrs[i];
-        }
-        g_pedersen_table_n_rows = n_rows;
-    }
-}
-
-// Internal implementation for CPU upload (used by gen_pedersen_builtin_trace.cu)
-inline void pedersen_table_init_impl(m31** columns, uint32_t n_rows) {
-    if (g_pedersen_table_initialized) {
-        return;  // Already initialized
-    }
-
-    // Clone column pointers to device
-    h_pedersen_table_device_ptrs = clone_to_device<m31*>(columns, PEDERSEN_TABLE_N_COLUMNS);
-
-    // Set the global device pointers
-    set_pedersen_table_pointers_kernel<<<1, 1>>>(h_pedersen_table_device_ptrs, n_rows);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
-    g_pedersen_table_initialized = true;
-}
-
-inline void pedersen_table_free_impl() {
-    if (!g_pedersen_table_initialized) {
-        return;
-    }
-
-    // Free the pointer array
-    if (h_pedersen_table_device_ptrs != nullptr) {
-        cuda_free_memory(h_pedersen_table_device_ptrs);
-        h_pedersen_table_device_ptrs = nullptr;
-    }
-
-    g_pedersen_table_initialized = false;
-}
-
 __device__ __forceinline__ void pedersen_table_lookup(
     uint32_t table_row,
     m31* x_limbs,
@@ -136,8 +84,8 @@ __device__ __forceinline__ void felt252_from_28_limbs(felt252& result, const m31
         result.limbs[i] = 0;
     }
 
-    // Each M31 limb is 9 bits (252 bits total = 28 × 9)
-    // We need to combine them into 8 × 32 = 256 bits
+    // Each M31 limb is 9 bits (252 bits total = 28 x 9)
+    // We need to combine them into 8 x 32 = 256 bits
     uint64_t accumulator = 0;
     int bits_in_acc = 0;
     int result_idx = 0;

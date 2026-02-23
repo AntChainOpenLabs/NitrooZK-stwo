@@ -23,17 +23,28 @@
 #include "ec_ops.cuh"
 
 // ============================================================================
-// Table Parameters (must match pedersen_table.cuh)
+// Table Parameters (must match pedersen_table.cuh and CPU pedersen.rs)
 // ============================================================================
 #define INIT_PEDERSEN_BITS_PER_WINDOW 18
-#define INIT_PEDERSEN_NUM_WINDOWS 14
+#define INIT_PEDERSEN_NUM_LOW_WINDOWS 13  // 252 / 18 - 1 = 13 low windows per section
 #define INIT_PEDERSEN_ROWS_PER_WINDOW (1 << INIT_PEDERSEN_BITS_PER_WINDOW)  // 262144
 
-#define INIT_PEDERSEN_P0_START 0
-#define INIT_PEDERSEN_P1_START (INIT_PEDERSEN_P0_START + INIT_PEDERSEN_NUM_WINDOWS * INIT_PEDERSEN_ROWS_PER_WINDOW)  // 3670016
-#define INIT_PEDERSEN_P2_START (INIT_PEDERSEN_P1_START + 16)  // 3670032
-#define INIT_PEDERSEN_P3_START (INIT_PEDERSEN_P2_START + INIT_PEDERSEN_NUM_WINDOWS * INIT_PEDERSEN_ROWS_PER_WINDOW)  // 7340048
-#define INIT_PEDERSEN_TABLE_N_ROWS_UNPADDED (INIT_PEDERSEN_P3_START + 16)  // 7340064
+// High section: last 18 bits split as 14 bits (row index) + 4 bits (sub-block index)
+#define INIT_PEDERSEN_HIGH_BITS (INIT_PEDERSEN_BITS_PER_WINDOW - 4)  // 14
+#define INIT_PEDERSEN_HIGH_ROWS_PER_SUBBLOCK (1 << INIT_PEDERSEN_HIGH_BITS)  // 16384
+#define INIT_PEDERSEN_HIGH_NUM_SUBBLOCKS 16  // 2^4
+
+// Section layout:
+// P0 low:      13 windows x 262144 = 3,407,872 rows
+// P0/P1 high:  16 sub-blocks x 16384 = 262,144 rows
+// P2 low:      13 windows x 262144 = 3,407,872 rows
+// P2/P3 high:  16 sub-blocks x 16384 = 262,144 rows
+// Total:       7,340,032 rows
+#define INIT_PEDERSEN_P0_LOW_START 0
+#define INIT_PEDERSEN_P0P1_HIGH_START (INIT_PEDERSEN_NUM_LOW_WINDOWS * INIT_PEDERSEN_ROWS_PER_WINDOW)  // 3407872
+#define INIT_PEDERSEN_P2_LOW_START (INIT_PEDERSEN_P0P1_HIGH_START + INIT_PEDERSEN_HIGH_NUM_SUBBLOCKS * INIT_PEDERSEN_HIGH_ROWS_PER_SUBBLOCK)  // 3670016
+#define INIT_PEDERSEN_P2P3_HIGH_START (INIT_PEDERSEN_P2_LOW_START + INIT_PEDERSEN_NUM_LOW_WINDOWS * INIT_PEDERSEN_ROWS_PER_WINDOW)  // 7077888
+#define INIT_PEDERSEN_TABLE_N_ROWS_UNPADDED (INIT_PEDERSEN_P2P3_HIGH_START + INIT_PEDERSEN_HIGH_NUM_SUBBLOCKS * INIT_PEDERSEN_HIGH_ROWS_PER_SUBBLOCK)  // 7340032
 #define INIT_PEDERSEN_TABLE_N_COLUMNS 56
 
 // ============================================================================
@@ -190,29 +201,29 @@ __device__ void ec_double_projective(ProjectivePointCuda& P) {
     felt252 Z = P.Z;
 
     // Formula dbl-2007-bl from https://hyperelliptic.org/EFD/g1p/auto-shortw-projective.html
-    // For curve y² = x³ + ax + b with a = 1 (Starknet curve)
+    // For curve y^2 = x^3 + ax + b with a = 1 (Starknet curve)
     // w = 3 * X^2 + a * Z^2
     felt252 XX = felt_mul(X, X);
     felt252 ZZ = felt_mul(Z, Z);
     felt252 w = felt_add(felt_add(XX, XX), XX);  // 3*X^2
     w = felt_add(w, ZZ);  // + Z^2
 
-    // s = 2*Y*Z (FIX: was Y*Z which caused all downstream values to be wrong)
+    // s = 2*Y*Z
     felt252 YZ = felt_mul(Y, Z);
     felt252 s = felt_add(YZ, YZ);  // s = 2*Y*Z
     felt252 ss = felt_mul(s, s);
     felt252 sss = felt_mul(s, ss);
-    felt252 R = felt_mul(Y, s);    // R = Y*s = 2*Y²*Z
-    felt252 RR = felt_mul(R, R);   // RR = R² = 4*Y⁴*Z²
+    felt252 R = felt_mul(Y, s);    // R = Y*s = 2*Y^2*Z
+    felt252 RR = felt_mul(R, R);   // RR = R^2 = 4*Y^4*Z^2
 
     felt252 X_plus_R = felt_add(X, R);
     felt252 B = felt_mul(X_plus_R, X_plus_R);
     B = felt_sub(B, XX);
-    B = felt_sub(B, RR);  // B = (X+R)² - X² - R² = 2*X*R = 4*X*Y²*Z
+    B = felt_sub(B, RR);  // B = (X+R)^2 - X^2 - R^2 = 2*X*R = 4*X*Y^2*Z
 
     felt252 ww = felt_mul(w, w);
     felt252 two_B = felt_add(B, B);
-    felt252 h = felt_sub(ww, two_B);  // h = w² - 2*B
+    felt252 h = felt_sub(ww, two_B);  // h = w^2 - 2*B
 
     P.X = felt_mul(h, s);  // X3 = h*s
 
@@ -221,8 +232,7 @@ __device__ void ec_double_projective(ProjectivePointCuda& P) {
     felt252 two_RR = felt_add(RR, RR);
     P.Y = felt_sub(w_Bh, two_RR);  // Y3 = w*(B-h) - 2*RR
 
-    // Z3 = s³ (FIX: was 8*s³ which was a hack to compensate for wrong s)
-    P.Z = sss;
+    P.Z = sss;  // Z3 = s^3
 }
 
 // ============================================================================
@@ -247,16 +257,12 @@ __device__ void load_base_point(PedersenPointType point_type, felt252& x, felt25
 }
 
 // ============================================================================
-// Optimized Kernel using Binary Decomposition
+// Low Section Kernel — Binary Decomposition (18-bit windows)
 // ============================================================================
 //
-// Key insight: Entry[k] = -SHIFT_POINT + k * scaled_base
-// where k = b_17*2^17 + b_16*2^16 + ... + b_1*2 + b_0 (18 bits)
-//
-// So Entry[k] = -SHIFT_POINT + sum(b_i * 2^i * scaled_base) for bits where b_i=1
-//
-// We precompute 18 powers: powers[i] = 2^i * scaled_base
-// Each thread only adds powers for set bits (max 18 additions vs 262,143)
+// Generates one window of a low section.
+// Entry[k] = -SHIFT + k * (base_point << (18 * window))
+// Binary decomposition: k has 18 bits, so at most 18 EC additions per thread.
 //
 __global__ void gen_pedersen_block_optimized_kernel(
     m31** columns,
@@ -283,11 +289,6 @@ __global__ void gen_pedersen_block_optimized_kernel(
         }
 
         // Compute 18 powers: powers[i] = 2^i * scaled_base
-        // powers[0] = scaled_base
-        // powers[1] = 2 * scaled_base
-        // powers[2] = 4 * scaled_base
-        // ...
-        // powers[17] = 2^17 * scaled_base
         for (int i = 0; i < INIT_PEDERSEN_BITS_PER_WINDOW; i++) {
             projective_to_affine(P, s_powers[i]);
             ec_double_projective(P);
@@ -306,7 +307,6 @@ __global__ void gen_pedersen_block_optimized_kernel(
     negate_projective_y(acc);
 
     // Phase 2: Binary decomposition - add only powers for set bits
-    // Entry[k] = -SHIFT_POINT + sum(b_i * powers[i]) where b_i is bit i of k
     #pragma unroll
     for (int bit = 0; bit < INIT_PEDERSEN_BITS_PER_WINDOW; bit++) {
         if (k & (1u << bit)) {
@@ -330,99 +330,106 @@ __global__ void gen_pedersen_block_optimized_kernel(
     }
 }
 
-// Legacy kernel (kept for reference/fallback, but not used)
-__global__ void gen_pedersen_block_kernel_init(
+// ============================================================================
+// High Section Kernel — Binary Decomposition (14-bit rows, 16 sub-blocks)
+// ============================================================================
+//
+// Generates one sub-block of a high section.
+// Entry[k] = -SHIFT + subblock_idx * high_point + k * raised_low
+// where raised_low = low_point << (num_low_windows * bits_per_window) = low_point << 234
+//
+// Binary decomposition: k has 14 bits, so at most 14 EC additions per thread.
+// subblock_idx additions (at most 15) are done per-thread since it's negligible.
+//
+__global__ void gen_pedersen_high_section_kernel(
     m31** columns,
-    uint32_t block_start_row,
-    uint32_t n_rows_in_block,
-    PedersenPointType point_type,
-    uint32_t window
+    uint32_t section_start_row,
+    PedersenPointType low_point_type,
+    PedersenPointType high_point_type,
+    uint32_t subblock_idx
 ) {
-    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= n_rows_in_block) return;
+    // Shared memory for precomputed values
+    __shared__ AffinePointCuda s_powers[INIT_PEDERSEN_HIGH_BITS];  // 14 binary decomposition powers
+    __shared__ AffinePointCuda s_high_point;  // high point (P1 or P3) in affine form
 
-    uint32_t output_row = block_start_row + idx;
+    // Phase 0: Thread 0 precomputes raised_low powers and high_point
+    if (threadIdx.x == 0) {
+        // Load low point (P0 or P2) and compute raised_low = low_point << 234
+        AffinePointCuda low_base;
+        load_base_point(low_point_type, low_base.x, low_base.y);
+        ProjectivePointCuda raised_low = affine_to_projective(low_base);
+        for (int i = 0; i < INIT_PEDERSEN_NUM_LOW_WINDOWS * INIT_PEDERSEN_BITS_PER_WINDOW; i++) {
+            ec_double_projective(raised_low);
+        }
 
-    // Load base point from constant memory
-    AffinePointCuda base_point;
-    load_base_point(point_type, base_point.x, base_point.y);
+        // Compute 14 binary decomposition powers of raised_low
+        for (int i = 0; i < INIT_PEDERSEN_HIGH_BITS; i++) {
+            projective_to_affine(raised_low, s_powers[i]);
+            ec_double_projective(raised_low);
+        }
 
-    // Compute 2^(18*window) * base_point
-    ProjectivePointCuda scaled_base = affine_to_projective(base_point);
-    for (uint32_t i = 0; i < 18 * window; i++) {
-        ec_double_projective(scaled_base);
+        // Load high point (P1 or P3) for sub-block offset
+        load_base_point(high_point_type, s_high_point.x, s_high_point.y);
     }
+    __syncthreads();
 
-    // Load -SHIFT_POINT as initial accumulator
-    AffinePointCuda shift_point;
-    load_shift_point(shift_point.x, shift_point.y);
+    // Each thread computes its entry
+    uint32_t k = blockIdx.x * blockDim.x + threadIdx.x;
+    if (k >= INIT_PEDERSEN_HIGH_ROWS_PER_SUBBLOCK) return;
 
-    // Convert to projective (which converts to Montgomery form), then negate Y
-    ProjectivePointCuda acc = affine_to_projective(shift_point);
+    // Phase 1: Start with -SHIFT_POINT
+    AffinePointCuda shift;
+    load_shift_point(shift.x, shift.y);
+    ProjectivePointCuda acc = affine_to_projective(shift);
     negate_projective_y(acc);
 
-    // Convert scaled_base to affine for mixed addition
-    AffinePointCuda scaled_base_affine;
-    projective_to_affine(scaled_base, scaled_base_affine);
-
-    // Add scaled_base idx times
-    for (uint32_t k = 0; k < idx; k++) {
-        ec_add_mixed(acc, scaled_base_affine);
+    // Phase 2: Add subblock_idx copies of high_point (at most 15 additions)
+    for (uint32_t j = 0; j < subblock_idx; j++) {
+        ec_add_mixed(acc, s_high_point);
     }
 
-    // Convert to affine
+    // Phase 3: Binary decomposition of k using 14 precomputed powers of raised_low
+    #pragma unroll
+    for (int bit = 0; bit < INIT_PEDERSEN_HIGH_BITS; bit++) {
+        if (k & (1u << bit)) {
+            ec_add_mixed(acc, s_powers[bit]);
+        }
+    }
+
+    // Phase 4: Convert to affine (includes field inversion)
     AffinePointCuda result;
     projective_to_affine(acc, result);
 
-    // Convert to 28 M31 limbs and store
+    // Phase 5: Store to columns
     m31 x_limbs[28], y_limbs[28];
     felt252_to_m31_28_limbs(result.x, x_limbs);
     felt252_to_m31_28_limbs(result.y, y_limbs);
 
-    // Store to output columns
+    uint32_t output_row = section_start_row + subblock_idx * INIT_PEDERSEN_HIGH_ROWS_PER_SUBBLOCK + k;
     for (int i = 0; i < 28; i++) {
         columns[i][output_row] = x_limbs[i];
         columns[28 + i][output_row] = y_limbs[i];
     }
 }
 
-__global__ void gen_pedersen_small_section_kernel_init(
+// ============================================================================
+// Padding Kernel — copies row 0 values to padding rows
+// ============================================================================
+//
+// CPU pads with copies of rows[0]. This kernel does the same on GPU.
+//
+__global__ void pad_pedersen_table_kernel(
     m31** columns,
-    uint32_t section_start_row,
-    uint32_t n_rows_in_section,
-    PedersenPointType point_type
+    uint32_t src_row,
+    uint32_t pad_start,
+    uint32_t pad_end
 ) {
     uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= n_rows_in_section) return;
+    uint32_t dst_row = pad_start + idx;
+    if (dst_row >= pad_end) return;
 
-    uint32_t output_row = section_start_row + idx;
-
-    // Load base point from constant memory
-    AffinePointCuda base_point;
-    load_base_point(point_type, base_point.x, base_point.y);
-
-    // Load -SHIFT_POINT as initial accumulator
-    AffinePointCuda shift_point;
-    load_shift_point(shift_point.x, shift_point.y);
-
-    // Convert to projective (Montgomery form), then negate Y
-    ProjectivePointCuda acc = affine_to_projective(shift_point);
-    negate_projective_y(acc);
-
-    for (uint32_t k = 0; k < idx; k++) {
-        ec_add_mixed(acc, base_point);
-    }
-
-    AffinePointCuda result;
-    projective_to_affine(acc, result);
-
-    m31 x_limbs[28], y_limbs[28];
-    felt252_to_m31_28_limbs(result.x, x_limbs);
-    felt252_to_m31_28_limbs(result.y, y_limbs);
-
-    for (int i = 0; i < 28; i++) {
-        columns[i][output_row] = x_limbs[i];
-        columns[28 + i][output_row] = y_limbs[i];
+    for (int col = 0; col < INIT_PEDERSEN_TABLE_N_COLUMNS; col++) {
+        columns[col][dst_row] = columns[col][src_row];
     }
 }
 
@@ -454,7 +461,7 @@ extern "C" void initialize_pedersen_table() {
     while (n_rows < n_rows_unpadded) n_rows <<= 1;
 
     s_pedersen_table_gpu_n_rows = n_rows;
-    printf("[PEDERSEN_TABLE_GPU] Allocating %u rows × %d columns (%zu MB)...\n",
+    printf("[PEDERSEN_TABLE_GPU] Allocating %u rows x %d columns (%zu MB)...\n",
            n_rows, INIT_PEDERSEN_TABLE_N_COLUMNS,
            (size_t)n_rows * INIT_PEDERSEN_TABLE_N_COLUMNS * sizeof(m31) / (1024 * 1024));
 
@@ -469,11 +476,10 @@ extern "C" void initialize_pedersen_table() {
 
     const uint32_t BLOCK_SIZE = 256;
 
-    // Generate P0 section (14 windows × 262144 rows each)
-    // Using optimized binary decomposition kernel: O(log k) additions instead of O(k)
-    printf("[PEDERSEN_TABLE_GPU] Generating P0 section (optimized binary decomposition)...\n");
-    for (uint32_t window = 0; window < INIT_PEDERSEN_NUM_WINDOWS; window++) {
-        uint32_t block_start = INIT_PEDERSEN_P0_START + window * INIT_PEDERSEN_ROWS_PER_WINDOW;
+    // ---- P0 low section: 13 windows x 262144 rows ----
+    printf("[PEDERSEN_TABLE_GPU] Generating P0 low section (13 windows, binary decomposition)...\n");
+    for (uint32_t window = 0; window < INIT_PEDERSEN_NUM_LOW_WINDOWS; window++) {
+        uint32_t block_start = INIT_PEDERSEN_P0_LOW_START + window * INIT_PEDERSEN_ROWS_PER_WINDOW;
         uint32_t num_blocks = (INIT_PEDERSEN_ROWS_PER_WINDOW + BLOCK_SIZE - 1) / BLOCK_SIZE;
         gen_pedersen_block_optimized_kernel<<<num_blocks, BLOCK_SIZE>>>(
             d_columns, block_start, INIT_PEDERSEN_ROWS_PER_WINDOW,
@@ -482,18 +488,21 @@ extern "C" void initialize_pedersen_table() {
     }
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
-    // Generate P1 section (16 rows)
-    printf("[PEDERSEN_TABLE_GPU] Generating P1 section...\n");
-    gen_pedersen_small_section_kernel_init<<<1, 16>>>(
-        d_columns, INIT_PEDERSEN_P1_START, 16, POINT_P1
-    );
+    // ---- P0/P1 high section: 16 sub-blocks x 16384 rows ----
+    printf("[PEDERSEN_TABLE_GPU] Generating P0/P1 high section (16 sub-blocks)...\n");
+    for (uint32_t sb = 0; sb < INIT_PEDERSEN_HIGH_NUM_SUBBLOCKS; sb++) {
+        uint32_t num_blocks = (INIT_PEDERSEN_HIGH_ROWS_PER_SUBBLOCK + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        gen_pedersen_high_section_kernel<<<num_blocks, BLOCK_SIZE>>>(
+            d_columns, INIT_PEDERSEN_P0P1_HIGH_START,
+            POINT_P0, POINT_P1, sb
+        );
+    }
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
-    // Generate P2 section (14 windows × 262144 rows each)
-    // Using optimized binary decomposition kernel: O(log k) additions instead of O(k)
-    printf("[PEDERSEN_TABLE_GPU] Generating P2 section (optimized binary decomposition)...\n");
-    for (uint32_t window = 0; window < INIT_PEDERSEN_NUM_WINDOWS; window++) {
-        uint32_t block_start = INIT_PEDERSEN_P2_START + window * INIT_PEDERSEN_ROWS_PER_WINDOW;
+    // ---- P2 low section: 13 windows x 262144 rows ----
+    printf("[PEDERSEN_TABLE_GPU] Generating P2 low section (13 windows, binary decomposition)...\n");
+    for (uint32_t window = 0; window < INIT_PEDERSEN_NUM_LOW_WINDOWS; window++) {
+        uint32_t block_start = INIT_PEDERSEN_P2_LOW_START + window * INIT_PEDERSEN_ROWS_PER_WINDOW;
         uint32_t num_blocks = (INIT_PEDERSEN_ROWS_PER_WINDOW + BLOCK_SIZE - 1) / BLOCK_SIZE;
         gen_pedersen_block_optimized_kernel<<<num_blocks, BLOCK_SIZE>>>(
             d_columns, block_start, INIT_PEDERSEN_ROWS_PER_WINDOW,
@@ -502,12 +511,27 @@ extern "C" void initialize_pedersen_table() {
     }
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
-    // Generate P3 section (16 rows)
-    printf("[PEDERSEN_TABLE_GPU] Generating P3 section...\n");
-    gen_pedersen_small_section_kernel_init<<<1, 16>>>(
-        d_columns, INIT_PEDERSEN_P3_START, 16, POINT_P3
-    );
+    // ---- P2/P3 high section: 16 sub-blocks x 16384 rows ----
+    printf("[PEDERSEN_TABLE_GPU] Generating P2/P3 high section (16 sub-blocks)...\n");
+    for (uint32_t sb = 0; sb < INIT_PEDERSEN_HIGH_NUM_SUBBLOCKS; sb++) {
+        uint32_t num_blocks = (INIT_PEDERSEN_HIGH_ROWS_PER_SUBBLOCK + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        gen_pedersen_high_section_kernel<<<num_blocks, BLOCK_SIZE>>>(
+            d_columns, INIT_PEDERSEN_P2P3_HIGH_START,
+            POINT_P2, POINT_P3, sb
+        );
+    }
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // ---- Padding: copy row 0 to fill up to next power of 2 ----
+    if (n_rows > n_rows_unpadded) {
+        uint32_t pad_count = n_rows - n_rows_unpadded;
+        printf("[PEDERSEN_TABLE_GPU] Padding %u rows (copying row 0)...\n", pad_count);
+        uint32_t num_blocks = (pad_count + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        pad_pedersen_table_kernel<<<num_blocks, BLOCK_SIZE>>>(
+            d_columns, 0, n_rows_unpadded, n_rows
+        );
+        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    }
 
     // Set global device symbol pointers (same symbols used by pedersen_table.cuh)
     set_global_pedersen_table_pointers_kernel<<<1, 1>>>(d_columns, n_rows);
@@ -551,392 +575,4 @@ extern "C" void free_pedersen_table() {
     s_pedersen_table_gpu_initialized = false;
     s_pedersen_table_gpu_n_rows = 0;
     printf("[PEDERSEN_TABLE_GPU] Freed GPU memory.\n");
-}
-
-// Upload pedersen table from host (CPU) data.
-// This copies pre-computed CPU table columns to GPU, guaranteeing exact match
-// with the SIMD reference path. Each column is n_rows M31 values.
-extern "C" void upload_pedersen_table_from_host(
-    const uint32_t** host_columns,  // 56 host-side column arrays (each n_rows uint32_t)
-    uint32_t n_cols,                // number of columns (must be 56)
-    uint32_t n_rows                 // padded row count (must be power of 2)
-) {
-    if (s_pedersen_table_gpu_initialized) {
-        printf("[PEDERSEN_TABLE_GPU] Already initialized, skipping host upload.\n");
-        return;
-    }
-
-    timer global_timer;
-    global_timer.start("upload_pedersen_table_from_host");
-
-    s_pedersen_table_gpu_n_rows = n_rows;
-
-    printf("[PEDERSEN_TABLE_GPU] Uploading %u columns × %u rows from host (%zu MB)...\n",
-           n_cols, n_rows,
-           (size_t)n_rows * n_cols * sizeof(m31) / (1024 * 1024));
-
-    // Allocate GPU memory and copy each column from host
-    for (int i = 0; i < INIT_PEDERSEN_TABLE_N_COLUMNS; i++) {
-        s_pedersen_table_gpu_ptrs[i] = cuda_malloc<m31>(n_rows);
-        if (i < (int)n_cols && host_columns[i] != nullptr) {
-            ASSERT_CUDA_SUCCESS(cudaMemcpy(
-                s_pedersen_table_gpu_ptrs[i], host_columns[i],
-                n_rows * sizeof(m31), cudaMemcpyHostToDevice));
-        } else {
-            cudaMemset(s_pedersen_table_gpu_ptrs[i], 0, n_rows * sizeof(m31));
-        }
-    }
-
-    // Set global device symbol pointers
-    m31** d_columns = clone_to_device<m31*>(s_pedersen_table_gpu_ptrs, INIT_PEDERSEN_TABLE_N_COLUMNS);
-    set_global_pedersen_table_pointers_kernel<<<1, 1>>>(d_columns, n_rows);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    cuda_free_memory(d_columns);
-
-    s_pedersen_table_gpu_initialized = true;
-    global_timer.end("upload_pedersen_table_from_host");
-    printf("[PEDERSEN_TABLE_GPU] Host upload complete!\n");
-}
-
-// Debug function: get base point P0 directly from constant memory
-__global__ void debug_get_P0_kernel(uint32_t* x_out, uint32_t* y_out) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        for (int i = 0; i < 8; i++) {
-            x_out[i] = CONST_PEDERSEN_P0_X[i];
-            y_out[i] = CONST_PEDERSEN_P0_Y[i];
-        }
-    }
-}
-
-extern "C" void debug_get_P0_constant(uint32_t* x_limbs, uint32_t* y_limbs) {
-    uint32_t* d_x = cuda_mem_pool_allocate<uint32_t>(8);
-    uint32_t* d_y = cuda_mem_pool_allocate<uint32_t>(8);
-
-    debug_get_P0_kernel<<<1, 1>>>(d_x, d_y);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(x_limbs, d_x, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(y_limbs, d_y, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-
-    cuda_mem_pool_free(d_x);
-    cuda_mem_pool_free(d_y);
-}
-
-// Debug function: get SHIFT_POINT directly from constant memory
-__global__ void debug_get_shift_kernel(uint32_t* x_out, uint32_t* y_out) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        for (int i = 0; i < 8; i++) {
-            x_out[i] = CONST_SHIFT_POINT_X[i];
-            y_out[i] = CONST_SHIFT_POINT_Y[i];
-        }
-    }
-}
-
-extern "C" void debug_get_shift_constant(uint32_t* x_limbs, uint32_t* y_limbs) {
-    uint32_t* d_x = cuda_mem_pool_allocate<uint32_t>(8);
-    uint32_t* d_y = cuda_mem_pool_allocate<uint32_t>(8);
-
-    debug_get_shift_kernel<<<1, 1>>>(d_x, d_y);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(x_limbs, d_x, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(y_limbs, d_y, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-
-    cuda_mem_pool_free(d_x);
-    cuda_mem_pool_free(d_y);
-}
-
-// Debug function: test negation of Y coordinate
-// Return -SHIFT_POINT in affine form (x unchanged, y negated)
-__global__ void debug_negate_shift_kernel(uint32_t* x_out, uint32_t* y_out) {
-    if (threadIdx.x != 0 || blockIdx.x != 0) return;
-
-    // Load SHIFT_POINT
-    AffinePointCuda shift_point;
-    load_shift_point(shift_point.x, shift_point.y);
-
-    // Convert to projective (and Montgomery form)
-    ProjectivePointCuda proj = affine_to_projective(shift_point);
-
-    // Negate Y
-    negate_projective_y(proj);
-
-    // Convert back to affine
-    AffinePointCuda result;
-    projective_to_affine(proj, result);
-
-    for (int i = 0; i < 8; i++) {
-        x_out[i] = result.x.limbs[i];
-        y_out[i] = result.y.limbs[i];
-    }
-}
-
-extern "C" void debug_negate_shift(uint32_t* x_limbs, uint32_t* y_limbs) {
-    uint32_t* d_x = cuda_mem_pool_allocate<uint32_t>(8);
-    uint32_t* d_y = cuda_mem_pool_allocate<uint32_t>(8);
-
-    debug_negate_shift_kernel<<<1, 1>>>(d_x, d_y);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(x_limbs, d_x, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(y_limbs, d_y, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-
-    cuda_mem_pool_free(d_x);
-    cuda_mem_pool_free(d_y);
-}
-
-// Debug: test to_mont, from_mont, and inverse for P0.x
-__global__ void debug_mont_roundtrip_kernel(uint32_t* result) {
-    if (threadIdx.x != 0 || blockIdx.x != 0) return;
-
-    AffinePointCuda p0;
-    load_P0(p0.x, p0.y);
-
-    printf("P0.x standard: %08x %08x %08x %08x ...\n",
-           p0.x.limbs[0], p0.x.limbs[1], p0.x.limbs[2], p0.x.limbs[3]);
-
-    felt252 mont = felt_to_mont(p0.x);
-    printf("P0.x mont:     %08x %08x %08x %08x ...\n",
-           mont.limbs[0], mont.limbs[1], mont.limbs[2], mont.limbs[3]);
-
-    felt252 back = felt_from_mont(mont);
-    printf("P0.x back:     %08x %08x %08x %08x ...\n",
-           back.limbs[0], back.limbs[1], back.limbs[2], back.limbs[3]);
-
-    // Test multiplication: mont(a) * mont(1) should equal mont(a)
-    felt252 one_mont = ff_config_starknet::one;
-    printf("one_mont:      %08x %08x %08x %08x ...\n",
-           one_mont.limbs[0], one_mont.limbs[1], one_mont.limbs[2], one_mont.limbs[3]);
-
-    felt252 mul_one = felt_mul(mont, one_mont);
-    printf("mont*one_mont: %08x %08x %08x %08x ...\n",
-           mul_one.limbs[0], mul_one.limbs[1], mul_one.limbs[2], mul_one.limbs[3]);
-
-    // Test: a^2 in Montgomery form
-    felt252 sq = felt_mul(mont, mont);
-    printf("mont^2:        %08x %08x %08x %08x ...\n",
-           sq.limbs[0], sq.limbs[1], sq.limbs[2], sq.limbs[3]);
-
-    // Convert back to standard
-    felt252 sq_std = felt_from_mont(sq);
-    printf("sq_std:        %08x %08x %08x %08x ...\n",
-           sq_std.limbs[0], sq_std.limbs[1], sq_std.limbs[2], sq_std.limbs[3]);
-
-    // Test inverse: a * a^(-1) should equal 1
-    printf("\n--- Testing inverse ---\n");
-    felt252 mont_inv = felt_inverse(mont);
-    printf("mont^(-1):     %08x %08x %08x %08x ...\n",
-           mont_inv.limbs[0], mont_inv.limbs[1], mont_inv.limbs[2], mont_inv.limbs[3]);
-
-    felt252 product = felt_mul(mont, mont_inv);
-    printf("mont*mont^(-1):%08x %08x %08x %08x ...\n",
-           product.limbs[0], product.limbs[1], product.limbs[2], product.limbs[3]);
-    printf("Expected 1_mont: %08x %08x %08x %08x ...\n",
-           one_mont.limbs[0], one_mont.limbs[1], one_mont.limbs[2], one_mont.limbs[3]);
-
-    bool inv_ok = true;
-    for (int i = 0; i < 8; i++) {
-        if (product.limbs[i] != one_mont.limbs[i]) inv_ok = false;
-    }
-    printf("Inverse test: %s\n", inv_ok ? "PASS" : "FAIL");
-
-    // Copy result for verification
-    for (int i = 0; i < 8; i++) {
-        result[i] = sq_std.limbs[i];
-    }
-}
-
-extern "C" void debug_mont_roundtrip(uint32_t* result) {
-    uint32_t* d_result = cuda_mem_pool_allocate<uint32_t>(8);
-
-    debug_mont_roundtrip_kernel<<<1, 1>>>(d_result);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(result, d_result, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cuda_mem_pool_free(d_result);
-}
-
-// Debug: Test -SHIFT + SHIFT = O (point at infinity)
-__global__ void debug_shift_plus_neg_shift_kernel(uint32_t* z_out) {
-    if (threadIdx.x != 0 || blockIdx.x != 0) return;
-
-    // Load SHIFT_POINT twice
-    AffinePointCuda shift;
-    load_shift_point(shift.x, shift.y);
-
-    // acc = -SHIFT
-    ProjectivePointCuda acc = affine_to_projective(shift);
-    negate_projective_y(acc);
-
-    printf("Before adding SHIFT to -SHIFT:\n");
-    printf("  acc.Z: %08x %08x %08x %08x\n", acc.Z.limbs[0], acc.Z.limbs[1], acc.Z.limbs[2], acc.Z.limbs[3]);
-
-    // Add SHIFT to acc
-    ec_add_mixed(acc, shift, true);
-
-    printf("After adding SHIFT:\n");
-    printf("  acc.X: %08x %08x %08x %08x\n", acc.X.limbs[0], acc.X.limbs[1], acc.X.limbs[2], acc.X.limbs[3]);
-    printf("  acc.Y: %08x %08x %08x %08x\n", acc.Y.limbs[0], acc.Y.limbs[1], acc.Y.limbs[2], acc.Y.limbs[3]);
-    printf("  acc.Z: %08x %08x %08x %08x\n", acc.Z.limbs[0], acc.Z.limbs[1], acc.Z.limbs[2], acc.Z.limbs[3]);
-
-    // If Z = 0, we have the point at infinity
-    for (int i = 0; i < 8; i++) z_out[i] = acc.Z.limbs[i];
-}
-
-extern "C" void debug_shift_plus_neg_shift(uint32_t* z_limbs) {
-    uint32_t* d_z = cuda_mem_pool_allocate<uint32_t>(8);
-    debug_shift_plus_neg_shift_kernel<<<1, 1>>>(d_z);
-    cudaDeviceSynchronize();
-    cudaMemcpy(z_limbs, d_z, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cuda_mem_pool_free(d_z);
-}
-
-// Debug kernel: compute -SHIFT + P0 using simple affine addition
-__global__ void debug_compute_affine_add_kernel(uint32_t* result_x, uint32_t* result_y) {
-    if (threadIdx.x != 0 || blockIdx.x != 0) return;
-
-    // Create -SHIFT in affine form
-    AffinePointCuda neg_shift;
-    load_shift_point(neg_shift.x, neg_shift.y);
-    // Negate Y coordinate (standard form): -y = p - y
-    felt252 zero = {};
-    for (int i = 0; i < 8; i++) zero.limbs[i] = 0;
-    felt252 neg_y_mont = felt_sub(zero, felt_to_mont(neg_shift.y));
-    neg_shift.y = felt_from_mont(neg_y_mont);
-
-    printf("Using AFFINE addition:\n");
-    printf("-SHIFT.x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
-           neg_shift.x.limbs[0], neg_shift.x.limbs[1], neg_shift.x.limbs[2], neg_shift.x.limbs[3],
-           neg_shift.x.limbs[4], neg_shift.x.limbs[5], neg_shift.x.limbs[6], neg_shift.x.limbs[7]);
-    printf("-SHIFT.y: %08x %08x %08x %08x %08x %08x %08x %08x\n",
-           neg_shift.y.limbs[0], neg_shift.y.limbs[1], neg_shift.y.limbs[2], neg_shift.y.limbs[3],
-           neg_shift.y.limbs[4], neg_shift.y.limbs[5], neg_shift.y.limbs[6], neg_shift.y.limbs[7]);
-
-    // Load P0
-    AffinePointCuda p0;
-    load_P0(p0.x, p0.y);
-
-    printf("P0.x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
-           p0.x.limbs[0], p0.x.limbs[1], p0.x.limbs[2], p0.x.limbs[3],
-           p0.x.limbs[4], p0.x.limbs[5], p0.x.limbs[6], p0.x.limbs[7]);
-    printf("P0.y: %08x %08x %08x %08x %08x %08x %08x %08x\n",
-           p0.y.limbs[0], p0.y.limbs[1], p0.y.limbs[2], p0.y.limbs[3],
-           p0.y.limbs[4], p0.y.limbs[5], p0.y.limbs[6], p0.y.limbs[7]);
-
-    // Compute -SHIFT + P0 using affine addition
-    AffinePointCuda result;
-    ec_add_affine(neg_shift, p0, result, true);
-
-    printf("Result.x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
-           result.x.limbs[0], result.x.limbs[1], result.x.limbs[2], result.x.limbs[3],
-           result.x.limbs[4], result.x.limbs[5], result.x.limbs[6], result.x.limbs[7]);
-    printf("Result.y: %08x %08x %08x %08x %08x %08x %08x %08x\n",
-           result.y.limbs[0], result.y.limbs[1], result.y.limbs[2], result.y.limbs[3],
-           result.y.limbs[4], result.y.limbs[5], result.y.limbs[6], result.y.limbs[7]);
-
-    for (int i = 0; i < 8; i++) {
-        result_x[i] = result.x.limbs[i];
-        result_y[i] = result.y.limbs[i];
-    }
-}
-
-extern "C" void debug_compute_affine_add(uint32_t* x_limbs, uint32_t* y_limbs) {
-    uint32_t* d_x = cuda_mem_pool_allocate<uint32_t>(8);
-    uint32_t* d_y = cuda_mem_pool_allocate<uint32_t>(8);
-
-    debug_compute_affine_add_kernel<<<1, 1>>>(d_x, d_y);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(x_limbs, d_x, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(y_limbs, d_y, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-
-    cuda_mem_pool_free(d_x);
-    cuda_mem_pool_free(d_y);
-}
-
-// Debug kernel: compute -SHIFT + P0 and return the result with verbose tracing
-__global__ void debug_compute_shift_plus_p0_kernel(uint32_t* result_x, uint32_t* result_y) {
-    if (threadIdx.x != 0 || blockIdx.x != 0) return;
-
-    // Load SHIFT_POINT
-    AffinePointCuda shift_point;
-    load_shift_point(shift_point.x, shift_point.y);
-
-    // Convert to projective and negate Y
-    ProjectivePointCuda acc = affine_to_projective(shift_point);
-
-    printf("After affine_to_projective (SHIFT in Mont form):\n");
-    printf("  X[0-3]: %08x %08x %08x %08x\n", acc.X.limbs[0], acc.X.limbs[1], acc.X.limbs[2], acc.X.limbs[3]);
-    printf("  Y[0-3]: %08x %08x %08x %08x\n", acc.Y.limbs[0], acc.Y.limbs[1], acc.Y.limbs[2], acc.Y.limbs[3]);
-    printf("  Z[0-3]: %08x %08x %08x %08x\n", acc.Z.limbs[0], acc.Z.limbs[1], acc.Z.limbs[2], acc.Z.limbs[3]);
-
-    negate_projective_y(acc);
-
-    printf("After negate (-SHIFT in Mont form):\n");
-    printf("  Y[0-3]: %08x %08x %08x %08x\n", acc.Y.limbs[0], acc.Y.limbs[1], acc.Y.limbs[2], acc.Y.limbs[3]);
-
-    // Load P0
-    AffinePointCuda p0;
-    load_P0(p0.x, p0.y);
-
-    printf("P0 in standard form:\n");
-    printf("  x[0-3]: %08x %08x %08x %08x\n", p0.x.limbs[0], p0.x.limbs[1], p0.x.limbs[2], p0.x.limbs[3]);
-    printf("  y[0-3]: %08x %08x %08x %08x\n", p0.y.limbs[0], p0.y.limbs[1], p0.y.limbs[2], p0.y.limbs[3]);
-
-    // Add P0 to accumulator: acc = -SHIFT + P0
-    ec_add_mixed(acc, p0, true);  // Enable debug output
-
-    printf("After ec_add_mixed (still in Mont projective):\n");
-    printf("  X[0-3]: %08x %08x %08x %08x\n", acc.X.limbs[0], acc.X.limbs[1], acc.X.limbs[2], acc.X.limbs[3]);
-    printf("  Y[0-3]: %08x %08x %08x %08x\n", acc.Y.limbs[0], acc.Y.limbs[1], acc.Y.limbs[2], acc.Y.limbs[3]);
-    printf("  Z[0-3]: %08x %08x %08x %08x\n", acc.Z.limbs[0], acc.Z.limbs[1], acc.Z.limbs[2], acc.Z.limbs[3]);
-
-    // Convert to affine
-    AffinePointCuda result;
-    projective_to_affine(acc, result, true);  // Enable debug
-
-    // Output the result as 8 x 32-bit limbs
-    for (int i = 0; i < 8; i++) {
-        result_x[i] = result.x.limbs[i];
-        result_y[i] = result.y.limbs[i];
-    }
-}
-
-extern "C" void debug_compute_shift_plus_p0(uint32_t* x_limbs, uint32_t* y_limbs) {
-    uint32_t* d_x = cuda_mem_pool_allocate<uint32_t>(8);
-    uint32_t* d_y = cuda_mem_pool_allocate<uint32_t>(8);
-
-    debug_compute_shift_plus_p0_kernel<<<1, 1>>>(d_x, d_y);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(x_limbs, d_x, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(y_limbs, d_y, 8 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-
-    cuda_mem_pool_free(d_x);
-    cuda_mem_pool_free(d_y);
-}
-
-// Debug function: download specific table entry for comparison
-extern "C" void debug_get_pedersen_table_entry(uint32_t row, uint32_t* x_limbs, uint32_t* y_limbs) {
-    if (!s_pedersen_table_gpu_initialized) {
-        printf("[PEDERSEN_TABLE_GPU] WARNING: Table not initialized!\n");
-        return;
-    }
-    if (row >= s_pedersen_table_gpu_n_rows) {
-        printf("[PEDERSEN_TABLE_GPU] WARNING: Row %u >= max %u\n", row, s_pedersen_table_gpu_n_rows);
-        return;
-    }
-
-    // Download 28 x-coordinate limbs and 28 y-coordinate limbs
-    for (int i = 0; i < 28; i++) {
-        m31 val;
-        cudaMemcpy(&val, &s_pedersen_table_gpu_ptrs[i][row], sizeof(m31), cudaMemcpyDeviceToHost);
-        x_limbs[i] = val;
-    }
-    for (int i = 0; i < 28; i++) {
-        m31 val;
-        cudaMemcpy(&val, &s_pedersen_table_gpu_ptrs[28 + i][row], sizeof(m31), cudaMemcpyDeviceToHost);
-        y_limbs[i] = val;
-    }
 }

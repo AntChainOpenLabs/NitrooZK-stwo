@@ -2781,57 +2781,16 @@ extern "C" {
         log_size: u32,
     );
 
-    // Pedersen table management - upload and free the ~1.8GB PEDERSEN_TABLE for GPU EC operations
-    pub fn pedersen_table_init(
-        columns: *const *const u32,  // Array of 56 column pointers (28 for x, 28 for y)
-        n_rows: u32,                  // Number of rows in the table (~8M)
-    );
-
-    pub fn pedersen_table_free();
-
     // GPU-native pedersen table generation (generates table directly on GPU)
-    // Similar to initialize_poseidon_constants() pattern
     pub fn initialize_pedersen_table();
     pub fn is_pedersen_table_initialized() -> bool;
     pub fn free_pedersen_table();
-
-    // Upload pedersen table from host (CPU) data to GPU.
-    // Guarantees exact match with SIMD reference path.
-    pub fn upload_pedersen_table_from_host(
-        host_columns: *const *const u32,  // 56 host-side column arrays
-        n_cols: u32,                      // number of columns (56)
-        n_rows: u32,                      // padded row count (power of 2)
-    );
 
     // Get device pointers for the pedersen table columns (must be initialized first).
     pub fn get_pedersen_table_column_ptrs(
         output_ptrs: *mut *const u32,   // Array of 56 device pointers
         out_n_rows: *mut u32,           // Padded row count
     );
-
-    // Debug function to download specific table entry for comparison
-    pub fn debug_get_pedersen_table_entry(row: u32, x_limbs: *mut u32, y_limbs: *mut u32);
-
-    // Debug function to get P0 constant from GPU
-    pub fn debug_get_P0_constant(x_limbs: *mut u32, y_limbs: *mut u32);
-
-    // Debug function to get SHIFT_POINT constant from GPU
-    pub fn debug_get_shift_constant(x_limbs: *mut u32, y_limbs: *mut u32);
-
-    // Debug function to test negation of SHIFT_POINT
-    pub fn debug_negate_shift(x_limbs: *mut u32, y_limbs: *mut u32);
-
-    // Debug function to test Montgomery round-trip
-    pub fn debug_mont_roundtrip(result: *mut u32);
-
-    // Debug function to test -SHIFT + SHIFT = O
-    pub fn debug_shift_plus_neg_shift(z_limbs: *mut u32);
-
-    // Debug function to compute -SHIFT + P0 on GPU
-    pub fn debug_compute_shift_plus_p0(x_limbs: *mut u32, y_limbs: *mut u32);
-
-    // Debug function to compute -SHIFT + P0 using simple affine addition
-    pub fn debug_compute_affine_add(x_limbs: *mut u32, y_limbs: *mut u32);
 
     // Generate preprocessed columns directly on GPU
     // Seq column: output[i] = i for i in 0..(1 << log_size)
