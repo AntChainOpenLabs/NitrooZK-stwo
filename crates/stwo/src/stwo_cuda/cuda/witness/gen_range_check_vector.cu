@@ -428,3 +428,171 @@ void range_check_vector_generate_interaction_trace(
     cuda_free_memory(device_numerator3);
     cuda_free_memory(denom_inv);
 }
+
+// ============================================================================
+// Multi-relation range check interaction trace
+// ============================================================================
+//
+// Handles N_RELATIONS relations (processed as N_PAIRS = N_RELATIONS/2 pairs)
+// entirely on GPU. For each pair (a, b):
+//   - Compute values from row index via bit-segment partitioning
+//   - denom_a = lookup_a.combine(values), denom_b = lookup_b.combine(values)
+//   - numerator = -mult_a * denom_b + -mult_b * denom_a
+//   - denominator = denom_a * denom_b
+//   - batch_inverse, finalize with accumulation across pairs
+// Then: cumsum_shift + prefix_sum on last 4 columns.
+//
+// This eliminates the 2*N_PAIRS GPU↔CPU round-trips that the old approach
+// required (download per-pair kernel output, CPU fraction recovery, re-upload).
+// ============================================================================
+
+#define RC_MULTI_REL_BLOCK_SIZE 256
+
+// Paired logup column generation kernel for range checks.
+// Computes values from row index (bit-segment partitioning), then does
+// paired logup: frac = (-mult_a/denom_a) + (-mult_b/denom_b)
+//             = (-mult_a * denom_b + -mult_b * denom_a) / (denom_a * denom_b)
+template <int N>
+__launch_bounds__(RC_MULTI_REL_BLOCK_SIZE, 2)
+__global__ void rc_multi_relation_col_gen_kernel(
+    LookupElementsBasic<N>* lookup_a,
+    LookupElementsBasic<N>* lookup_b,
+    m31* mults_a,
+    m31* mults_b,
+    unsigned* ranges,
+    unsigned trace_size,
+    qm31* denom_ptr,
+    m31* numerator0,
+    m31* numerator1,
+    m31* numerator2,
+    m31* numerator3
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < trace_size) {
+        // Compute values from row index via bit-segment partitioning
+        m31 values[N];
+        unsigned row_tmp = idx;
+        for (int seg = N - 1; seg >= 0; --seg) {
+            unsigned nbits = ranges[seg];
+            unsigned mask = (1u << nbits) - 1;
+            values[seg] = row_tmp & mask;
+            row_tmp >>= nbits;
+        }
+
+        qm31 d_a = lookup_a->combine(values, N);
+        qm31 d_b = lookup_b->combine(values, N);
+
+        // Paired logup numerator: -mult_a * d_b + -mult_b * d_a
+        qm31 m_a = qm31{cm31{neg(mults_a[idx]), 0}, cm31{0, 0}};
+        qm31 m_b = qm31{cm31{neg(mults_b[idx]), 0}, cm31{0, 0}};
+        qm31 numer = add(mul(m_a, d_b), mul(m_b, d_a));
+        qm31 denom = mul(d_a, d_b);
+
+        logup_col_write_frac(idx, numer, denom,
+                            denom_ptr, numerator0, numerator1, numerator2, numerator3);
+    }
+}
+
+// Dispatch macro for multi-relation col gen kernel (template instantiation)
+#define HANDLE_RC_MULTI_REL_COL_GEN(TEMPLATE_N) \
+    { \
+        LookupElementsBasic<TEMPLATE_N>* d_lookup_a = cuda_malloc<LookupElementsBasic<TEMPLATE_N>>(1); \
+        LookupElementsBasic<TEMPLATE_N>* d_lookup_b = cuda_malloc<LookupElementsBasic<TEMPLATE_N>>(1); \
+        cuda_mem_copy_host_to_device<LookupElementsBasic<TEMPLATE_N>>( \
+            (LookupElementsBasic<TEMPLATE_N>*)lookup_elements[2 * pair], d_lookup_a, 1); \
+        cuda_mem_copy_host_to_device<LookupElementsBasic<TEMPLATE_N>>( \
+            (LookupElementsBasic<TEMPLATE_N>*)lookup_elements[2 * pair + 1], d_lookup_b, 1); \
+        rc_multi_relation_col_gen_kernel<TEMPLATE_N><<<num_blocks, block_dim>>>( \
+            d_lookup_a, d_lookup_b, \
+            multiplicities[2 * pair], multiplicities[2 * pair + 1], \
+            device_ranges, trace_size, \
+            device_logup_denom, numerator0, numerator1, numerator2, numerator3); \
+        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
+        ASSERT_CUDA_SUCCESS(cudaGetLastError()); \
+        cuda_free_memory(d_lookup_a); \
+        cuda_free_memory(d_lookup_b); \
+    }
+
+void range_check_multi_relation_interaction_trace(
+    unsigned n_pairs,
+    unsigned n_range,
+    unsigned* ranges,
+    void** lookup_elements,      // 2*n_pairs host pointers to LookupElements<N_RANGES>
+    m31** multiplicities,        // 2*n_pairs device pointers
+    unsigned log_size,
+    m31** interaction_trace_columns,  // 4*n_pairs output column device pointers
+    m31* claimed_sum                  // 4 device m31s for qm31
+) {
+    unsigned trace_size = 1u << log_size;
+    unsigned* device_ranges = clone_to_device<unsigned>(ranges, n_range);
+
+    // Allocate working memory
+    qm31* device_logup_denom = cuda_malloc<qm31>(trace_size);
+    qm31* denom_inv = cuda_malloc<qm31>(trace_size);
+    m31* numerator0 = cuda_malloc<m31>(trace_size);
+    m31* numerator1 = cuda_malloc<m31>(trace_size);
+    m31* numerator2 = cuda_malloc<m31>(trace_size);
+    m31* numerator3 = cuda_malloc<m31>(trace_size);
+
+    m31** device_it = clone_to_device<m31*>(interaction_trace_columns, 4 * n_pairs);
+
+    int block_dim = trace_size < RC_MULTI_REL_BLOCK_SIZE ? trace_size : RC_MULTI_REL_BLOCK_SIZE;
+    int num_blocks = (trace_size + block_dim - 1) / block_dim;
+
+    // Process each pair
+    for (unsigned pair = 0; pair < n_pairs; pair++) {
+        // 1. Col gen kernel — dispatch based on n_range
+        if (n_range == 1) {
+            HANDLE_RC_MULTI_REL_COL_GEN(1)
+        } else if (n_range == 2) {
+            HANDLE_RC_MULTI_REL_COL_GEN(2)
+        } else if (n_range == 3) {
+            HANDLE_RC_MULTI_REL_COL_GEN(3)
+        } else if (n_range == 4) {
+            HANDLE_RC_MULTI_REL_COL_GEN(4)
+        } else if (n_range == 5) {
+            HANDLE_RC_MULTI_REL_COL_GEN(5)
+        }
+
+        // 2. Batch inverse
+        batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+
+        // 3. Finalize col — accumulates with previous columns
+        generate_range_check_interaction_trace_finalize_col_kernel<<<num_blocks, block_dim>>>(
+            pair, trace_size, denom_inv,
+            numerator0, numerator1, numerator2, numerator3,
+            device_it);
+        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+        ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    }
+
+    // Finalize: cumsum_shift + prefix sum on last 4 columns
+    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+
+    size_t shared_size = 4 * block_dim * sizeof(m31);
+    generate_range_check_interaction_trace_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
+        n_pairs, trace_size, device_it, claimed_sum);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+
+    generate_range_check_interaction_trace_coord_prefix_sum<<<num_blocks, block_dim>>>(
+        claimed_sum, n_pairs, trace_size, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+
+    // Inclusive prefix sum on last 4 columns
+    inclusive_prefix_sum(interaction_trace_columns[4 * n_pairs - 4], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * n_pairs - 3], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * n_pairs - 2], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * n_pairs - 1], trace_size);
+
+    // Cleanup
+    cuda_free_memory(device_ranges);
+    cuda_free_memory(device_logup_denom);
+    cuda_free_memory(denom_inv);
+    cuda_free_memory(numerator0);
+    cuda_free_memory(numerator1);
+    cuda_free_memory(numerator2);
+    cuda_free_memory(numerator3);
+    cuda_free_memory(device_it);
+}

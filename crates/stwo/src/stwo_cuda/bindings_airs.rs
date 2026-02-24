@@ -805,6 +805,20 @@ extern "C" {
         claimed_sum: *mut u32,
     );
 
+    /// Multi-relation range check interaction trace generation entirely on GPU.
+    /// Processes n_pairs relation pairs, reusing the cumsum_shift + prefix_sum
+    /// finalization from the single-relation kernel.
+    pub fn range_check_multi_relation_interaction_trace(
+        n_pairs: u32,
+        n_range: u32,
+        ranges: *const u32,
+        lookup_elements: *const *mut std::os::raw::c_void, // 2*n_pairs
+        multiplicities: *const *const u32,                  // 2*n_pairs device ptrs
+        log_size: u32,
+        interaction_trace_columns: *const *const u32,       // 4*n_pairs output cols
+        claimed_sum: *mut u32,                              // 4 m31s for qm31
+    );
+
     // blake_compress_opcode functions
     pub fn generate_blake_compress_opcode_traces(
         traces: *const *const u32,
@@ -3724,6 +3738,32 @@ extern "C" {
         // Sizes
         n_rows: u32,
         log_size: u32,
+    );
+
+    /// Native CUDA interaction trace generation for pedersen_aggregator_wb18.
+    /// Uses lookup data (already on GPU) to compute 6 logup columns entirely on GPU.
+    pub fn gen_pedersen_aggregator_wb18_interaction_trace(
+        // CommonLookupElements (= LookupElements<128>)
+        lookup_elements: *mut std::os::raw::c_void,
+        // Lookup data (all device pointers)
+        lk_mem_0: *const *const u32,                    // 30 arrays
+        lk_mem_1: *const *const u32,                    // 30 arrays
+        lk_mem_2: *const *const u32,                    // 30 arrays
+        lk_rc8_0: *const *const u32,                    // 2 arrays
+        lk_rc8_1: *const *const u32,                    // 2 arrays
+        lk_rc8_2: *const *const u32,                    // 2 arrays
+        lk_rc8_3: *const *const u32,                    // 2 arrays
+        lk_pem_0: *const *const u32,                    // 73 arrays
+        lk_pem_1: *const *const u32,                    // 73 arrays
+        lk_pem_2: *const *const u32,                    // 73 arrays
+        lk_pem_3: *const *const u32,                    // 73 arrays
+        lk_agg_0: *const *const u32,                    // 4 arrays
+        mults: *const u32,                              // multiplicities
+        // Sizes
+        log_size: u32,
+        // Output
+        interaction_trace_columns: *const *const u32,   // 4*6 = 24 columns
+        claimed_sum: *mut u32,                          // 4 m31s for qm31
     );
 
 }

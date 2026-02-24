@@ -77,4 +77,32 @@ extern "C" void gen_pedersen_aggregator_wb18_trace(
     uint32_t log_size                // Log2 of padded trace size
 );
 
+/**
+ * Interaction trace generation kernel.
+ * Uses lookup data arrays (already on GPU) to compute 6 logup columns.
+ */
+extern "C" void gen_pedersen_aggregator_wb18_interaction_trace(
+    // CommonLookupElements (= LookupElements<128>)
+    void* lookup_elements,
+    // Lookup data (all device pointers)
+    m31** lk_mem_0,         // 30 arrays
+    m31** lk_mem_1,         // 30 arrays
+    m31** lk_mem_2,         // 30 arrays
+    m31** lk_rc8_0,         // 2 arrays
+    m31** lk_rc8_1,         // 2 arrays
+    m31** lk_rc8_2,         // 2 arrays
+    m31** lk_rc8_3,         // 2 arrays
+    m31** lk_pem_0,         // 73 arrays
+    m31** lk_pem_1,         // 73 arrays
+    m31** lk_pem_2,         // 73 arrays
+    m31** lk_pem_3,         // 73 arrays
+    m31** lk_agg_0,         // 4 arrays
+    m31* mults,             // multiplicities (device pointer)
+    // Sizes
+    uint32_t log_size,
+    // Output
+    m31** interaction_trace_columns,   // 4 * 6 = 24 columns
+    m31* claimed_sum                   // 4 m31s for qm31
+);
+
 #endif // GEN_PEDERSEN_AGGREGATOR_WB18_TRACE_CUH

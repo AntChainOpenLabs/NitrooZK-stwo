@@ -31,6 +31,9 @@
 #include "../fp256_config.cuh"
 #include "../fp256_dispatch_st.cuh"
 #include "../utils.cuh"
+#include "../logup.cuh"
+#include "../batch_inverse.cuh"
+#include "../prefix_sum.cuh"
 #include "gen_memory_id_to_big_trace.cuh"
 
 // ============================================================================
@@ -720,4 +723,362 @@ extern "C" void gen_pedersen_aggregator_wb18_trace(
     if (prev_stack_size < needed_stack) {
         cudaDeviceSetLimit(cudaLimitStackSize, prev_stack_size);
     }
+}
+
+// ============================================================================
+// Interaction trace generation for pedersen_aggregator_wb18 (6 logup columns)
+// ============================================================================
+//
+// Column layout (matching the SIMD LogupTraceGenerator in pedersen_aggregator_cuda.rs):
+//   Col 0: mem_id_to_big pair (mem_0 + mem_1)  — ADD: 30-elem combine each
+//   Col 1: range_check_8 pair (rc8_0 + rc8_1)  — ADD: 2-elem combine each
+//   Col 2: range_check_8 pair (rc8_2 + rc8_3)  — ADD: 2-elem combine each
+//   Col 3: partial_ec_mul pair (pem_0 - pem_1)  — SUB: 73-elem combine each
+//   Col 4: partial_ec_mul pair (pem_2 - pem_3)  — SUB: 73-elem combine each
+//   Col 5: mem_id_to_big_2 + self-lookup with mults — SPECIAL
+//
+// All lookup data arrays reside on GPU (produced by gen_pedersen_aggregator_wb18_trace).
+// The kernel uses CommonLookupElements (= LookupElementsBasic<128>) directly,
+// since the lookup data already includes the relation constant at index 0.
+// ============================================================================
+
+#define AGG_IT_BLOCK_SIZE 256
+
+// ADD pair kernel: frac = (d0 + d1) / (d0 * d1)
+template <int N, int M>
+__launch_bounds__(AGG_IT_BLOCK_SIZE, 2)
+__global__ void agg_it_add_pair_kernel(
+    LookupElementsBasic<128>* lookup_elements,
+    m31** data_0,
+    m31** data_1,
+    unsigned trace_size,
+    qm31* denom_ptr,
+    m31* numer0, m31* numer1, m31* numer2, m31* numer3
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < trace_size) {
+        m31 vals0[N], vals1[M];
+        for (int i = 0; i < N; i++) vals0[i] = data_0[i][idx];
+        for (int i = 0; i < M; i++) vals1[i] = data_1[i][idx];
+        qm31 d0 = lookup_elements->combine(vals0, N);
+        qm31 d1 = lookup_elements->combine(vals1, M);
+        logup_col_write_frac(idx, add(d0, d1), mul(d0, d1),
+                            denom_ptr, numer0, numer1, numer2, numer3);
+    }
+}
+
+// SUB pair kernel: frac = (d0 - d1) / (d0 * d1)
+template <int N, int M>
+__launch_bounds__(AGG_IT_BLOCK_SIZE, 2)
+__global__ void agg_it_sub_pair_kernel(
+    LookupElementsBasic<128>* lookup_elements,
+    m31** data_0,
+    m31** data_1,
+    unsigned trace_size,
+    qm31* denom_ptr,
+    m31* numer0, m31* numer1, m31* numer2, m31* numer3
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < trace_size) {
+        m31 vals0[N], vals1[M];
+        for (int i = 0; i < N; i++) vals0[i] = data_0[i][idx];
+        for (int i = 0; i < M; i++) vals1[i] = data_1[i][idx];
+        qm31 d0 = lookup_elements->combine(vals0, N);
+        qm31 d1 = lookup_elements->combine(vals1, M);
+        logup_col_write_frac(idx, sub(d0, d1), mul(d0, d1),
+                            denom_ptr, numer0, numer1, numer2, numer3);
+    }
+}
+
+// Special mult-weighted kernel: frac = (d1 - d0 * mult) / (d0 * d1)
+template <int N, int M>
+__launch_bounds__(AGG_IT_BLOCK_SIZE, 2)
+__global__ void agg_it_special_mults_kernel(
+    LookupElementsBasic<128>* lookup_elements,
+    m31** data_0,
+    m31** data_1,
+    m31* mults,
+    unsigned trace_size,
+    qm31* denom_ptr,
+    m31* numer0, m31* numer1, m31* numer2, m31* numer3
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < trace_size) {
+        m31 vals0[N], vals1[M];
+        for (int i = 0; i < N; i++) vals0[i] = data_0[i][idx];
+        for (int i = 0; i < M; i++) vals1[i] = data_1[i][idx];
+        qm31 d0 = lookup_elements->combine(vals0, N);
+        qm31 d1 = lookup_elements->combine(vals1, M);
+        qm31 m_val = qm31{cm31{mults[idx], 0}, cm31{0, 0}};
+        logup_col_write_frac(idx, sub(d1, mul(d0, m_val)), mul(d0, d1),
+                            denom_ptr, numer0, numer1, numer2, numer3);
+    }
+}
+
+// Finalize kernel: multiply numerator by inverse denominator and accumulate
+__global__ void agg_it_finalize_col_kernel(
+    unsigned rep_index,
+    unsigned trace_size,
+    qm31* denom_inv_ptr,
+    m31* numerator0,
+    m31* numerator1,
+    m31* numerator2,
+    m31* numerator3,
+    m31** interaction_traces
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int pre_index = rep_index - 1;
+
+    if (idx < trace_size) {
+        qm31 value = mul(
+            qm31 {
+                cm31{numerator0[idx], numerator1[idx]},
+                cm31{numerator2[idx], numerator3[idx]}
+            },
+            denom_inv_ptr[idx]
+        );
+
+        if (pre_index == -1) {
+            qm31 tmp = value;
+            numerator0[idx] = tmp.a.a;
+            numerator1[idx] = tmp.a.b;
+            numerator2[idx] = tmp.b.a;
+            numerator3[idx] = tmp.b.b;
+        } else {
+            qm31 pre_value = qm31 {
+                cm31{interaction_traces[pre_index * 4 + 0][idx], interaction_traces[pre_index * 4 + 1][idx]},
+                cm31{interaction_traces[pre_index * 4 + 2][idx], interaction_traces[pre_index * 4 + 3][idx]}
+            };
+            qm31 tmp = add(value, pre_value);
+            numerator0[idx] = tmp.a.a;
+            numerator1[idx] = tmp.a.b;
+            numerator2[idx] = tmp.b.a;
+            numerator3[idx] = tmp.b.b;
+        }
+
+        interaction_traces[rep_index * 4 + 0][idx] = numerator0[idx];
+        interaction_traces[rep_index * 4 + 1][idx] = numerator1[idx];
+        interaction_traces[rep_index * 4 + 2][idx] = numerator2[idx];
+        interaction_traces[rep_index * 4 + 3][idx] = numerator3[idx];
+    }
+}
+
+// Cumsum shift kernel — computes claimed_sum from last column
+__global__ void agg_it_cumsum_shift(
+    unsigned n_cols,
+    unsigned trace_size,
+    m31** interactive_traces,
+    m31* coordinate_sums
+) {
+    int idx0 = 4 * n_cols - 4;
+    int idx1 = 4 * n_cols - 3;
+    int idx2 = 4 * n_cols - 2;
+    int idx3 = 4 * n_cols - 1;
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int gridSize = gridDim.x * blockDim.x;
+
+    m31 s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+    for (int i = tid; i < trace_size; i += gridSize) {
+        s0 = add(s0, interactive_traces[idx0][i]);
+        s1 = add(s1, interactive_traces[idx1][i]);
+        s2 = add(s2, interactive_traces[idx2][i]);
+        s3 = add(s3, interactive_traces[idx3][i]);
+    }
+
+    extern __shared__ m31 shared[];
+    m31* sd0 = &shared[0];
+    m31* sd1 = &shared[blockDim.x];
+    m31* sd2 = &shared[2 * blockDim.x];
+    m31* sd3 = &shared[3 * blockDim.x];
+
+    sd0[threadIdx.x] = s0;
+    sd1[threadIdx.x] = s1;
+    sd2[threadIdx.x] = s2;
+    sd3[threadIdx.x] = s3;
+    __syncthreads();
+
+    for (unsigned s = blockDim.x >> 1; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sd0[threadIdx.x] = add(sd0[threadIdx.x], sd0[threadIdx.x + s]);
+            sd1[threadIdx.x] = add(sd1[threadIdx.x], sd1[threadIdx.x + s]);
+            sd2[threadIdx.x] = add(sd2[threadIdx.x], sd2[threadIdx.x + s]);
+            sd3[threadIdx.x] = add(sd3[threadIdx.x], sd3[threadIdx.x + s]);
+        }
+        __syncthreads();
+    }
+
+    if (threadIdx.x == 0) {
+        atomic_add(&coordinate_sums[0], sd0[0]);
+        atomic_add(&coordinate_sums[1], sd1[0]);
+        atomic_add(&coordinate_sums[2], sd2[0]);
+        atomic_add(&coordinate_sums[3], sd3[0]);
+    }
+}
+
+// Coordinate prefix sum kernel — subtracts shift from last column
+__global__ void agg_it_coord_prefix_sum(
+    m31* coordinate_sums,
+    unsigned n_cols,
+    unsigned trace_size,
+    m31** interactive_traces
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < trace_size) {
+        qm31 cs = qm31 {
+            cm31{coordinate_sums[0], coordinate_sums[1]},
+            cm31{coordinate_sums[2], coordinate_sums[3]}
+        };
+        qm31 shift = div(cs, m31(trace_size));
+
+        interactive_traces[4 * n_cols - 4][idx] = sub(interactive_traces[4 * n_cols - 4][idx], shift.a.a);
+        interactive_traces[4 * n_cols - 3][idx] = sub(interactive_traces[4 * n_cols - 3][idx], shift.a.b);
+        interactive_traces[4 * n_cols - 2][idx] = sub(interactive_traces[4 * n_cols - 2][idx], shift.b.a);
+        interactive_traces[4 * n_cols - 1][idx] = sub(interactive_traces[4 * n_cols - 1][idx], shift.b.b);
+    }
+}
+
+// Helper macro for processing a column
+#define AGG_IT_PROCESS_ADD(col_idx, N1, N2, d0_ptrs, d1_ptrs) \
+    agg_it_add_pair_kernel<N1, N2><<<num_blocks, block_dim>>>( \
+        d_lookup, d0_ptrs, d1_ptrs, trace_size, \
+        device_logup_denom, numer0, numer1, numer2, numer3); \
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
+    agg_it_finalize_col_kernel<<<num_blocks, block_dim>>>(col_idx, trace_size, denom_inv, \
+        numer0, numer1, numer2, numer3, device_it); \
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+#define AGG_IT_PROCESS_SUB(col_idx, N1, N2, d0_ptrs, d1_ptrs) \
+    agg_it_sub_pair_kernel<N1, N2><<<num_blocks, block_dim>>>( \
+        d_lookup, d0_ptrs, d1_ptrs, trace_size, \
+        device_logup_denom, numer0, numer1, numer2, numer3); \
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
+    agg_it_finalize_col_kernel<<<num_blocks, block_dim>>>(col_idx, trace_size, denom_inv, \
+        numer0, numer1, numer2, numer3, device_it); \
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+extern "C" void gen_pedersen_aggregator_wb18_interaction_trace(
+    // CommonLookupElements (= LookupElements<128>)
+    void* lookup_elements,
+    // Lookup data (all device pointers, from base trace generation)
+    m31** lk_mem_0,         // 30 arrays
+    m31** lk_mem_1,         // 30 arrays
+    m31** lk_mem_2,         // 30 arrays
+    m31** lk_rc8_0,         // 2 arrays
+    m31** lk_rc8_1,         // 2 arrays
+    m31** lk_rc8_2,         // 2 arrays
+    m31** lk_rc8_3,         // 2 arrays
+    m31** lk_pem_0,         // 73 arrays
+    m31** lk_pem_1,         // 73 arrays
+    m31** lk_pem_2,         // 73 arrays
+    m31** lk_pem_3,         // 73 arrays
+    m31** lk_agg_0,         // 4 arrays
+    m31* mults,             // multiplicities (device pointer)
+    // Sizes
+    uint32_t log_size,
+    // Output
+    m31** interaction_trace_columns,   // 4 * AGG_N_LOGUP_COLUMNS = 24 columns
+    m31* claimed_sum                   // 4 m31s for qm31
+) {
+    uint32_t trace_size = 1u << log_size;
+
+    // Copy lookup elements to device
+    LookupElementsBasic<128>* d_lookup = cuda_malloc<LookupElementsBasic<128>>(1);
+    cuda_mem_copy_host_to_device<LookupElementsBasic<128>>(
+        (LookupElementsBasic<128>*)lookup_elements, d_lookup, 1);
+
+    // Clone lookup data pointer arrays to device
+    m31** d_mem_0 = clone_to_device<m31*>(lk_mem_0, 30);
+    m31** d_mem_1 = clone_to_device<m31*>(lk_mem_1, 30);
+    m31** d_mem_2 = clone_to_device<m31*>(lk_mem_2, 30);
+    m31** d_rc8_0 = clone_to_device<m31*>(lk_rc8_0, 2);
+    m31** d_rc8_1 = clone_to_device<m31*>(lk_rc8_1, 2);
+    m31** d_rc8_2 = clone_to_device<m31*>(lk_rc8_2, 2);
+    m31** d_rc8_3 = clone_to_device<m31*>(lk_rc8_3, 2);
+    m31** d_pem_0 = clone_to_device<m31*>(lk_pem_0, 73);
+    m31** d_pem_1 = clone_to_device<m31*>(lk_pem_1, 73);
+    m31** d_pem_2 = clone_to_device<m31*>(lk_pem_2, 73);
+    m31** d_pem_3 = clone_to_device<m31*>(lk_pem_3, 73);
+    m31** d_agg_0 = clone_to_device<m31*>(lk_agg_0, 4);
+
+    // Allocate working memory
+    qm31* device_logup_denom = cuda_malloc<qm31>(trace_size);
+    qm31* denom_inv = cuda_malloc<qm31>(trace_size);
+    m31* numer0 = cuda_malloc<m31>(trace_size);
+    m31* numer1 = cuda_malloc<m31>(trace_size);
+    m31* numer2 = cuda_malloc<m31>(trace_size);
+    m31* numer3 = cuda_malloc<m31>(trace_size);
+
+    m31** device_it = clone_to_device<m31*>(interaction_trace_columns, 4 * AGG_N_LOGUP_COLUMNS);
+
+    int block_dim = trace_size < AGG_IT_BLOCK_SIZE ? trace_size : AGG_IT_BLOCK_SIZE;
+    int num_blocks = (trace_size + block_dim - 1) / block_dim;
+
+    // Col 0: mem_id_to_big pair (mem_0 + mem_1) — ADD, 30 elements each
+    AGG_IT_PROCESS_ADD(0, 30, 30, d_mem_0, d_mem_1);
+
+    // Col 1: range_check_8 pair (rc8_0 + rc8_1) — ADD, 2 elements each
+    AGG_IT_PROCESS_ADD(1, 2, 2, d_rc8_0, d_rc8_1);
+
+    // Col 2: range_check_8 pair (rc8_2 + rc8_3) — ADD, 2 elements each
+    AGG_IT_PROCESS_ADD(2, 2, 2, d_rc8_2, d_rc8_3);
+
+    // Col 3: partial_ec_mul pair (pem_0 - pem_1) — SUB, 73 elements each
+    AGG_IT_PROCESS_SUB(3, 73, 73, d_pem_0, d_pem_1);
+
+    // Col 4: partial_ec_mul pair (pem_2 - pem_3) — SUB, 73 elements each
+    AGG_IT_PROCESS_SUB(4, 73, 73, d_pem_2, d_pem_3);
+
+    // Col 5: special — frac = (d1 - d0 * mults) / (d0 * d1)
+    // where d0 = mem_2 (30 elems), d1 = agg_0 (4 elems), m = multiplicities
+    agg_it_special_mults_kernel<30, 4><<<num_blocks, block_dim>>>(
+        d_lookup, d_mem_2, d_agg_0, mults, trace_size,
+        device_logup_denom, numer0, numer1, numer2, numer3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    agg_it_finalize_col_kernel<<<num_blocks, block_dim>>>(5, trace_size, denom_inv,
+        numer0, numer1, numer2, numer3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Finalize: cumsum_shift + prefix sum on last 4 columns
+    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+
+    size_t shared_size = 4 * block_dim * sizeof(m31);
+    agg_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
+        AGG_N_LOGUP_COLUMNS, trace_size, device_it, claimed_sum);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    agg_it_coord_prefix_sum<<<num_blocks, block_dim>>>(
+        claimed_sum, AGG_N_LOGUP_COLUMNS, trace_size, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Inclusive prefix sum on last 4 columns
+    inclusive_prefix_sum(interaction_trace_columns[4 * AGG_N_LOGUP_COLUMNS - 4], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * AGG_N_LOGUP_COLUMNS - 3], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * AGG_N_LOGUP_COLUMNS - 2], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * AGG_N_LOGUP_COLUMNS - 1], trace_size);
+
+    // Cleanup
+    cuda_free_memory(d_lookup);
+    cuda_free_memory(d_mem_0);
+    cuda_free_memory(d_mem_1);
+    cuda_free_memory(d_mem_2);
+    cuda_free_memory(d_rc8_0);
+    cuda_free_memory(d_rc8_1);
+    cuda_free_memory(d_rc8_2);
+    cuda_free_memory(d_rc8_3);
+    cuda_free_memory(d_pem_0);
+    cuda_free_memory(d_pem_1);
+    cuda_free_memory(d_pem_2);
+    cuda_free_memory(d_pem_3);
+    cuda_free_memory(d_agg_0);
+    cuda_free_memory(device_logup_denom);
+    cuda_free_memory(denom_inv);
+    cuda_free_memory(numer0);
+    cuda_free_memory(numer1);
+    cuda_free_memory(numer2);
+    cuda_free_memory(numer3);
+    cuda_free_memory(device_it);
 }

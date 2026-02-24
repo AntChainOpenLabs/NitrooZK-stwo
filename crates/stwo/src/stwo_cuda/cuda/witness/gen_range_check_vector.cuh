@@ -63,4 +63,16 @@ void range_check_vector_generate_interaction_trace(
         cuda_free_memory(device_lookup_elements); \
     }
 
+extern "C"
+void range_check_multi_relation_interaction_trace(
+    unsigned n_pairs,
+    unsigned n_range,
+    unsigned *ranges,
+    void **lookup_elements,              // 2*n_pairs host pointers to LookupElements
+    m31 **multiplicities,                // 2*n_pairs device pointers
+    unsigned log_size,
+    m31 **interaction_trace_columns,     // 4*n_pairs output column device pointers
+    m31 *claimed_sum                     // 4 device m31s for qm31
+);
+
 #endif // GEN_RANGE_CHECK_VECTOR_TRACE_H
