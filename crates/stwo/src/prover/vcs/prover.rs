@@ -1,14 +1,13 @@
 use std::cmp::Reverse;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use itertools::Itertools;
 use tracing::{span, Level};
 
 use super::ops::MerkleOps;
 use crate::core::fields::m31::BaseField;
 use crate::core::utils::PeekableExt;
-use crate::core::vcs::utils::{next_decommitment_node, option_flatten_peekable};
 use crate::core::vcs::verifier::{
     ExtendedMerkleDecommitment, MerkleDecommitment, MerkleDecommitmentAux,
 };
@@ -67,6 +66,9 @@ impl<B: MerkleOps<H>, H: MerkleHasher> MerkleProver<B, H> {
     /// Decommits to columns on the given queries.
     /// Queries are given as indices to the largest column.
     ///
+    /// Uses a two-pass approach per layer to enable batch GPU fetches:
+    /// Pass 1 computes all needed indices on CPU, Pass 2 batch-fetches from GPU.
+    ///
     /// # Arguments
     ///
     /// * `queries_per_log_size` - Maps a log_size to a vector of queries for columns of that size.
@@ -83,85 +85,123 @@ impl<B: MerkleOps<H>, H: MerkleHasher> MerkleProver<B, H> {
         queries_per_log_size: &BTreeMap<u32, Vec<usize>>,
         columns: Vec<&Col<B, BaseField>>,
     ) -> (Vec<BaseField>, ExtendedMerkleDecommitment<H>) {
-        // Prepare output buffers.
         let mut queried_values = vec![];
         let mut decommitment = MerkleDecommitment::empty();
         let mut all_node_values: Vec<HashMap<usize, <H as MerkleHasher>::Hash>> = vec![];
 
-        // Sort columns by layer.
+        // Sort columns by layer (largest first).
         let mut columns_by_layer = columns
             .iter()
             .sorted_by_key(|c| Reverse(c.len()))
             .peekable();
 
-        let mut last_layer_queries = vec![];
+        let mut last_layer_queries: Vec<usize> = vec![];
         for layer_log_size in (0..self.layers.len() as u32).rev() {
-            let mut all_node_values_for_layer = HashMap::<usize, <H as MerkleHasher>::Hash>::new();
-
-            // Prepare write buffer for queries to the current layer. This will propagate to the
-            // next layer.
-            let mut layer_total_queries = vec![];
-
-            // Each layer node is a hash of column values as previous layer hashes.
-            // Prepare the relevant columns and previous layer hashes to read from.
             let layer_columns = columns_by_layer
                 .peek_take_while(|column| column.len().ilog2() == layer_log_size)
                 .collect_vec();
             let previous_layer_hashes = self.layers.get(layer_log_size as usize + 1);
 
-            // Queries to this layer come from queried node in the previous layer and queried
-            // columns in this one.
-            let mut prev_layer_queries = last_layer_queries.into_iter().peekable();
-            let mut layer_column_queries =
-                option_flatten_peekable(queries_per_log_size.get(&layer_log_size));
+            // === Pass 1: Compute all indices on CPU (no GPU access) ===
 
-            // Merge previous layer queries and column queries.
-            while let Some(node_index) =
-                next_decommitment_node(&mut prev_layer_queries, &mut layer_column_queries)
-            {
-                if let Some(previous_layer_hashes) = previous_layer_hashes {
-                    // Copy values to all_node_values.
-                    all_node_values_for_layer
-                        .insert(2 * node_index, previous_layer_hashes.at(2 * node_index));
-                    all_node_values_for_layer.insert(
-                        2 * node_index + 1,
-                        previous_layer_hashes.at(2 * node_index + 1),
-                    );
+            // Build set of previous-layer query indices for O(1) membership checks.
+            let prev_queries_set: HashSet<usize> =
+                last_layer_queries.iter().copied().collect();
 
-                    // If the left child was not computed, add it to the witness.
-                    if prev_layer_queries.next_if_eq(&(2 * node_index)).is_none() {
-                        decommitment
-                            .hash_witness
-                            .push(previous_layer_hashes.at(2 * node_index));
+            // Parent queries: each prev query q maps to parent node q/2.
+            let parent_queries: BTreeSet<usize> =
+                last_layer_queries.iter().map(|&q| q / 2).collect();
+
+            // Column queries for this layer.
+            let column_queries_set: HashSet<usize> = queries_per_log_size
+                .get(&layer_log_size)
+                .map(|v| v.iter().copied().collect())
+                .unwrap_or_default();
+
+            // Merge parent queries and column queries (sorted, deduplicated).
+            let mut merged: BTreeSet<usize> = parent_queries;
+            merged.extend(column_queries_set.iter().copied());
+            let merged_nodes: Vec<usize> = merged.into_iter().collect();
+
+            // Classify each node and build index arrays for batch fetches.
+            let mut children_to_fetch: Vec<usize> = Vec::with_capacity(merged_nodes.len() * 2);
+            let mut witness_positions: Vec<usize> = vec![];
+            let mut queried_column_nodes: Vec<usize> = vec![];
+            let mut witness_column_nodes: Vec<usize> = vec![];
+
+            for (i, &node_index) in merged_nodes.iter().enumerate() {
+                if previous_layer_hashes.is_some() {
+                    children_to_fetch.push(2 * node_index);
+                    children_to_fetch.push(2 * node_index + 1);
+
+                    // Track which children positions are witnesses (not in prev queries).
+                    if !prev_queries_set.contains(&(2 * node_index)) {
+                        witness_positions.push(2 * i);
                     }
-
-                    // If the right child was not computed, add it to the witness.
-                    if prev_layer_queries
-                        .next_if_eq(&(2 * node_index + 1))
-                        .is_none()
-                    {
-                        decommitment
-                            .hash_witness
-                            .push(previous_layer_hashes.at(2 * node_index + 1));
+                    if !prev_queries_set.contains(&(2 * node_index + 1)) {
+                        witness_positions.push(2 * i + 1);
                     }
                 }
 
-                // If the column values were queried, return them.
-                let node_values = layer_columns.iter().map(|c| c.at(node_index));
-                if layer_column_queries.next_if_eq(&node_index).is_some() {
-                    queried_values.extend(node_values);
+                if column_queries_set.contains(&node_index) {
+                    queried_column_nodes.push(node_index);
                 } else {
-                    // Otherwise, add them to the witness.
-                    decommitment.column_witness.extend(node_values);
+                    witness_column_nodes.push(node_index);
+                }
+            }
+
+            // === Pass 2: Batch fetch from GPU ===
+
+            let mut all_node_values_for_layer =
+                HashMap::<usize, <H as MerkleHasher>::Hash>::new();
+
+            if let Some(prev_hashes) = previous_layer_hashes {
+                // Single batch fetch for all children hashes.
+                let children = prev_hashes.batch_at(&children_to_fetch);
+
+                // Build all_node_values from the batch result.
+                for (i, &node_index) in merged_nodes.iter().enumerate() {
+                    all_node_values_for_layer.insert(2 * node_index, children[2 * i]);
+                    all_node_values_for_layer
+                        .insert(2 * node_index + 1, children[2 * i + 1]);
                 }
 
-                layer_total_queries.push(node_index);
+                // Extract hash witnesses from the same batch result.
+                for &pos in &witness_positions {
+                    decommitment.hash_witness.push(children[pos]);
+                }
             }
 
             all_node_values.push(all_node_values_for_layer);
 
-            // Propagate queries to the next layer.
-            last_layer_queries = layer_total_queries;
+            // Batch fetch column values for queried nodes (one batch per column).
+            if !queried_column_nodes.is_empty() && !layer_columns.is_empty() {
+                let batched: Vec<Vec<BaseField>> = layer_columns
+                    .iter()
+                    .map(|col| col.batch_at(&queried_column_nodes))
+                    .collect();
+                for node_idx in 0..queried_column_nodes.len() {
+                    for col_values in &batched {
+                        queried_values.push(col_values[node_idx]);
+                    }
+                }
+            }
+
+            // Batch fetch column values for witness nodes (one batch per column).
+            if !witness_column_nodes.is_empty() && !layer_columns.is_empty() {
+                let batched: Vec<Vec<BaseField>> = layer_columns
+                    .iter()
+                    .map(|col| col.batch_at(&witness_column_nodes))
+                    .collect();
+                for node_idx in 0..witness_column_nodes.len() {
+                    for col_values in &batched {
+                        decommitment.column_witness.push(col_values[node_idx]);
+                    }
+                }
+            }
+
+            // Propagate all merged nodes as queries to the next (smaller) layer.
+            last_layer_queries = merged_nodes;
         }
 
         (

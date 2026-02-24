@@ -19,10 +19,11 @@ use crate::core::fields::m31::BaseField;
 use crate::core::poly::circle::CanonicCoset;
 use crate::core::poly::line::{LineDomain, LinePoly};
 use crate::core::utils::bit_reverse_index;
-use crate::core::vcs_lifted::merkle_hasher::MerkleHasherLifted;
-use crate::core::vcs_lifted::verifier::{
-    MerkleDecommitmentLifted, MerkleDecommitmentLiftedAux, MerkleVerificationError,
-    MerkleVerifierLifted,
+use std_shims::BTreeMap;
+
+use crate::core::vcs::MerkleHasher;
+use crate::core::vcs::verifier::{
+    MerkleDecommitment, MerkleDecommitmentAux, MerkleVerificationError, MerkleVerifier,
 };
 
 /// FRI proof config
@@ -359,7 +360,7 @@ impl LinePolyDegreeBound {
 
 /// A FRI proof.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FriProof<H: MerkleHasherLifted> {
+pub struct FriProof<H: MerkleHasher> {
     pub first_layer: FriLayerProof<H>,
     pub inner_layers: Vec<FriLayerProof<H>>,
     pub last_layer_poly: LinePoly,
@@ -367,13 +368,13 @@ pub struct FriProof<H: MerkleHasherLifted> {
 
 /// Auxiliary data produced by the prover.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FriProofAux<H: MerkleHasherLifted> {
+pub struct FriProofAux<H: MerkleHasher> {
     pub first_layer: FriLayerProofAux<H>,
     pub inner_layers: Vec<FriLayerProofAux<H>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct ExtendedFriProof<H: MerkleHasherLifted> {
+pub struct ExtendedFriProof<H: MerkleHasher> {
     pub proof: FriProof<H>,
     pub aux: FriProofAux<H>,
 }
@@ -387,40 +388,40 @@ pub const CIRCLE_TO_LINE_FOLD_STEP: u32 = 1;
 
 /// Proof of an individual FRI layer.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FriLayerProof<H: MerkleHasherLifted> {
+pub struct FriLayerProof<H: MerkleHasher> {
     /// Values that the verifier needs but cannot deduce from previous computations, in the
     /// order they are needed. This complements the values that were queried. These must be
     /// supplied directly to the verifier.
     pub fri_witness: Vec<SecureField>,
-    pub decommitment: MerkleDecommitmentLifted<H>,
+    pub decommitment: MerkleDecommitment<H>,
     pub commitment: H::Hash,
 }
 
 /// Auxiliary data for a single FRI layer.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FriLayerProofAux<H: MerkleHasherLifted> {
+pub struct FriLayerProofAux<H: MerkleHasher> {
     /// For each column (of different size), the values of all nodes that participate in the
     /// decommitment.
     // TODO(lior): Remove the `Vec<>` once mixed-degree Merkle is removed.
     pub all_values: Vec<HashMap<usize, QM31>>,
     /// The auxiliary data for the merkle decommitment.
-    pub decommitment: MerkleDecommitmentLiftedAux<H>,
+    pub decommitment: MerkleDecommitmentAux<H>,
 }
 
 #[derive(Clone, Debug)]
-pub struct ExtendedFriLayerProof<H: MerkleHasherLifted> {
+pub struct ExtendedFriLayerProof<H: MerkleHasher> {
     pub proof: FriLayerProof<H>,
     pub aux: FriLayerProofAux<H>,
 }
 
-struct FriFirstLayerVerifier<H: MerkleHasherLifted> {
+struct FriFirstLayerVerifier<H: MerkleHasher> {
     /// The commitment domain all the circle polynomials in the first layer.
     column_commitment_domain: CircleDomain,
     folding_alpha: SecureField,
     proof: FriLayerProof<H>,
 }
 
-impl<H: MerkleHasherLifted> FriFirstLayerVerifier<H> {
+impl<H: MerkleHasher> FriFirstLayerVerifier<H> {
     /// Verifies the first layer's merkle decommitment, and returns the evaluations needed to fold
     /// the committed column.
     ///
@@ -457,16 +458,16 @@ impl<H: MerkleHasherLifted> FriFirstLayerVerifier<H> {
             })?;
 
         // A QM31 column is committed as 4 M31 columns.
-        let mut decommitmented_values: [Vec<BaseField>; SECURE_EXTENSION_DEGREE] =
-            core::array::from_fn(|_| Vec::new());
+        // Flatten to interleaved Vec<BaseField> for non-lifted verify.
+        let mut flat_values: Vec<BaseField> = Vec::new();
         sparse_evaluation
             .subset_evals
             .iter()
             .flatten()
             .for_each(|x| {
                 let arr = x.to_m31_array();
-                for (i, val) in arr.into_iter().enumerate() {
-                    decommitmented_values[i].push(val);
+                for val in arr {
+                    flat_values.push(val);
                 }
             });
 
@@ -475,16 +476,19 @@ impl<H: MerkleHasherLifted> FriFirstLayerVerifier<H> {
             return Err(FriVerificationError::FirstLayerEvaluationsInvalid);
         }
 
-        let merkle_verifier = MerkleVerifierLifted::new(
+        let column_log_size = self.column_commitment_domain.log_size();
+        let merkle_verifier = MerkleVerifier::new(
             self.proof.commitment,
-            vec![self.column_commitment_domain.log_size(); SECURE_EXTENSION_DEGREE],
-            None,
+            vec![column_log_size; SECURE_EXTENSION_DEGREE],
         );
+
+        let queries_per_log_size =
+            BTreeMap::from([(column_log_size, decommitment_positions.clone())]);
 
         merkle_verifier
             .verify(
-                &decommitment_positions,
-                decommitmented_values.to_vec(),
+                &queries_per_log_size,
+                flat_values,
                 self.proof.decommitment.clone(),
             )
             .map_err(|error| FriVerificationError::FirstLayerCommitmentInvalid { error })?;
@@ -493,7 +497,7 @@ impl<H: MerkleHasherLifted> FriFirstLayerVerifier<H> {
     }
 }
 
-struct FriInnerLayerVerifier<H: MerkleHasherLifted> {
+struct FriInnerLayerVerifier<H: MerkleHasher> {
     domain: LineDomain,
     folding_alpha: SecureField,
     layer_index: usize,
@@ -501,7 +505,7 @@ struct FriInnerLayerVerifier<H: MerkleHasherLifted> {
     fold_step: u32,
 }
 
-impl<H: MerkleHasherLifted> FriInnerLayerVerifier<H> {
+impl<H: MerkleHasher> FriInnerLayerVerifier<H> {
     /// Verifies the layer's merkle decommitment and returns the the folded queries and query evals.
     ///
     /// # Errors
@@ -545,29 +549,32 @@ impl<H: MerkleHasherLifted> FriInnerLayerVerifier<H> {
         }
 
         // A QM31 column is committed as 4 M31 columns.
-        let mut decommitmented_values: [Vec<BaseField>; SECURE_EXTENSION_DEGREE] =
-            core::array::from_fn(|_| Vec::new());
+        // Flatten to interleaved Vec<BaseField> for non-lifted verify.
+        let mut flat_values: Vec<BaseField> = Vec::new();
         sparse_evaluation
             .subset_evals
             .iter()
             .flatten()
             .for_each(|x| {
                 let arr = x.to_m31_array();
-                for (i, val) in arr.into_iter().enumerate() {
-                    decommitmented_values[i].push(val);
+                for val in arr {
+                    flat_values.push(val);
                 }
             });
 
-        let merkle_verifier = MerkleVerifierLifted::new(
+        let column_log_size = self.domain.log_size();
+        let merkle_verifier = MerkleVerifier::new(
             self.proof.commitment,
-            vec![self.domain.log_size(); SECURE_EXTENSION_DEGREE],
-            None,
+            vec![column_log_size; SECURE_EXTENSION_DEGREE],
         );
+
+        let queries_per_log_size =
+            BTreeMap::from([(column_log_size, decommitment_positions.clone())]);
 
         merkle_verifier
             .verify(
-                &decommitment_positions,
-                decommitmented_values.to_vec(),
+                &queries_per_log_size,
+                flat_values,
                 self.proof.decommitment.clone(),
             )
             .map_err(|e| FriVerificationError::InnerLayerCommitmentInvalid {
@@ -790,7 +797,7 @@ mod tests {
     use crate::core::poly::line::{LineDomain, LinePoly};
     use crate::core::queries::Queries;
     use crate::core::test_utils::test_channel;
-    use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleChannel;
+    use crate::core::vcs::blake2_merkle::Blake2sMerkleChannel;
     use crate::m31;
     use crate::prover::backend::cpu::CpuCirclePoly;
     use crate::prover::backend::{ColumnOps, CpuBackend};

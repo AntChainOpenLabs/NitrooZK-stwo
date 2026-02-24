@@ -9,7 +9,7 @@ use crate::core::fri::FriVerificationError;
 use crate::core::pcs::utils::get_lifting_log_size;
 use crate::core::pcs::CommitmentSchemeVerifier;
 use crate::core::proof::StarkProof;
-use crate::core::vcs_lifted::verifier::MerkleVerificationError;
+use crate::core::vcs::verifier::MerkleVerificationError;
 pub const PREPROCESSED_TRACE_IDX: usize = 0;
 
 // TODO(Leo): remove this once the composition poly split can be dependant on a config instead of
@@ -61,7 +61,13 @@ pub fn verify_ex<MC: MerkleChannel>(
         split_composition_log_degree_bound + commitment_scheme.config.fri_config.log_blowup_factor,
     );
     if include_all_preprocessed_columns {
-        assert!(lifting_log_size >= commitment_scheme.trees[PREPROCESSED_TRACE_IDX].height);
+        let preprocessed_max_log_size = commitment_scheme.trees[PREPROCESSED_TRACE_IDX]
+            .column_log_sizes
+            .iter()
+            .max()
+            .copied()
+            .unwrap_or_default();
+        assert!(lifting_log_size >= preprocessed_max_log_size);
     }
 
     // The max degree of a committed polynomial. If `lifting_log_size` is not set,

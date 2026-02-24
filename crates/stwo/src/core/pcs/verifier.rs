@@ -9,18 +9,20 @@ use super::super::fri::{CirclePolyDegreeBound, FriVerifier};
 use super::quotients::{fri_answers, PointSample};
 use super::utils::TreeVec;
 use super::PcsConfig;
+use std_shims::BTreeMap;
+
 use crate::core::channel::{Channel, MerkleChannel};
 use crate::core::pcs::quotients::CommitmentSchemeProof;
 use crate::core::pcs::utils::prepare_preprocessed_query_positions;
-use crate::core::vcs_lifted::merkle_hasher::MerkleHasherLifted;
-use crate::core::vcs_lifted::verifier::MerkleVerifierLifted;
+use crate::core::vcs::MerkleHasher;
+use crate::core::vcs::verifier::MerkleVerifier;
 use crate::core::verifier::VerificationError;
 use crate::core::ColumnVec;
 
 /// The verifier side of a FRI polynomial commitment scheme. See [super].
 #[derive(Default)]
 pub struct CommitmentSchemeVerifier<MC: MerkleChannel> {
-    pub trees: TreeVec<MerkleVerifierLifted<MC::H>>,
+    pub trees: TreeVec<MerkleVerifier<MC::H>>,
     pub config: PcsConfig,
 }
 
@@ -42,7 +44,7 @@ impl<MC: MerkleChannel> CommitmentSchemeVerifier<MC> {
     /// Reads a commitment from the prover.
     pub fn commit(
         &mut self,
-        commitment: <MC::H as MerkleHasherLifted>::Hash,
+        commitment: <MC::H as MerkleHasher>::Hash,
         log_sizes: &[u32],
         channel: &mut MC::C,
     ) {
@@ -51,8 +53,7 @@ impl<MC: MerkleChannel> CommitmentSchemeVerifier<MC> {
             .iter()
             .map(|&log_size| log_size + self.config.fri_config.log_blowup_factor)
             .collect();
-        let verifier =
-            MerkleVerifierLifted::new(commitment, extended_log_sizes, self.config.lifting_log_size);
+        let verifier = MerkleVerifier::new(commitment, extended_log_sizes);
         self.trees.push(verifier);
     }
 
@@ -64,7 +65,19 @@ impl<MC: MerkleChannel> CommitmentSchemeVerifier<MC> {
     ) -> Result<(), VerificationError> {
         channel.mix_felts(&proof.sampled_values.clone().flatten_cols());
         let random_coeff = channel.draw_secure_felt();
-        let lifting_log_size = self.trees.last().unwrap().height;
+        // The lifting log size is the length of the longest column which has at least one sample
+        // (i.e. a column which is actually used in the constraints). Usually, the only columns
+        // that have an empty vector of samples are among the preprocessed columns.
+        let lifting_log_size = self
+            .column_log_sizes()
+            .zip_cols(&sampled_points)
+            .flatten()
+            .iter()
+            .filter(|(_, sampled_points)| !sampled_points.is_empty())
+            .map(|(log_size, _)| *log_size)
+            .max()
+            .unwrap();
+
         let bound =
             CirclePolyDegreeBound::new(lifting_log_size - self.config.fri_config.log_blowup_factor);
 
@@ -82,7 +95,11 @@ impl<MC: MerkleChannel> CommitmentSchemeVerifier<MC> {
         let preprocessed_query_positions = prepare_preprocessed_query_positions(
             &query_positions,
             lifting_log_size,
-            self.trees[0].height,
+            self.column_log_sizes()[0]
+                .iter()
+                .max()
+                .copied()
+                .unwrap_or_default(),
         );
 
         // Build the query positions tree: the preprocessed tree needs a different treatment than
@@ -101,6 +118,7 @@ impl<MC: MerkleChannel> CommitmentSchemeVerifier<MC> {
                 .collect::<Vec<_>>(),
         );
         // Verify decommitments.
+        // Build queries_per_log_size for each tree from flat query positions and column log sizes.
         self.trees
             .as_ref()
             .zip_eq(proof.decommitments)
@@ -108,7 +126,9 @@ impl<MC: MerkleChannel> CommitmentSchemeVerifier<MC> {
             .zip_eq(query_positions_tree)
             .map(
                 |(((tree, decommitment), queried_values), query_positions)| {
-                    tree.verify(query_positions, queried_values, decommitment)
+                    let queries_per_log_size =
+                        build_queries_per_log_size(&tree.column_log_sizes, query_positions);
+                    tree.verify(&queries_per_log_size, queried_values, decommitment)
                 },
             )
             .0
@@ -136,4 +156,27 @@ impl<MC: MerkleChannel> CommitmentSchemeVerifier<MC> {
 
         Ok(())
     }
+}
+
+/// Builds a `BTreeMap<u32, Vec<usize>>` mapping each unique column log_size to sorted, deduplicated
+/// query positions at that log_size. The input `query_positions` are at the max log_size; smaller
+/// columns have their positions shifted right.
+fn build_queries_per_log_size(
+    column_log_sizes: &[u32],
+    query_positions: &[usize],
+) -> BTreeMap<u32, Vec<usize>> {
+    let max_log_size = column_log_sizes.iter().copied().max().unwrap_or(0);
+    let mut queries_per_log_size = BTreeMap::new();
+    for &log_size in column_log_sizes {
+        queries_per_log_size.entry(log_size).or_insert_with(|| {
+            let shift = max_log_size - log_size;
+            query_positions
+                .iter()
+                .map(|&pos| (pos >> (shift + 1) << 1) + (pos & 1))
+                .sorted()
+                .dedup()
+                .collect()
+        });
+    }
+    queries_per_log_size
 }

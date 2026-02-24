@@ -133,20 +133,6 @@ __device__ void blake2s_finalize(Blake2sState* S, Blake2sHash* out) {
 }
 
 
-// Domain separation prefixes (64 bytes each)
-__constant__ uint8_t LEAF_PREFIX[64] = {
-    'l', 'e', 'a', 'f', 0,0,0,0, 0,0,0,0, 0,0,0,0,
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
-};
-__constant__ uint8_t NODE_PREFIX[64] = {
-    'n', 'o', 'd', 'e', 0,0,0,0, 0,0,0,0, 0,0,0,0,
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
-};
-
 __global__ void commit_on_first_layer_in_gpu(
     uint32_t size,
     uint32_t number_of_columns,
@@ -157,9 +143,6 @@ __global__ void commit_on_first_layer_in_gpu(
     if (index >= size) return;
     Blake2sState state;
     blake2s_init(&state);
-
-    // Domain separation: leaf prefix
-    blake2s_update(&state, LEAF_PREFIX, 64);
 
     for (int col = 0; col < number_of_columns; ++col) {
         uint32_t val = data[col][index];
@@ -183,9 +166,6 @@ __global__ void commit_on_layer_using_previous_in_gpu(
     if (index >= size) return;
     Blake2sState state;
     blake2s_init(&state);
-
-    // Domain separation: node prefix
-    blake2s_update(&state, NODE_PREFIX, 64);
 
     // left hash
     Blake2sHash left = prev_layer[2*index];

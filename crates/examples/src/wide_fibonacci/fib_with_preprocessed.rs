@@ -94,7 +94,7 @@ mod tests {
     use stwo::core::fields::qm31::SecureField;
     use stwo::core::pcs::{CommitmentSchemeVerifier, PcsConfig};
     use stwo::core::poly::circle::CanonicCoset;
-    use stwo::core::vcs_lifted::blake2_merkle::Blake2sM31MerkleChannel;
+    use stwo::core::vcs::blake2_merkle::Blake2sM31MerkleChannel;
     use stwo::core::verifier::verify;
     use stwo::prover::backend::simd::column::BaseColumn;
     use stwo::prover::backend::simd::SimdBackend;

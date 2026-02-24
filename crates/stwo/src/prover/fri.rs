@@ -13,15 +13,17 @@ use crate::core::fri::{
 };
 use crate::core::poly::line::{LineDomain, LinePoly};
 use crate::core::queries::{draw_queries, Queries};
-use crate::core::vcs_lifted::merkle_hasher::MerkleHasherLifted;
+use std::collections::BTreeMap;
+
+use crate::core::vcs::MerkleHasher;
 use crate::prover::backend::ColumnOps;
 use crate::prover::line::LineEvaluation;
 use crate::prover::poly::circle::{PolyOps, SecureEvaluation};
 use crate::prover::poly::twiddles::TwiddleTree;
 use crate::prover::poly::BitReversedOrder;
 use crate::prover::secure_column::SecureColumnByCoords;
-use crate::prover::vcs_lifted::ops::MerkleOpsLifted;
-use crate::prover::vcs_lifted::prover::MerkleProverLifted;
+use crate::prover::vcs::ops::MerkleOps;
+use crate::prover::vcs::prover::MerkleProver;
 
 pub trait FriOps: ColumnOps<BaseField> + PolyOps + Sized + ColumnOps<SecureField> {
     /// Folds a degree `d` polynomial into a degree `d/2` polynomial.
@@ -73,20 +75,20 @@ pub trait FriOps: ColumnOps<BaseField> + PolyOps + Sized + ColumnOps<SecureField
     ) -> (SecureEvaluation<Self, BitReversedOrder>, SecureField);
 }
 
-pub struct FriDecommitResult<H: MerkleHasherLifted> {
+pub struct FriDecommitResult<H: MerkleHasher> {
     pub fri_proof: ExtendedFriProof<H>,
     pub query_positions: Vec<usize>,
     pub unsorted_query_locations: Vec<usize>,
 }
 
 /// A FRI prover that applies the FRI protocol to prove a set of polynomials are of low degree.
-pub struct FriProver<'a, B: FriOps + MerkleOpsLifted<MC::H>, MC: MerkleChannel> {
+pub struct FriProver<'a, B: FriOps + MerkleOps<MC::H>, MC: MerkleChannel> {
     config: FriConfig,
     first_layer: FriFirstLayerProver<'a, B, MC::H>,
     inner_layers: Vec<FriInnerLayerProver<B, MC::H>>,
     last_layer_poly: LinePoly,
 }
-impl<'a, B: FriOps + MerkleOpsLifted<MC::H>, MC: MerkleChannel> FriProver<'a, B, MC> {
+impl<'a, B: FriOps + MerkleOps<MC::H>, MC: MerkleChannel> FriProver<'a, B, MC> {
     /// Runs the commitment phase of FRI on one circle evaluation over a canonic circle domain.
     ///
     /// # Panics
@@ -270,16 +272,15 @@ impl<'a, B: FriOps + MerkleOpsLifted<MC::H>, MC: MerkleChannel> FriProver<'a, B,
 }
 
 /// Commitment to the first FRI layer.
-struct FriFirstLayerProver<'a, B: FriOps + MerkleOpsLifted<H>, H: MerkleHasherLifted> {
+struct FriFirstLayerProver<'a, B: FriOps + MerkleOps<H>, H: MerkleHasher> {
     column: &'a SecureEvaluation<B, BitReversedOrder>,
-    merkle_tree: MerkleProverLifted<B, H>,
+    merkle_tree: MerkleProver<B, H>,
 }
 
-impl<'a, B: FriOps + MerkleOpsLifted<H>, H: MerkleHasherLifted> FriFirstLayerProver<'a, B, H> {
+impl<'a, B: FriOps + MerkleOps<H>, H: MerkleHasher> FriFirstLayerProver<'a, B, H> {
     fn new(first_layer_column: &'a SecureEvaluation<B, BitReversedOrder>) -> Self {
         let coordinate_columns = first_layer_column.columns.iter().collect();
-        let merkle_tree =
-            MerkleProverLifted::commit(coordinate_columns, first_layer_column.domain.log_size());
+        let merkle_tree = MerkleProver::commit(coordinate_columns);
 
         FriFirstLayerProver {
             column: first_layer_column,
@@ -297,8 +298,11 @@ impl<'a, B: FriOps + MerkleOpsLifted<H>, H: MerkleHasherLifted> FriFirstLayerPro
                 CIRCLE_TO_LINE_FOLD_STEP,
             );
 
-        let (_, decommitment) = self.merkle_tree.decommit(
-            &column_decommitment_positions,
+        let column_log_size = self.column.domain.log_size();
+        let queries_per_log_size =
+            BTreeMap::from([(column_log_size, column_decommitment_positions.clone())]);
+        let (prover_queried_values, decommitment) = self.merkle_tree.decommit(
+            &queries_per_log_size,
             self.column.columns.iter().collect(),
         );
 
@@ -323,18 +327,16 @@ impl<'a, B: FriOps + MerkleOpsLifted<H>, H: MerkleHasherLifted> FriFirstLayerPro
 // TODO(andrew): Support different step sizes and update docs.
 // TODO(andrew): The docs are wrong. Each leaf of the merkle tree commits to a single
 // QM31 value. This is inefficient and should be changed.
-struct FriInnerLayerProver<B: FriOps + MerkleOpsLifted<H>, H: MerkleHasherLifted> {
+struct FriInnerLayerProver<B: FriOps + MerkleOps<H>, H: MerkleHasher> {
     evaluation: LineEvaluation<B>,
-    merkle_tree: MerkleProverLifted<B, H>,
+    merkle_tree: MerkleProver<B, H>,
     fold_step: u32,
 }
 
-impl<B: FriOps + MerkleOpsLifted<H>, H: MerkleHasherLifted> FriInnerLayerProver<B, H> {
+impl<B: FriOps + MerkleOps<H>, H: MerkleHasher> FriInnerLayerProver<B, H> {
     fn new(evaluation: LineEvaluation<B>, fold_step: u32) -> Self {
-        let merkle_tree = MerkleProverLifted::commit(
-            evaluation.values.columns.iter().collect_vec(),
-            evaluation.values.len().ilog2(),
-        );
+        let merkle_tree =
+            MerkleProver::commit(evaluation.values.columns.iter().collect_vec());
         FriInnerLayerProver {
             evaluation,
             merkle_tree,
@@ -350,8 +352,11 @@ impl<B: FriOps + MerkleOpsLifted<H>, H: MerkleHasherLifted> FriInnerLayerProver<
                 self.fold_step,
             );
 
+        let column_log_size = self.evaluation.values.len().ilog2();
+        let queries_per_log_size =
+            BTreeMap::from([(column_log_size, decommitment_positions.clone())]);
         let (_evals, decommitment) = self.merkle_tree.decommit(
-            &decommitment_positions,
+            &queries_per_log_size,
             self.evaluation.values.columns.iter().collect_vec(),
         );
 
@@ -419,7 +424,7 @@ mod tests {
     use crate::core::poly::circle::CircleDomain;
     use crate::core::queries::Queries;
     use crate::core::test_utils::test_channel;
-    use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleChannel;
+    use crate::core::vcs::blake2_merkle::Blake2sMerkleChannel;
     use crate::prover::backend::cpu::CpuCirclePoly;
     use crate::prover::backend::CpuBackend;
     use crate::prover::poly::circle::{PolyOps, SecureEvaluation};

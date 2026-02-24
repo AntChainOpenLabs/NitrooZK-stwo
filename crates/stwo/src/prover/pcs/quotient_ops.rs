@@ -157,7 +157,7 @@ mod tests {
     use crate::core::pcs::quotients::PointSample;
     use crate::core::pcs::{CommitmentSchemeVerifier, PcsConfig, TreeVec};
     use crate::core::poly::circle::CanonicCoset;
-    use crate::core::vcs_lifted::blake2_merkle::Blake2sMerkleChannel;
+    use crate::core::vcs::blake2_merkle::Blake2sMerkleChannel;
     use crate::core::verifier::VerificationError;
     use crate::prover::backend::cpu::{CpuCircleEvaluation, CpuCirclePoly};
     use crate::prover::backend::simd::SimdBackend;

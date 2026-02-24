@@ -30,7 +30,7 @@ impl<H: MerkleHasher> MerkleDecommitment<H> {
 }
 
 /// Auxiliary data for Merkle decommitment.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MerkleDecommitmentAux<H: MerkleHasher> {
     /// For each layer, a map from node index to its hash value.
     pub all_node_values: Vec<HashMap<usize, H::Hash>>,

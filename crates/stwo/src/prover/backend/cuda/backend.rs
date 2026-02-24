@@ -3,8 +3,8 @@ use crate::prover::backend::{Backend, BackendForChannel, simd::SimdBackend};
 use crate::core::{
     channel::{Blake2sChannel, Blake2sM31Channel, Poseidon252Channel},
     proof_of_work::GrindOps,
-    vcs_lifted::blake2_merkle::{Blake2sMerkleChannel, Blake2sM31MerkleChannel},
-    vcs_lifted::poseidon252_merkle::Poseidon252MerkleChannel,
+    vcs::blake2_merkle::{Blake2sMerkleChannel, Blake2sM31MerkleChannel},
+    vcs::poseidon252_merkle::Poseidon252MerkleChannel,
 };
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]

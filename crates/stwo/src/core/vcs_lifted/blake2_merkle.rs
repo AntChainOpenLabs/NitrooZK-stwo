@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use super::merkle_hasher::MerkleHasherLifted;
-use crate::core::channel::{Blake2sChannelGeneric, MerkleChannel};
 use crate::core::fields::m31::BaseField;
 use crate::core::vcs::blake2_hash::{Blake2sHash, Blake2sHasherGeneric};
 
@@ -41,19 +40,6 @@ pub type Blake2sM31MerkleChannel = Blake2sMerkleChannelGeneric<true>;
 
 #[derive(Default)]
 pub struct Blake2sMerkleChannelGeneric<const IS_M31_OUTPUT: bool>;
-
-impl<const IS_M31_OUTPUT: bool> MerkleChannel for Blake2sMerkleChannelGeneric<IS_M31_OUTPUT> {
-    type C = Blake2sChannelGeneric<IS_M31_OUTPUT>;
-    type H = Blake2sMerkleHasherGeneric<IS_M31_OUTPUT>;
-
-    fn mix_root(channel: &mut Self::C, root: <Self::H as MerkleHasherLifted>::Hash) {
-        use crate::core::vcs::blake2_hash::Blake2sHasherGeneric;
-        channel.update_digest(Blake2sHasherGeneric::<IS_M31_OUTPUT>::concat_and_hash(
-            &channel.digest(),
-            &root,
-        ));
-    }
-}
 
 /// Dummy implementations of `Serialize` and `Deserialize` for `Blake2sMerkleHasherGeneric` (we
 /// cannot simply derive them because its inner field doesn't implement these traits and is from an

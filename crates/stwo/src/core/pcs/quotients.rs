@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std_shims::Vec;
 
 use super::TreeVec;
+use super::utils::prepare_preprocessed_query_positions;
 use crate::core::circle::CirclePoint;
 use crate::core::constraints::complex_conjugate_line_coeffs;
 use crate::core::fields::cm31::CM31;
@@ -16,37 +17,39 @@ use crate::core::fri::{FriProof, FriProofAux};
 use crate::core::pcs::PcsConfig;
 use crate::core::poly::circle::CanonicCoset;
 use crate::core::utils::bit_reverse_index;
-use crate::core::vcs_lifted::merkle_hasher::MerkleHasherLifted;
-use crate::core::vcs_lifted::verifier::{MerkleDecommitmentLifted, MerkleDecommitmentLiftedAux};
+use std_shims::BTreeMap;
+
+use crate::core::vcs::MerkleHasher;
+use crate::core::vcs::verifier::{MerkleDecommitment, MerkleDecommitmentAux};
 use crate::core::verifier::VerificationError;
 use crate::core::ColumnVec;
 // Used for no_std support.
 pub type IndexMap<K, V> = indexmap::IndexMap<K, V, core::hash::BuildHasherDefault<fnv::FnvHasher>>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CommitmentSchemeProof<H: MerkleHasherLifted> {
+pub struct CommitmentSchemeProof<H: MerkleHasher> {
     pub config: PcsConfig,
     pub commitments: TreeVec<H::Hash>,
     pub sampled_values: TreeVec<ColumnVec<Vec<SecureField>>>,
-    pub decommitments: TreeVec<MerkleDecommitmentLifted<H>>,
-    pub queried_values: TreeVec<ColumnVec<Vec<BaseField>>>,
+    pub decommitments: TreeVec<MerkleDecommitment<H>>,
+    pub queried_values: TreeVec<Vec<BaseField>>,
     pub proof_of_work: u64,
     pub fri_proof: FriProof<H>,
 }
 
 /// Auxiliary data for a [CommitmentSchemeProof].
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CommitmentSchemeProofAux<H: MerkleHasherLifted> {
+pub struct CommitmentSchemeProofAux<H: MerkleHasher> {
     /// The indices of the queries in the ordered they were sampled, before sorting and
     /// deduplication.
     pub unsorted_query_locations: Vec<usize>,
     /// For each trace, the Merkle decommitment auxiliary data.
-    pub trace_decommitment: TreeVec<MerkleDecommitmentLiftedAux<H>>,
+    pub trace_decommitment: TreeVec<MerkleDecommitmentAux<H>>,
     /// The FRI auxiliary data.
     pub fri: FriProofAux<H>,
 }
 
-pub struct ExtendedCommitmentSchemeProof<H: MerkleHasherLifted> {
+pub struct ExtendedCommitmentSchemeProof<H: MerkleHasher> {
     pub proof: CommitmentSchemeProof<H>,
     pub aux: CommitmentSchemeProofAux<H>,
 }
@@ -122,10 +125,22 @@ pub fn fri_answers(
     samples: TreeVec<Vec<Vec<PointSample>>>,
     random_coeff: SecureField,
     query_positions: &[usize],
-    queried_values: TreeVec<ColumnVec<Vec<BaseField>>>,
+    queried_values: TreeVec<Vec<BaseField>>,
     lifting_log_size: u32,
 ) -> Result<Vec<SecureField>, VerificationError> {
-    let queried_values = queried_values.flatten();
+    // Reshape flat values back to per-column format.
+    let queried_values: Vec<Vec<BaseField>> = column_log_sizes
+        .iter()
+        .zip(queried_values.iter())
+        .flat_map(|(tree_col_log_sizes, tree_flat_values)| {
+            reshape_flat_to_per_column(
+                tree_flat_values,
+                tree_col_log_sizes,
+                query_positions,
+                lifting_log_size,
+            )
+        })
+        .collect();
     assert!(queried_values
         .iter()
         .all(|queries_per_col| queries_per_col.len() == query_positions.len()));
@@ -333,4 +348,92 @@ pub fn build_samples_with_randomness_and_periodicity(
         res.push(samples_with_randomness_and_periodicity);
     }
     TreeVec(res)
+}
+
+/// Reshapes flat decommitted values (from non-lifted `MerkleProver::decommit`) back to per-column
+/// format, with one value per original query position per column.
+///
+/// The flat values are ordered: for each layer (from largest log_size down), for each queried node
+/// at that log_size, for each column at that log_size — one BaseField value.
+///
+/// The flat values were produced by `MerkleProver::decommit` using tree-local query positions
+/// (which may differ from the global FRI query positions when the tree's max log_size <
+/// `lifting_log_size`). This function computes the tree-local max from `column_log_sizes` and
+/// maps global query positions to tree-local positions via `prepare_preprocessed_query_positions`.
+///
+/// For columns with `log_size < tree_max_log_size`, positions are mapped using the lifted
+/// index formula `(pos >> (shift+1) << 1) + (pos & 1)` which preserves the circle domain
+/// twin-coset structure. Values are then "expanded" back so that each column has exactly
+/// `query_positions.len()` entries.
+fn reshape_flat_to_per_column(
+    flat_values: &[BaseField],
+    column_log_sizes: &[u32],
+    query_positions: &[usize],
+    max_log_size: u32,
+) -> Vec<Vec<BaseField>> {
+    // Compute tree-specific max log_size from the columns in this tree.
+    let tree_max_log_size = column_log_sizes.iter().copied().max().unwrap_or(0);
+
+    // Map global FRI query positions to tree-local positions. When
+    // tree_max_log_size == max_log_size this is the identity mapping.
+    let tree_query_positions = prepare_preprocessed_query_positions(
+        query_positions,
+        max_log_size,
+        tree_max_log_size,
+    );
+
+    // Group column indices by log_size (in descending order to match decommit traversal).
+    let mut columns_by_log_size: BTreeMap<u32, Vec<usize>> = BTreeMap::new();
+    for (col_idx, &log_size) in column_log_sizes.iter().enumerate() {
+        columns_by_log_size.entry(log_size).or_default().push(col_idx);
+    }
+
+    // For each log_size, compute the unique sorted query positions at that level using the
+    // lifted index formula relative to the tree's max log_size.
+    let queries_per_log_size: BTreeMap<u32, Vec<usize>> = columns_by_log_size
+        .keys()
+        .map(|&log_size| {
+            let shift = tree_max_log_size - log_size;
+            let positions: Vec<usize> = tree_query_positions
+                .iter()
+                .map(|&pos| (pos >> (shift + 1) << 1) + (pos & 1))
+                .sorted()
+                .dedup()
+                .collect();
+            (log_size, positions)
+        })
+        .collect();
+
+    // Walk through flat values in the same order as decommit produces them (largest layer first).
+    let mut per_column_at_natural: Vec<Vec<BaseField>> = vec![Vec::new(); column_log_sizes.len()];
+    let mut flat_iter = flat_values.iter();
+
+    for (&log_size, col_indices) in columns_by_log_size.iter().rev() {
+        let positions = &queries_per_log_size[&log_size];
+        for &_pos in positions {
+            for &col_idx in col_indices {
+                per_column_at_natural[col_idx].push(*flat_iter.next().unwrap());
+            }
+        }
+    }
+
+    assert!(
+        flat_iter.next().is_none(),
+        "Not all flat values were consumed in reshape_flat_to_per_column"
+    );
+
+    // Expand each column's natural-position values to one entry per original query position.
+    // Use tree-local positions for the lookup.
+    let mut result: Vec<Vec<BaseField>> = vec![Vec::new(); column_log_sizes.len()];
+    for (col_idx, &log_size) in column_log_sizes.iter().enumerate() {
+        let shift = tree_max_log_size - log_size;
+        let positions = &queries_per_log_size[&log_size];
+        for &tree_qp in &tree_query_positions {
+            let lifted = (tree_qp >> (shift + 1) << 1) + (tree_qp & 1);
+            let idx = positions.binary_search(&lifted).unwrap();
+            result[col_idx].push(per_column_at_natural[col_idx][idx]);
+        }
+    }
+
+    result
 }

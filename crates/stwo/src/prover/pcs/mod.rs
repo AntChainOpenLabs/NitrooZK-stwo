@@ -17,8 +17,10 @@ use crate::core::pcs::quotients::{
 use crate::core::pcs::utils::prepare_preprocessed_query_positions;
 use crate::core::pcs::{PcsConfig, TreeSubspan, TreeVec};
 use crate::core::poly::circle::CanonicCoset;
-use crate::core::vcs_lifted::merkle_hasher::MerkleHasherLifted;
-use crate::core::vcs_lifted::verifier::ExtendedMerkleDecommitmentLifted;
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::core::vcs::MerkleHasher;
+use crate::core::vcs::verifier::ExtendedMerkleDecommitment;
 use crate::core::ColumnVec;
 use crate::prover::air::component_prover::{Poly, Trace, WeightsHashMap};
 use crate::prover::backend::{BackendForChannel, Col};
@@ -27,7 +29,7 @@ use crate::prover::pcs::quotient_ops::compute_fri_quotients;
 use crate::prover::poly::circle::{CircleCoefficients, CircleEvaluation, PolyOps};
 use crate::prover::poly::twiddles::TwiddleTree;
 use crate::prover::poly::BitReversedOrder;
-use crate::prover::vcs_lifted::prover::MerkleProverLifted;
+use crate::prover::vcs::prover::MerkleProver;
 
 pub mod quotient_ops;
 
@@ -77,7 +79,7 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
         }
     }
 
-    pub fn roots(&self) -> TreeVec<<MC::H as MerkleHasherLifted>::Hash> {
+    pub fn roots(&self) -> TreeVec<<MC::H as MerkleHasher>::Hash> {
         self.trees.as_ref().map(|tree| tree.commitment.root())
     }
 
@@ -420,7 +422,7 @@ impl<B: BackendForChannel<MC>, MC: MerkleChannel> TreeBuilder<'_, '_, B, MC> {
 /// commit on a set of polynomials at a time. This corresponds to such a set.
 pub struct CommitmentTreeProver<B: BackendForChannel<MC>, MC: MerkleChannel> {
     pub polynomials: ColumnVec<Poly<B>>,
-    pub commitment: MerkleProverLifted<B, MC::H>,
+    pub commitment: MerkleProver<B, MC::H>,
 }
 
 impl<B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentTreeProver<B, MC> {
@@ -446,18 +448,15 @@ impl<B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentTreeProver<B, MC> {
             .map(|poly| poly.evals.domain.log_size())
             .max()
             .unwrap_or_default();
-        let lifting_log_size = lifting_log_size.unwrap_or(max_log_domain_size);
         let _span = span!(Level::INFO, "Merkle",
             n_polys = polynomials.len(),
             max_log_domain_size = max_log_domain_size,
-            lifting_log_size = lifting_log_size,
         ).entered();
-        let tree = MerkleProverLifted::commit(
+        let tree = MerkleProver::commit(
             polynomials
                 .iter()
                 .map(|poly: &Poly<B>| &poly.evals.values)
                 .collect(),
-            lifting_log_size,
         );
         MC::mix_root(channel, tree.root());
 
@@ -468,22 +467,39 @@ impl<B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentTreeProver<B, MC> {
     }
 
     /// Decommits the merkle tree on the given query positions.
-    /// Returns the values at the queried positions and the decommitment.
-    /// The queries are given as a mapping from the log size of the layer size to the queried
-    /// positions on each column of that size.
+    /// Returns the flat values at the queried positions and the decommitment.
     fn decommit(
         &self,
         queries: &[usize],
     ) -> (
-        ColumnVec<Vec<BaseField>>,
-        ExtendedMerkleDecommitmentLifted<MC::H>,
+        Vec<BaseField>,
+        ExtendedMerkleDecommitment<MC::H>,
     ) {
+        // Build queries_per_log_size from flat positions.
+        let column_log_sizes: BTreeSet<u32> = self
+            .polynomials
+            .iter()
+            .map(|p| p.evals.domain.log_size())
+            .collect();
+        let max_log_size = self.commitment.layers.len() as u32 - 1;
+        let mut queries_per_log_size = BTreeMap::new();
+        for &log_size in &column_log_sizes {
+            let shift = max_log_size - log_size;
+            let positions: Vec<usize> = queries
+                .iter()
+                .map(|&pos| (pos >> (shift + 1) << 1) + (pos & 1))
+                .sorted()
+                .dedup()
+                .collect();
+            queries_per_log_size.insert(log_size, positions);
+        }
+
         let eval_vec = self
             .polynomials
             .iter()
             .map(|poly| &poly.evals.values)
             .collect_vec();
-        self.commitment.decommit(queries, eval_vec)
+        self.commitment.decommit(&queries_per_log_size, eval_vec)
     }
 }
 

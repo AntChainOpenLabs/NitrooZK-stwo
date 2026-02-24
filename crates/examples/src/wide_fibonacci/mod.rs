@@ -14,8 +14,8 @@ use stwo::prover::poly::BitReversedOrder;
 use stwo::core::ColumnVec;
 use stwo::core::pcs::PcsConfig;
 use stwo::core::channel::{Blake2sChannel, Poseidon252Channel};
-use stwo::core::vcs_lifted::blake2_merkle::{Blake2sMerkleChannel, Blake2sMerkleHasher};
-use stwo::core::vcs_lifted::poseidon252_merkle::Poseidon252MerkleChannel;
+use stwo::core::vcs::blake2_merkle::{Blake2sMerkleChannel, Blake2sMerkleHasher};
+use stwo::core::vcs::poseidon252_merkle::Poseidon252MerkleChannel;
 use stwo::core::proof::StarkProof;
 use stwo::prover::{prove, CommitmentSchemeProver};
 use num_traits::Zero;
@@ -264,9 +264,9 @@ pub fn simd_prove_wide_fibonacci<const N: usize>(
 pub fn simd_prove_wide_fibonacci_poseidon<const N: usize>(
     log_n_instances: u32,
     config: PcsConfig,
-) -> (WideFibonacciComponent<N>, StarkProof<stwo::core::vcs_lifted::poseidon252_merkle::Poseidon252MerkleHasher>) {
+) -> (WideFibonacciComponent<N>, StarkProof<stwo::core::vcs::poseidon252_merkle::Poseidon252MerkleHasher>) {
     use stwo::core::channel::Poseidon252Channel;
-    use stwo::core::vcs_lifted::poseidon252_merkle::Poseidon252MerkleChannel;
+    use stwo::core::vcs::poseidon252_merkle::Poseidon252MerkleChannel;
 
     let inputs = if log_n_instances < LOG_N_LANES {
         let n_instances = 1 << log_n_instances;
@@ -335,7 +335,7 @@ pub fn simd_prove_wide_fibonacci_poseidon<const N: usize>(
 pub fn cuda_prove_wide_fibonacci_poseidon<const N: usize>(
     log_n_instances: u32,
     config: PcsConfig,
-) -> (WideFibonacciComponent<N>, StarkProof<stwo::core::vcs_lifted::poseidon252_merkle::Poseidon252MerkleHasher>) {
+) -> (WideFibonacciComponent<N>, StarkProof<stwo::core::vcs::poseidon252_merkle::Poseidon252MerkleHasher>) {
     // Precompute twiddles.
     let twiddles = CudaBackend::precompute_twiddles(
         CanonicCoset::new(log_n_instances + 1 + config.fri_config.log_blowup_factor)
@@ -401,9 +401,9 @@ mod tests {
     use stwo::prover::poly::circle::CircleEvaluation;
     use stwo::prover::poly::BitReversedOrder;
     use stwo::core::verifier::verify;
-    use stwo::core::vcs_lifted::blake2_merkle::Blake2sMerkleChannel;
+    use stwo::core::vcs::blake2_merkle::Blake2sMerkleChannel;
     #[cfg(not(target_arch = "wasm32"))]
-    use stwo::core::vcs_lifted::poseidon252_merkle::Poseidon252MerkleChannel;
+    use stwo::core::vcs::poseidon252_merkle::Poseidon252MerkleChannel;
     use stwo::core::ColumnVec;
     use crate::wide_fibonacci::{generate_trace, FibInput};
 

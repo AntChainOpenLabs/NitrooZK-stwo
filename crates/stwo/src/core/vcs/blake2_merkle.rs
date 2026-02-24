@@ -1,7 +1,8 @@
 use blake2::{Blake2s256, Digest};
 use serde::{Deserialize, Serialize};
 
-use super::blake2_hash::{reduce_to_m31, Blake2sHash};
+use super::blake2_hash::{reduce_to_m31, Blake2sHash, Blake2sHasherGeneric};
+use crate::core::channel::{Blake2sChannelGeneric, MerkleChannel};
 use crate::core::fields::m31::BaseField;
 use crate::core::vcs::MerkleHasher;
 
@@ -44,6 +45,18 @@ pub type Blake2sM31MerkleChannel = Blake2sMerkleChannelGeneric<true>;
 
 #[derive(Default)]
 pub struct Blake2sMerkleChannelGeneric<const IS_M31_OUTPUT: bool>;
+
+impl<const IS_M31_OUTPUT: bool> MerkleChannel for Blake2sMerkleChannelGeneric<IS_M31_OUTPUT> {
+    type C = Blake2sChannelGeneric<IS_M31_OUTPUT>;
+    type H = Blake2sMerkleHasherGeneric<IS_M31_OUTPUT>;
+
+    fn mix_root(channel: &mut Self::C, root: <Self::H as MerkleHasher>::Hash) {
+        channel.update_digest(Blake2sHasherGeneric::<IS_M31_OUTPUT>::concat_and_hash(
+            &channel.digest(),
+            &root,
+        ));
+    }
+}
 
 #[cfg(all(test, feature = "prover"))]
 mod tests {
