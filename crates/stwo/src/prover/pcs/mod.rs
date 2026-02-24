@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use hashbrown::HashMap;
 use itertools::Itertools;
+use num_traits::Zero;
 #[cfg(feature = "parallel")]
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tracing::{info, span, Level};
@@ -162,31 +163,116 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
             Some(self.build_weights_hash_map(&sampled_points, lifting_log_size))
         };
 
-        // Lambda that evaluates a polynomial on a collection of circle points and returns a vector
-        // of point samples.
-        let eval_at_points = |(poly, points): (&Poly<B>, &Vec<CirclePoint<SecureField>>)| {
-            points
-                .iter()
-                .map(|&point| PointSample {
-                    point,
-                    value: poly.eval_at_point(
-                        point.repeated_double(lifting_log_size - poly.evals.domain.log_size()),
-                        weights_hash_map.as_ref(),
-                    ),
-                })
-                .collect_vec()
-        };
+        let samples: TreeVec<Vec<Vec<PointSample>>> = if self.store_polynomials_coefficients {
+            // Batch OODS evaluation: group polynomials by coefficient log_size,
+            // then batch-evaluate each group at each unique transformed point.
+            // Reduces ~400 individual GPU kernel launches to ~15 batched calls.
+            let polys = self.polynomials();
 
-        #[cfg(not(feature = "parallel"))]
-        let samples: TreeVec<Vec<Vec<PointSample>>> = self
-            .polynomials()
-            .zip_cols(&sampled_points)
-            .map_cols(eval_at_points);
-        #[cfg(feature = "parallel")]
-        let samples: TreeVec<Vec<Vec<PointSample>>> = self
-            .polynomials()
-            .zip_cols(&sampled_points)
-            .par_map_cols(eval_at_points);
+            // Initialize result structure with placeholder values.
+            let mut samples = TreeVec::new(
+                sampled_points
+                    .iter()
+                    .map(|tree_points| {
+                        tree_points
+                            .iter()
+                            .map(|col_points| {
+                                col_points
+                                    .iter()
+                                    .map(|&p| PointSample {
+                                        point: p,
+                                        value: SecureField::zero(),
+                                    })
+                                    .collect_vec()
+                            })
+                            .collect_vec()
+                    })
+                    .collect_vec(),
+            );
+
+            // Collect evaluation tasks grouped by (coeffs_log_size, transformed_point).
+            let mut groups: HashMap<
+                u32,
+                Vec<(
+                    CirclePoint<SecureField>,
+                    Vec<(usize, usize, usize)>,
+                    Vec<&CircleCoefficients<B>>,
+                )>,
+            > = HashMap::new();
+
+            for (tree_idx, (tree_polys, tree_points)) in
+                polys.iter().zip(sampled_points.iter()).enumerate()
+            {
+                for (col_idx, (poly, col_points)) in
+                    tree_polys.iter().zip(tree_points.iter()).enumerate()
+                {
+                    let coeffs = poly.coeffs.as_ref().unwrap();
+                    let log_size = coeffs.log_size();
+                    let n_doubles = lifting_log_size - poly.evals.domain.log_size();
+
+                    for (point_idx, &point) in col_points.iter().enumerate() {
+                        let transformed = point.repeated_double(n_doubles);
+                        let group = groups.entry(log_size).or_default();
+                        if let Some(entry) =
+                            group.iter_mut().find(|(p, _, _)| *p == transformed)
+                        {
+                            entry.1.push((tree_idx, col_idx, point_idx));
+                            entry.2.push(coeffs);
+                        } else {
+                            group.push((
+                                transformed,
+                                vec![(tree_idx, col_idx, point_idx)],
+                                vec![coeffs],
+                            ));
+                        }
+                    }
+                }
+            }
+
+            // Batch evaluate each group using B::batch_eval_at_point().
+            for (_, point_groups) in groups {
+                for (transformed_point, positions, coeffs_refs) in point_groups {
+                    let results = B::batch_eval_at_point(&coeffs_refs, transformed_point);
+                    for ((tree_idx, col_idx, point_idx), value) in
+                        positions.into_iter().zip(results)
+                    {
+                        samples.0[tree_idx][col_idx][point_idx].value = value;
+                    }
+                }
+            }
+
+            samples
+        } else {
+            // Fallback: per-polynomial evaluation using barycentric weights.
+            let eval_at_points =
+                |(poly, points): (&Poly<B>, &Vec<CirclePoint<SecureField>>)| {
+                    points
+                        .iter()
+                        .map(|&point| PointSample {
+                            point,
+                            value: poly.eval_at_point(
+                                point.repeated_double(
+                                    lifting_log_size - poly.evals.domain.log_size(),
+                                ),
+                                weights_hash_map.as_ref(),
+                            ),
+                        })
+                        .collect_vec()
+                };
+
+            #[cfg(not(feature = "parallel"))]
+            {
+                self.polynomials()
+                    .zip_cols(&sampled_points)
+                    .map_cols(eval_at_points)
+            }
+            #[cfg(feature = "parallel")]
+            {
+                self.polynomials()
+                    .zip_cols(&sampled_points)
+                    .par_map_cols(eval_at_points)
+            }
+        };
 
         span.exit();
 
