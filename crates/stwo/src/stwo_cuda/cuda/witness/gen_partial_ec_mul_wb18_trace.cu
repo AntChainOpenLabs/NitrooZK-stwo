@@ -33,6 +33,10 @@
 #include "../fp256_config.cuh"
 #include "../fp256_dispatch_st.cuh"
 #include "../utils.cuh"
+#include "logup.cuh"
+#include "batch_inverse.cuh"
+#include "cuda_mem_pool.cuh"
+#include "../prefix_sum.cuh"
 
 // Pedersen table — defined in pedersen_table_init.cu
 #define PEDERSEN_TABLE_N_COLUMNS 56
@@ -840,8 +844,261 @@ extern "C" void gen_partial_ec_mul_wb18_trace(
     }
 }
 
+// ============================================================================
+// Interaction trace kernel templates for wb18 (65 logup columns)
+// ============================================================================
+
+#define WB18_IT_BLOCK_SIZE 256
+
+// Standard pair kernel: computes frac = (d0 + d1) / (d0 * d1)
+template <int N, int M>
+__launch_bounds__(WB18_IT_BLOCK_SIZE, 2)
+__global__ void wb18_it_col_gen_kernel(
+    LookupElementsBasic<N>* lookup_elements_n,
+    LookupElementsBasic<M>* lookup_elements_m,
+    m31** lookup_state_0,
+    m31** lookup_state_1,
+    unsigned trace_size,
+    qm31* denom_ptr,
+    m31* numerator0,
+    m31* numerator1,
+    m31* numerator2,
+    m31* numerator3
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    m31 reg0[N] = {};
+    m31 reg1[M] = {};
+
+    for (int i = 0; i < N; i++) reg0[i] = lookup_state_0[i][idx];
+    for (int i = 0; i < M; i++) reg1[i] = lookup_state_1[i][idx];
+
+    if (idx < trace_size) {
+        qm31 d0 = lookup_elements_n->combine(reg0, N);
+        qm31 d1 = lookup_elements_m->combine(reg1, M);
+        logup_col_write_frac(idx, add(d0, d1), mul(d0, d1),
+                            denom_ptr, numerator0, numerator1, numerator2, numerator3);
+    }
+}
+
+// Enabler pair kernel: frac = (d0 * en + d1) / (d0 * d1)
+template <int N, int M>
+__launch_bounds__(WB18_IT_BLOCK_SIZE, 2)
+__global__ void wb18_it_enabler_col_gen_kernel(
+    LookupElementsBasic<N>* lookup_elements_n,
+    LookupElementsBasic<M>* lookup_elements_m,
+    m31** lookup_state_0,
+    m31** lookup_state_1,
+    unsigned n_rows,
+    unsigned trace_size,
+    qm31* denom_ptr,
+    m31* numerator0,
+    m31* numerator1,
+    m31* numerator2,
+    m31* numerator3
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    qm31 en = {0};
+    if (idx < n_rows) en = {1};
+
+    m31 reg0[N] = {};
+    m31 reg1[M] = {};
+
+    for (int i = 0; i < N; i++) reg0[i] = lookup_state_0[i][idx];
+    for (int i = 0; i < M; i++) reg1[i] = lookup_state_1[i][idx];
+
+    if (idx < trace_size) {
+        qm31 d0 = lookup_elements_n->combine(reg0, N);
+        qm31 d1 = lookup_elements_m->combine(reg1, M);
+        logup_col_write_frac(idx, add(mul(d0, en), d1), mul(d0, d1),
+                            denom_ptr, numerator0, numerator1, numerator2, numerator3);
+    }
+}
+
+// Negative enabler kernel: frac = -en / d
+template <int N>
+__launch_bounds__(WB18_IT_BLOCK_SIZE, 2)
+__global__ void wb18_it_neg_enabler_col_gen_kernel(
+    LookupElementsBasic<N>* lookup_elements_n,
+    m31** lookup_state_0,
+    unsigned n_rows,
+    unsigned trace_size,
+    qm31* denom_ptr,
+    m31* numerator0,
+    m31* numerator1,
+    m31* numerator2,
+    m31* numerator3
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    qm31 en = {0};
+    if (idx < n_rows) en = {1};
+
+    m31 reg0[N] = {};
+    for (int i = 0; i < N; i++) reg0[i] = lookup_state_0[i][idx];
+
+    if (idx < trace_size) {
+        qm31 d = lookup_elements_n->combine(reg0, N);
+        logup_col_write_frac(idx, mul(qm31{P-1, 0, 0, 0}, en), d,
+                            denom_ptr, numerator0, numerator1, numerator2, numerator3);
+    }
+}
+
+// Finalize kernel: multiply numerator by inverse denominator and accumulate
+__global__ void wb18_it_finalize_col_kernel(
+    unsigned rep_index,
+    unsigned trace_size,
+    qm31* denom_inv_ptr,
+    m31* numerator0,
+    m31* numerator1,
+    m31* numerator2,
+    m31* numerator3,
+    m31** interaction_traces
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int pre_index = rep_index - 1;
+
+    if (idx < trace_size) {
+        qm31 value = mul(
+            qm31 {
+                cm31{numerator0[idx], numerator1[idx]},
+                cm31{numerator2[idx], numerator3[idx]}
+            },
+            denom_inv_ptr[idx]
+        );
+
+        if (pre_index == -1) {
+            interaction_traces[0][idx] = 0;
+            interaction_traces[1][idx] = 0;
+            interaction_traces[2][idx] = 0;
+            interaction_traces[3][idx] = 0;
+            qm31 tmp = value;
+            numerator0[idx] = tmp.a.a;
+            numerator1[idx] = tmp.a.b;
+            numerator2[idx] = tmp.b.a;
+            numerator3[idx] = tmp.b.b;
+        } else {
+            qm31 pre_value = qm31 {
+                cm31{interaction_traces[pre_index * 4 + 0][idx], interaction_traces[pre_index * 4 + 1][idx]},
+                cm31{interaction_traces[pre_index * 4 + 2][idx], interaction_traces[pre_index * 4 + 3][idx]}
+            };
+            qm31 tmp = add(value, pre_value);
+            numerator0[idx] = tmp.a.a;
+            numerator1[idx] = tmp.a.b;
+            numerator2[idx] = tmp.b.a;
+            numerator3[idx] = tmp.b.b;
+        }
+
+        interaction_traces[rep_index * 4 + 0][idx] = numerator0[idx];
+        interaction_traces[rep_index * 4 + 1][idx] = numerator1[idx];
+        interaction_traces[rep_index * 4 + 2][idx] = numerator2[idx];
+        interaction_traces[rep_index * 4 + 3][idx] = numerator3[idx];
+    }
+}
+
+// Cumsum shift kernel (parameterized N_COLS)
+__global__ void wb18_it_cumsum_shift(
+    unsigned n_cols,
+    unsigned trace_size,
+    m31** interactive_traces,
+    m31* coordinate_sums
+) {
+    int idx0 = 4 * n_cols - 4;
+    int idx1 = 4 * n_cols - 3;
+    int idx2 = 4 * n_cols - 2;
+    int idx3 = 4 * n_cols - 1;
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int gridSize = gridDim.x * blockDim.x;
+
+    m31 s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+    for (int i = tid; i < trace_size; i += gridSize) {
+        s0 = add(s0, interactive_traces[idx0][i]);
+        s1 = add(s1, interactive_traces[idx1][i]);
+        s2 = add(s2, interactive_traces[idx2][i]);
+        s3 = add(s3, interactive_traces[idx3][i]);
+    }
+
+    extern __shared__ m31 shared[];
+    m31* sd0 = &shared[0];
+    m31* sd1 = &shared[blockDim.x];
+    m31* sd2 = &shared[2 * blockDim.x];
+    m31* sd3 = &shared[3 * blockDim.x];
+
+    sd0[threadIdx.x] = s0;
+    sd1[threadIdx.x] = s1;
+    sd2[threadIdx.x] = s2;
+    sd3[threadIdx.x] = s3;
+    __syncthreads();
+
+    for (unsigned s = blockDim.x >> 1; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sd0[threadIdx.x] = add(sd0[threadIdx.x], sd0[threadIdx.x + s]);
+            sd1[threadIdx.x] = add(sd1[threadIdx.x], sd1[threadIdx.x + s]);
+            sd2[threadIdx.x] = add(sd2[threadIdx.x], sd2[threadIdx.x + s]);
+            sd3[threadIdx.x] = add(sd3[threadIdx.x], sd3[threadIdx.x + s]);
+        }
+        __syncthreads();
+    }
+
+    if (threadIdx.x == 0) {
+        atomic_add(&coordinate_sums[0], sd0[0]);
+        atomic_add(&coordinate_sums[1], sd1[0]);
+        atomic_add(&coordinate_sums[2], sd2[0]);
+        atomic_add(&coordinate_sums[3], sd3[0]);
+    }
+}
+
+// Coordinate prefix sum kernel (parameterized N_COLS)
+__global__ void wb18_it_coord_prefix_sum(
+    m31* coordinate_sums,
+    unsigned n_cols,
+    unsigned trace_size,
+    m31** interactive_traces
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < trace_size) {
+        qm31 cs = qm31 {
+            cm31{coordinate_sums[0], coordinate_sums[1]},
+            cm31{coordinate_sums[2], coordinate_sums[3]}
+        };
+        qm31 shift = div(cs, m31(trace_size));
+
+        interactive_traces[4 * n_cols - 4][idx] = sub(interactive_traces[4 * n_cols - 4][idx], shift.a.a);
+        interactive_traces[4 * n_cols - 3][idx] = sub(interactive_traces[4 * n_cols - 3][idx], shift.a.b);
+        interactive_traces[4 * n_cols - 2][idx] = sub(interactive_traces[4 * n_cols - 2][idx], shift.b.a);
+        interactive_traces[4 * n_cols - 1][idx] = sub(interactive_traces[4 * n_cols - 1][idx], shift.b.b);
+    }
+}
+
+// Helper macro for standard pair columns
+#define WB18_PROCESS_COL(col_idx, elem1, elem2, lookup1, lookup2, N1, N2) \
+    wb18_it_col_gen_kernel<N1, N2><<<num_blocks, block_dim>>>( \
+        elem1, elem2, lookup1, lookup2, trace_size, \
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3); \
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx, trace_size, denom_inv, \
+        numerator0, numerator1, numerator2, numerator3, device_it); \
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+// ============================================================================
+// Interaction trace type aliases for wb18
+// ============================================================================
+
+typedef LookupElementsBasic<72> PemLookup;
+typedef LookupElementsBasic<57> PptLookup;
+typedef LookupElementsBasic<2> Rc99Lookup;
+typedef LookupElementsBasic<1> Rc20Lookup;
+
+// ============================================================================
+// Main interaction trace generation function
+// ============================================================================
+
 extern "C" void gen_partial_ec_mul_wb18_interaction_trace(
     void* partial_ec_mul_lookup_elements,
+    void* pedersen_points_table_lookup_elements,
     void* rc_20_lookup_elements,
     void* rc_20_b_lookup_elements,
     void* rc_20_c_lookup_elements,
@@ -884,8 +1141,358 @@ extern "C" void gen_partial_ec_mul_wb18_interaction_trace(
 ) {
     uint32_t trace_size = 1u << log_size;
 
-    // TODO: Implement interaction trace generation using logup pattern.
-    // Zero the claimed_sum for now (stub)
-    uint32_t zero_sum[4] = {0, 0, 0, 0};
-    cudaMemcpy(claimed_sum, zero_sum, 4 * sizeof(uint32_t), cudaMemcpyHostToDevice);
+    // ========================================================================
+    // Copy lookup elements to device (18 total: pem, ppt, 8×rc20, 8×rc99)
+    // ========================================================================
+
+    PemLookup* d_pem = cuda_malloc<PemLookup>(1);
+    PptLookup* d_ppt = cuda_malloc<PptLookup>(1);
+    Rc20Lookup* d_rc20[8];
+    Rc99Lookup* d_rc99[8];
+    for (int i = 0; i < 8; i++) {
+        d_rc20[i] = cuda_malloc<Rc20Lookup>(1);
+        d_rc99[i] = cuda_malloc<Rc99Lookup>(1);
+    }
+
+    cuda_mem_copy_host_to_device<PemLookup>((PemLookup*)partial_ec_mul_lookup_elements, d_pem, 1);
+    cuda_mem_copy_host_to_device<PptLookup>((PptLookup*)pedersen_points_table_lookup_elements, d_ppt, 1);
+
+    void* rc20_elems[8] = {
+        rc_20_lookup_elements, rc_20_b_lookup_elements,
+        rc_20_c_lookup_elements, rc_20_d_lookup_elements,
+        rc_20_e_lookup_elements, rc_20_f_lookup_elements,
+        rc_20_g_lookup_elements, rc_20_h_lookup_elements
+    };
+    void* rc99_elems[8] = {
+        rc_9_9_lookup_elements, rc_9_9_b_lookup_elements,
+        rc_9_9_c_lookup_elements, rc_9_9_d_lookup_elements,
+        rc_9_9_e_lookup_elements, rc_9_9_f_lookup_elements,
+        rc_9_9_g_lookup_elements, rc_9_9_h_lookup_elements
+    };
+    for (int i = 0; i < 8; i++) {
+        cuda_mem_copy_host_to_device<Rc20Lookup>((Rc20Lookup*)rc20_elems[i], d_rc20[i], 1);
+        cuda_mem_copy_host_to_device<Rc99Lookup>((Rc99Lookup*)rc99_elems[i], d_rc99[i], 1);
+    }
+
+    // ========================================================================
+    // Clone lookup data arrays to device
+    // ========================================================================
+
+    // PEM self-lookups (73 arrays each, but kernel uses shifted elements → index 1..72)
+    m31** d_lk_pem_0 = clone_to_device<m31*>(lookup_partial_ec_mul_0, 73);
+    m31** d_lk_pem_1 = clone_to_device<m31*>(lookup_partial_ec_mul_1, 73);
+
+    // PPT lookup (58 arrays, kernel uses index 1..57)
+    m31** d_lk_ppt = clone_to_device<m31*>(lookup_ppt_0, 58);
+
+    // RC_20 variants (2 elements per entry, includes relation constant)
+    m31** lk_rc20_host[8] = {
+        lookup_rc_20, lookup_rc_20_b, lookup_rc_20_c, lookup_rc_20_d,
+        lookup_rc_20_e, lookup_rc_20_f, lookup_rc_20_g, lookup_rc_20_h
+    };
+    int rc20_flat[8] = {24, 24, 24, 24, 18, 18, 18, 18};
+    m31** d_lk_rc20[8];
+    for (int i = 0; i < 8; i++) {
+        d_lk_rc20[i] = clone_to_device<m31*>(lk_rc20_host[i], rc20_flat[i]);
+    }
+
+    // RC_9_9 variants (3 elements per entry, includes relation constant)
+    m31** lk_rc99_host[8] = {
+        lookup_rc_9_9, lookup_rc_9_9_b, lookup_rc_9_9_c, lookup_rc_9_9_d,
+        lookup_rc_9_9_e, lookup_rc_9_9_f, lookup_rc_9_9_g, lookup_rc_9_9_h
+    };
+    int rc99_flat[8] = {18, 18, 18, 18, 18, 18, 9, 9};
+    m31** d_lk_rc99[8];
+    for (int i = 0; i < 8; i++) {
+        d_lk_rc99[i] = clone_to_device<m31*>(lk_rc99_host[i], rc99_flat[i]);
+    }
+
+    // ========================================================================
+    // Allocate working memory
+    // ========================================================================
+
+    qm31* device_logup_denom = cuda_malloc<qm31>(trace_size);
+    qm31* denom_inv = cuda_malloc<qm31>(trace_size);
+    m31* numerator0 = cuda_malloc<m31>(trace_size);
+    m31* numerator1 = cuda_malloc<m31>(trace_size);
+    m31* numerator2 = cuda_malloc<m31>(trace_size);
+    m31* numerator3 = cuda_malloc<m31>(trace_size);
+
+    m31** device_it = clone_to_device<m31*>(interaction_trace_columns, 4 * PEM_WB18_N_LOGUP_COLUMNS);
+
+    int block_dim = trace_size < WB18_IT_BLOCK_SIZE ? trace_size : WB18_IT_BLOCK_SIZE;
+    int num_blocks = (trace_size + block_dim - 1) / block_dim;
+    int block_dim_fin = block_dim;
+    int num_blocks_fin = num_blocks;
+
+    // ========================================================================
+    // Process 65 interaction columns
+    // Column pairing matches Rust standard_pairs exactly
+    //
+    // Lookup data layout:
+    //   rc_20[variant]:  [rel_const, val] per entry → 2*count arrays
+    //                    Entry e at offsets [2*e, 2*e+1]
+    //                    Kernel uses shifted lookup elements → starts at index 1
+    //   rc_9_9[variant]: [rel_const, val0, val1] per entry → 3*count arrays
+    //                    Entry e at offsets [3*e, 3*e+1, 3*e+2]
+    //                    Kernel uses shifted lookup elements → starts at index 1
+    //   ppt:             [rel_const, table_idx, x0..x27, y0..y27] → 58 arrays
+    //                    Kernel uses shifted → starts at index 1
+    //   pem:             [rel_const, 72 values] → 73 arrays
+    //                    Kernel uses shifted → starts at index 1
+    //
+    // Since create_modified_lookup_for_cuda shifts alpha_powers by 1 and
+    // absorbs rel_const into z, the kernel's combine(vals, N) will read
+    // N values starting from the pointer given. We must point to index 1
+    // (skipping the rel_const at index 0) for all lookups.
+    // ========================================================================
+
+    int col = 0;
+
+    // Col 0: (Ppt0, Rc99(0,0))   — ppt uses 57 vals, rc99 uses 2 vals
+    wb18_it_col_gen_kernel<57, 2><<<num_blocks, block_dim>>>(
+        d_ppt, d_rc99[0], &d_lk_ppt[1], &d_lk_rc99[0][1], trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Col 1: (Rc99(1,0), Rc99(2,0))
+    WB18_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][1], &d_lk_rc99[2][1], 2, 2);
+    // Col 2: (Rc99(3,0), Rc99(4,0))
+    WB18_PROCESS_COL(col++, d_rc99[3], d_rc99[4], &d_lk_rc99[3][1], &d_lk_rc99[4][1], 2, 2);
+    // Col 3: (Rc99(5,0), Rc99(6,0))
+    WB18_PROCESS_COL(col++, d_rc99[5], d_rc99[6], &d_lk_rc99[5][1], &d_lk_rc99[6][1], 2, 2);
+    // Col 4: (Rc99(7,0), Rc99(0,1))
+    WB18_PROCESS_COL(col++, d_rc99[7], d_rc99[0], &d_lk_rc99[7][1], &d_lk_rc99[0][4], 2, 2);
+    // Col 5: (Rc99(1,1), Rc99(2,1))
+    WB18_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][4], &d_lk_rc99[2][4], 2, 2);
+    // Col 6: (Rc99(3,1), Rc99(4,1))
+    WB18_PROCESS_COL(col++, d_rc99[3], d_rc99[4], &d_lk_rc99[3][4], &d_lk_rc99[4][4], 2, 2);
+    // Col 7: (Rc99(5,1), Rc20(0,0))
+    wb18_it_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
+        d_rc99[5], d_rc20[0], &d_lk_rc99[5][4], &d_lk_rc20[0][1], trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Col 8: (Rc20(1,0), Rc20(2,0))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][1], &d_lk_rc20[2][1], 1, 1);
+    // Col 9: (Rc20(3,0), Rc20(4,0))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][1], &d_lk_rc20[4][1], 1, 1);
+    // Col 10: (Rc20(5,0), Rc20(6,0))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][1], &d_lk_rc20[6][1], 1, 1);
+    // Col 11: (Rc20(7,0), Rc20(0,1))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][1], &d_lk_rc20[0][3], 1, 1);
+    // Col 12: (Rc20(1,1), Rc20(2,1))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][3], &d_lk_rc20[2][3], 1, 1);
+    // Col 13: (Rc20(3,1), Rc20(4,1))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][3], &d_lk_rc20[4][3], 1, 1);
+    // Col 14: (Rc20(5,1), Rc20(6,1))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][3], &d_lk_rc20[6][3], 1, 1);
+    // Col 15: (Rc20(7,1), Rc20(0,2))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][3], &d_lk_rc20[0][5], 1, 1);
+    // Col 16: (Rc20(1,2), Rc20(2,2))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][5], &d_lk_rc20[2][5], 1, 1);
+    // Col 17: (Rc20(3,2), Rc20(4,2))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][5], &d_lk_rc20[4][5], 1, 1);
+    // Col 18: (Rc20(5,2), Rc20(6,2))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][5], &d_lk_rc20[6][5], 1, 1);
+    // Col 19: (Rc20(7,2), Rc20(0,3))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][5], &d_lk_rc20[0][7], 1, 1);
+    // Col 20: (Rc20(1,3), Rc20(2,3))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][7], &d_lk_rc20[2][7], 1, 1);
+
+    // Col 21: (Rc20(3,3), Rc99(0,2))
+    wb18_it_col_gen_kernel<1, 2><<<num_blocks, block_dim>>>(
+        d_rc20[3], d_rc99[0], &d_lk_rc20[3][7], &d_lk_rc99[0][7], trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Col 22: (Rc99(1,2), Rc99(2,2))
+    WB18_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][7], &d_lk_rc99[2][7], 2, 2);
+    // Col 23: (Rc99(3,2), Rc99(4,2))
+    WB18_PROCESS_COL(col++, d_rc99[3], d_rc99[4], &d_lk_rc99[3][7], &d_lk_rc99[4][7], 2, 2);
+    // Col 24: (Rc99(5,2), Rc99(6,1))
+    WB18_PROCESS_COL(col++, d_rc99[5], d_rc99[6], &d_lk_rc99[5][7], &d_lk_rc99[6][4], 2, 2);
+    // Col 25: (Rc99(7,1), Rc99(0,3))
+    WB18_PROCESS_COL(col++, d_rc99[7], d_rc99[0], &d_lk_rc99[7][4], &d_lk_rc99[0][10], 2, 2);
+    // Col 26: (Rc99(1,3), Rc99(2,3))
+    WB18_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][10], &d_lk_rc99[2][10], 2, 2);
+    // Col 27: (Rc99(3,3), Rc99(4,3))
+    WB18_PROCESS_COL(col++, d_rc99[3], d_rc99[4], &d_lk_rc99[3][10], &d_lk_rc99[4][10], 2, 2);
+
+    // Col 28: (Rc99(5,3), Rc20(0,4))
+    wb18_it_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
+        d_rc99[5], d_rc20[0], &d_lk_rc99[5][10], &d_lk_rc20[0][9], trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Col 29: (Rc20(1,4), Rc20(2,4))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][9], &d_lk_rc20[2][9], 1, 1);
+    // Col 30: (Rc20(3,4), Rc20(4,3))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][9], &d_lk_rc20[4][7], 1, 1);
+    // Col 31: (Rc20(5,3), Rc20(6,3))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][7], &d_lk_rc20[6][7], 1, 1);
+    // Col 32: (Rc20(7,3), Rc20(0,5))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][7], &d_lk_rc20[0][11], 1, 1);
+    // Col 33: (Rc20(1,5), Rc20(2,5))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][11], &d_lk_rc20[2][11], 1, 1);
+    // Col 34: (Rc20(3,5), Rc20(4,4))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][11], &d_lk_rc20[4][9], 1, 1);
+    // Col 35: (Rc20(5,4), Rc20(6,4))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][9], &d_lk_rc20[6][9], 1, 1);
+    // Col 36: (Rc20(7,4), Rc20(0,6))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][9], &d_lk_rc20[0][13], 1, 1);
+    // Col 37: (Rc20(1,6), Rc20(2,6))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][13], &d_lk_rc20[2][13], 1, 1);
+    // Col 38: (Rc20(3,6), Rc20(4,5))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][13], &d_lk_rc20[4][11], 1, 1);
+    // Col 39: (Rc20(5,5), Rc20(6,5))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][11], &d_lk_rc20[6][11], 1, 1);
+    // Col 40: (Rc20(7,5), Rc20(0,7))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][11], &d_lk_rc20[0][15], 1, 1);
+    // Col 41: (Rc20(1,7), Rc20(2,7))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][15], &d_lk_rc20[2][15], 1, 1);
+
+    // Col 42: (Rc20(3,7), Rc99(0,4))
+    wb18_it_col_gen_kernel<1, 2><<<num_blocks, block_dim>>>(
+        d_rc20[3], d_rc99[0], &d_lk_rc20[3][15], &d_lk_rc99[0][13], trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Col 43: (Rc99(1,4), Rc99(2,4))
+    WB18_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][13], &d_lk_rc99[2][13], 2, 2);
+    // Col 44: (Rc99(3,4), Rc99(4,4))
+    WB18_PROCESS_COL(col++, d_rc99[3], d_rc99[4], &d_lk_rc99[3][13], &d_lk_rc99[4][13], 2, 2);
+    // Col 45: (Rc99(5,4), Rc99(6,2))
+    WB18_PROCESS_COL(col++, d_rc99[5], d_rc99[6], &d_lk_rc99[5][13], &d_lk_rc99[6][7], 2, 2);
+    // Col 46: (Rc99(7,2), Rc99(0,5))
+    WB18_PROCESS_COL(col++, d_rc99[7], d_rc99[0], &d_lk_rc99[7][7], &d_lk_rc99[0][16], 2, 2);
+    // Col 47: (Rc99(1,5), Rc99(2,5))
+    WB18_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][16], &d_lk_rc99[2][16], 2, 2);
+    // Col 48: (Rc99(3,5), Rc99(4,5))
+    WB18_PROCESS_COL(col++, d_rc99[3], d_rc99[4], &d_lk_rc99[3][16], &d_lk_rc99[4][16], 2, 2);
+
+    // Col 49: (Rc99(5,5), Rc20(0,8))
+    wb18_it_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
+        d_rc99[5], d_rc20[0], &d_lk_rc99[5][16], &d_lk_rc20[0][17], trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Col 50: (Rc20(1,8), Rc20(2,8))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][17], &d_lk_rc20[2][17], 1, 1);
+    // Col 51: (Rc20(3,8), Rc20(4,6))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][17], &d_lk_rc20[4][13], 1, 1);
+    // Col 52: (Rc20(5,6), Rc20(6,6))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][13], &d_lk_rc20[6][13], 1, 1);
+    // Col 53: (Rc20(7,6), Rc20(0,9))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][13], &d_lk_rc20[0][19], 1, 1);
+    // Col 54: (Rc20(1,9), Rc20(2,9))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][19], &d_lk_rc20[2][19], 1, 1);
+    // Col 55: (Rc20(3,9), Rc20(4,7))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][19], &d_lk_rc20[4][15], 1, 1);
+    // Col 56: (Rc20(5,7), Rc20(6,7))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][15], &d_lk_rc20[6][15], 1, 1);
+    // Col 57: (Rc20(7,7), Rc20(0,10))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][15], &d_lk_rc20[0][21], 1, 1);
+    // Col 58: (Rc20(1,10), Rc20(2,10))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][21], &d_lk_rc20[2][21], 1, 1);
+    // Col 59: (Rc20(3,10), Rc20(4,8))
+    WB18_PROCESS_COL(col++, d_rc20[3], d_rc20[4], &d_lk_rc20[3][21], &d_lk_rc20[4][17], 1, 1);
+    // Col 60: (Rc20(5,8), Rc20(6,8))
+    WB18_PROCESS_COL(col++, d_rc20[5], d_rc20[6], &d_lk_rc20[5][17], &d_lk_rc20[6][17], 1, 1);
+    // Col 61: (Rc20(7,8), Rc20(0,11))
+    WB18_PROCESS_COL(col++, d_rc20[7], d_rc20[0], &d_lk_rc20[7][17], &d_lk_rc20[0][23], 1, 1);
+    // Col 62: (Rc20(1,11), Rc20(2,11))
+    WB18_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][23], &d_lk_rc20[2][23], 1, 1);
+
+    // Col 63: ENABLER — (Rc20(3,11), Pem0)  frac = (d0*en + d1) / (d0*d1)
+    wb18_it_enabler_col_gen_kernel<1, 72><<<num_blocks, block_dim>>>(
+        d_rc20[3], d_pem, &d_lk_rc20[3][23], &d_lk_pem_0[1], n_rows, trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Col 64: NEG_ENABLER — (Pem1)  frac = -en / d
+    wb18_it_neg_enabler_col_gen_kernel<72><<<num_blocks, block_dim>>>(
+        d_pem, &d_lk_pem_1[1], n_rows, trace_size,
+        device_logup_denom, numerator0, numerator1, numerator2, numerator3);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
+    wb18_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
+        numerator0, numerator1, numerator2, numerator3, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // ========================================================================
+    // Finalize: cumsum shift + prefix sum
+    // ========================================================================
+
+    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+
+    size_t shared_size = 4 * block_dim * sizeof(m31);
+    wb18_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
+        PEM_WB18_N_LOGUP_COLUMNS, trace_size, device_it, claimed_sum);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    wb18_it_coord_prefix_sum<<<num_blocks, block_dim>>>(
+        claimed_sum, PEM_WB18_N_LOGUP_COLUMNS, trace_size, device_it);
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+
+    // Inclusive prefix sum on last 4 columns
+    inclusive_prefix_sum(interaction_trace_columns[4 * PEM_WB18_N_LOGUP_COLUMNS - 4], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * PEM_WB18_N_LOGUP_COLUMNS - 3], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * PEM_WB18_N_LOGUP_COLUMNS - 2], trace_size);
+    inclusive_prefix_sum(interaction_trace_columns[4 * PEM_WB18_N_LOGUP_COLUMNS - 1], trace_size);
+
+    // ========================================================================
+    // Cleanup
+    // ========================================================================
+
+    cuda_free_memory(d_pem);
+    cuda_free_memory(d_ppt);
+    for (int i = 0; i < 8; i++) {
+        cuda_free_memory(d_rc20[i]);
+        cuda_free_memory(d_rc99[i]);
+    }
+
+    cuda_free_memory(d_lk_pem_0);
+    cuda_free_memory(d_lk_pem_1);
+    cuda_free_memory(d_lk_ppt);
+    for (int i = 0; i < 8; i++) {
+        cuda_free_memory(d_lk_rc20[i]);
+        cuda_free_memory(d_lk_rc99[i]);
+    }
+
+    cuda_free_memory(device_logup_denom);
+    cuda_free_memory(denom_inv);
+    cuda_free_memory(numerator0);
+    cuda_free_memory(numerator1);
+    cuda_free_memory(numerator2);
+    cuda_free_memory(numerator3);
+    cuda_free_memory(device_it);
 }

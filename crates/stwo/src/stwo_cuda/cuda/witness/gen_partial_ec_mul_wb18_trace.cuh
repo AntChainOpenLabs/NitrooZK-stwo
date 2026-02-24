@@ -102,6 +102,7 @@ extern "C" void gen_partial_ec_mul_wb18_trace(
 extern "C" void gen_partial_ec_mul_wb18_interaction_trace(
     // Lookup elements (per-relation, modified for CUDA)
     void* partial_ec_mul_lookup_elements,
+    void* pedersen_points_table_lookup_elements,
     void* rc_20_lookup_elements,
     void* rc_20_b_lookup_elements,
     void* rc_20_c_lookup_elements,

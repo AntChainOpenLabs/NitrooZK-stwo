@@ -3642,8 +3642,9 @@ extern "C" {
     /// Generate interaction trace for partial_ec_mul_wb18 from lookup_data.
     /// Uses all lookup data arrays to compute the 65 LogUp columns.
     pub fn gen_partial_ec_mul_wb18_interaction_trace(
-        // Lookup elements for each relation (18 total: pem + 8 rc_20 + 8 rc_9_9 + ppt unused)
+        // Lookup elements for each relation (18 total: pem + ppt + 8 rc_20 + 8 rc_9_9)
         partial_ec_mul_lookup_elements: *mut c_void,
+        pedersen_points_table_lookup_elements: *mut c_void,
         rc_20_lookup_elements: *mut c_void,
         rc_20_b_lookup_elements: *mut c_void,
         rc_20_c_lookup_elements: *mut c_void,
