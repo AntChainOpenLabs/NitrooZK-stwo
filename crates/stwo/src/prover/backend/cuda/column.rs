@@ -50,6 +50,10 @@ impl Column<BaseField> for interface::base_field_vec::BaseFieldVec {
         Self::get_data(self, index)
     }
 
+    fn batch_at(&self, indices: &[usize]) -> Vec<BaseField> {
+        self.batch_get(indices)
+    }
+
     fn set(&mut self, _index: usize, _value: BaseField) {
         Self::set_data(self, _index, _value);
     }

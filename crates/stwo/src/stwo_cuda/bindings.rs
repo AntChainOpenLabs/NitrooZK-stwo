@@ -296,6 +296,13 @@ extern "C" {
         n_indices: u32,
     );
 
+    pub fn cuda_batch_get_uint32_t(
+        device_ptr: *const u32,
+        host_ptr: *mut u32,
+        indices: *const u32,
+        n_indices: u32,
+    );
+
     pub fn cuda_multi_layer_batch_get_blake_2s_hash(
         layer_device_ptrs: *const *const Blake2sHash,
         host_ptr: *mut Blake2sHash,

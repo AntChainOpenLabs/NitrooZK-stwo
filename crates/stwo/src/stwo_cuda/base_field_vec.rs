@@ -57,6 +57,24 @@ impl BaseFieldVec {
         BaseField::from_u32_unchecked(value)
     }
 
+    pub fn batch_get(&self, indices: &[usize]) -> Vec<BaseField> {
+        if indices.is_empty() {
+            return Vec::new();
+        }
+        let indices_u32: Vec<u32> = indices.iter().map(|&i| i as u32).collect();
+        let mut result: Vec<BaseField> = Vec::with_capacity(indices.len());
+        unsafe {
+            result.set_len(indices.len());
+            bindings::cuda_batch_get_uint32_t(
+                self.device_ptr,
+                result.as_mut_ptr() as *mut u32,
+                indices_u32.as_ptr(),
+                indices.len() as u32,
+            );
+        }
+        result
+    }
+
     pub fn set_data(&mut self, index: usize, value: BaseField) {
         unsafe {
             bindings::cuda_set_uint32_t(self.device_ptr as *const c_void, index, value.0);

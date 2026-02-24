@@ -179,6 +179,67 @@ void cuda_batch_get_blake_2s_hash(
     cuda_mem_pool_free(d_result);
 }
 
+// Kernel: Batch get uint32_t values from device memory by indices
+__global__ void batch_get_uint32_kernel(
+    const uint32_t* src,
+    uint32_t* dst,
+    const uint32_t* indices,
+    uint32_t n_indices
+) {
+    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (idx < n_indices) {
+        dst[idx] = src[indices[idx]];
+    }
+}
+
+// Host function: Batch get uint32_t values
+void cuda_batch_get_uint32_t(
+    uint32_t *device_ptr,
+    uint32_t *host_ptr,
+    uint32_t *indices,
+    uint32_t n_indices
+) {
+    if (n_indices == 0) {
+        return;
+    }
+
+    // 1. Allocate GPU memory for indices array from pool
+    uint32_t* d_indices = cuda_mem_pool_allocate<uint32_t>(n_indices);
+    if (!d_indices) {
+        printf("Failed to allocate indices buffer in batch_get_uint32\n");
+        return;
+    }
+
+    // 2. Allocate GPU memory for result array from pool
+    uint32_t* d_result = cuda_mem_pool_allocate<uint32_t>(n_indices);
+    if (!d_result) {
+        printf("Failed to allocate result buffer in batch_get_uint32\n");
+        cuda_mem_pool_free(d_indices);
+        return;
+    }
+
+    // 3. Copy indices to GPU asynchronously
+    cudaMemcpyAsync(d_indices, indices, n_indices * sizeof(uint32_t), cudaMemcpyHostToDevice, 0);
+
+    // 4. Launch kernel to gather values in parallel
+    const int block_size = 256;
+    const int num_blocks = (n_indices + block_size - 1) / block_size;
+    batch_get_uint32_kernel<<<num_blocks, block_size, 0, 0>>>(
+        device_ptr, d_result, d_indices, n_indices
+    );
+
+    // 5. Copy result back to CPU asynchronously
+    cudaMemcpyAsync(host_ptr, d_result, n_indices * sizeof(uint32_t), cudaMemcpyDeviceToHost, 0);
+
+    // 6. Synchronize stream to ensure all operations complete
+    cudaStreamSynchronize(0);
+
+    // 7. Free temporary GPU memory back to pool
+    cuda_mem_pool_free(d_indices);
+    cuda_mem_pool_free(d_result);
+}
+
 // Multi-layer batch get kernel
 __global__ void multi_layer_batch_get_kernel(
     const Blake2sHash* const* layer_ptrs,  // Array of layer device pointers

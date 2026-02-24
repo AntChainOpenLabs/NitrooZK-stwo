@@ -90,11 +90,11 @@ impl<B: MerkleOpsLifted<H>, H: MerkleHasherLifted> MerkleProverLifted<B, H> {
         for col in columns.iter() {
             let log_size = col.len().ilog2() as usize;
             let shift = max_log_size - log_size;
-            let res: Vec<_> = query_positions
+            let indices: Vec<usize> = query_positions
                 .iter()
-                .map(|pos| col.at((pos >> (shift + 1) << 1) + (pos & 1)))
+                .map(|pos| (pos >> (shift + 1) << 1) + (pos & 1))
                 .collect();
-            queried_values.push(res);
+            queried_values.push(col.batch_at(&indices));
         }
 
         let mut prev_layer_queries = query_positions.to_vec();
@@ -103,34 +103,37 @@ impl<B: MerkleOpsLifted<H>, H: MerkleHasherLifted> MerkleProverLifted<B, H> {
         // from the layer of log size `self.layers.len() - 2` so that we always have a previous
         // layer available for the computation.
         for layer_log_size in (0..self.layers.len() - 1).rev() {
-            let mut all_node_values_for_layer =
-                HashMap::<usize, <H as MerkleHasherLifted>::Hash>::new();
-            // Prepare write buffer for queries to the current layer. This will propagate to the
-            // next layer.
-            let mut curr_layer_queries: Vec<usize> = vec![];
-
-            // Each layer node is a hash of column values as previous layer hashes.
-            // Prepare the previous layer hashes to read from.
             let prev_layer_hashes = self.layers.get(layer_log_size + 1).unwrap();
-            // All chunks have either length 1 (only one child is present) or 2 (both children are
-            // present).
+            let mut curr_layer_queries: Vec<usize> = vec![];
+            let mut witness_indices: Vec<usize> = vec![];
+            let mut children_indices: Vec<usize> = vec![];
+            let mut parent_indices: Vec<usize> = vec![];
+
+            // Pass 1: compute indices (CPU only, no GPU access).
             for queries_chunk in prev_layer_queries.as_slice().chunk_by(|a, b| a ^ 1 == *b) {
                 let first = queries_chunk[0];
-                // If the brother of `first` was not queried before, add its hash to the witness.
                 if queries_chunk.len() == 1 {
-                    decommitment
-                        .hash_witness
-                        .push(prev_layer_hashes.at(first ^ 1))
+                    witness_indices.push(first ^ 1);
                 }
                 let curr_index = first >> 1;
                 curr_layer_queries.push(curr_index);
-
-                // Add the previous layer hashes to all_node_values.
-                all_node_values_for_layer
-                    .insert(2 * curr_index, prev_layer_hashes.at(2 * curr_index));
-                all_node_values_for_layer
-                    .insert(2 * curr_index + 1, prev_layer_hashes.at(2 * curr_index + 1));
+                children_indices.push(2 * curr_index);
+                children_indices.push(2 * curr_index + 1);
+                parent_indices.push(curr_index);
             }
+
+            // Pass 2: batch fetch from GPU.
+            let witnesses = prev_layer_hashes.batch_at(&witness_indices);
+            decommitment.hash_witness.extend(witnesses);
+
+            let children = prev_layer_hashes.batch_at(&children_indices);
+            let mut all_node_values_for_layer =
+                HashMap::<usize, <H as MerkleHasherLifted>::Hash>::new();
+            for (i, &parent_idx) in parent_indices.iter().enumerate() {
+                all_node_values_for_layer.insert(2 * parent_idx, children[2 * i]);
+                all_node_values_for_layer.insert(2 * parent_idx + 1, children[2 * i + 1]);
+            }
+
             // Propagate queries to the next layer.
             prev_layer_queries = curr_layer_queries;
 

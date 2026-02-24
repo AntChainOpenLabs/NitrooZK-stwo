@@ -267,6 +267,14 @@ void cuda_batch_get_blake_2s_hash(
     uint32_t n_indices
 );
 
+extern "C"
+void cuda_batch_get_uint32_t(
+    uint32_t *device_ptr,
+    uint32_t *host_ptr,
+    uint32_t *indices,
+    uint32_t n_indices
+);
+
 // Multi-layer batch get: fetch hashes from multiple layers in one call
 extern "C"
 void cuda_multi_layer_batch_get_blake_2s_hash(

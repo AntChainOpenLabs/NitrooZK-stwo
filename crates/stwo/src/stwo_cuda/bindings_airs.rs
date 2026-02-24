@@ -2740,59 +2740,30 @@ extern "C" {
         claimed_sum: *const u32,
     );
 
-    // === PEDERSEN_BUILTIN ===
+    // === PEDERSEN_BUILTIN (simplified: 3 columns, no EC math) ===
     pub fn gen_pedersen_builtin_trace(
-        traces: *const *const u32,
-        n_trace_columns: u32,
-
-        // Lookup data - memory_address_to_id (3 lookups)
-        lookup_memory_address_to_id_0: *const *const u32,
-        lookup_memory_address_to_id_1: *const *const u32,
-        lookup_memory_address_to_id_2: *const *const u32,
-
-        // Lookup data - memory_id_to_big (3 lookups)
-        lookup_memory_id_to_big_0: *const *const u32,
-        lookup_memory_id_to_big_1: *const *const u32,
-        lookup_memory_id_to_big_2: *const *const u32,
-
-        // Lookup data - partial_ec_mul (8 lookups)
-        lookup_partial_ec_mul_0: *const *const u32,
-        lookup_partial_ec_mul_1: *const *const u32,
-        lookup_partial_ec_mul_2: *const *const u32,
-        lookup_partial_ec_mul_3: *const *const u32,
-        lookup_partial_ec_mul_4: *const *const u32,
-        lookup_partial_ec_mul_5: *const *const u32,
-        lookup_partial_ec_mul_6: *const *const u32,
-        lookup_partial_ec_mul_7: *const *const u32,
-
-        // Lookup data - range_check_5_4 (2 lookups)
-        lookup_range_check_5_4_0: *const *const u32,
-        lookup_range_check_5_4_1: *const *const u32,
-
-        // Lookup data - range_check_8 (4 lookups)
-        lookup_range_check_8_0: *const *const u32,
-        lookup_range_check_8_1: *const *const u32,
-        lookup_range_check_8_2: *const *const u32,
-        lookup_range_check_8_3: *const *const u32,
-
-        // Sub-component inputs
-        sub_component_inputs_memory_address_to_id: *const *const u32,
-        sub_component_inputs_memory_id_to_big: *const *const u32,
-
-        // Builtin segment info
+        traces: *const *const u32,           // 3 output columns
+        lk_mem_0: *const *const u32,         // 3 arrays
+        lk_mem_1: *const *const u32,         // 3 arrays
+        lk_mem_2: *const *const u32,         // 3 arrays
+        lk_agg_0: *const *const u32,         // 4 arrays
+        sub_mem: *const *const u32,          // 3 arrays
+        sub_agg: *const *const u32,          // 3 arrays
+        address_to_raw_id: *const u32,       // GPU memory table
         segment_start: u32,
-
-        // Memory lookup tables
-        memory_address_to_id_address_to_raw_id: *const u32,
-        memory_id_to_big_transposed_big_values: *const *const u32,
-        memory_id_to_big_small_values: *const u32,
-
-        // Pre-computed EC columns (columns 66-350)
-        precomputed_ec_columns: *const *const u32,
-        n_precomputed_ec_columns: u32,
-
         n_rows: u32,
         log_size: u32,
+    );
+
+    pub fn gen_pedersen_builtin_interaction_trace(
+        lookup_elements: *mut std::os::raw::c_void,
+        lk_mem_0: *const *const u32,         // 3 arrays
+        lk_mem_1: *const *const u32,         // 3 arrays
+        lk_mem_2: *const *const u32,         // 3 arrays
+        lk_agg_0: *const *const u32,         // 4 arrays
+        log_size: u32,
+        interaction_trace_columns: *const *const u32,  // 8 columns (4*2)
+        claimed_sum: *mut u32,               // 4 m31s for qm31
     );
 
     // GPU-native pedersen table generation (generates table directly on GPU)
