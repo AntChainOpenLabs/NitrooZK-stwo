@@ -575,6 +575,9 @@ extern "C" {
         result: *mut [u8; 32],
     );
 
+    // GPU-accelerated PoW grinding for Blake2s channel
+    pub fn grind_blake2s(prefixed_digest: *const u32, pow_bits: u32) -> u64;
+
     // Test function to compute offset_bit_reversed_circle_domain_index on GPU
     pub fn test_offset_bit_reversed_indices(
         result_host: *mut u32,
