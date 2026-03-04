@@ -66,9 +66,6 @@ __global__ void evaluate_jump_opcode_rel_imm_pre_kernel(
     const m31 M31_0 = m31(0);
     const m31 M31_1 = m31(1);
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstruction7Ebc4
     m31 decode_output[19];
     evaluate_decode_instruction_7ebc4(
@@ -98,6 +95,9 @@ __global__ void evaluate_jump_opcode_rel_imm_pre_kernel(
 
     // read_small_output[0] contains the relative offset (limb_0 in signed representation)
     // next_pc = input_pc + relative_offset
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add first opcodes relation entry (positive)
     {

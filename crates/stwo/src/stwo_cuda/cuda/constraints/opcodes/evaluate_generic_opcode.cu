@@ -293,9 +293,6 @@ __global__ void evaluate_generic_opcode_pre_kernel(
     m31 next_fp_col241 = cuda_evaluator.next_trace_mask();
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    // enabler constraint
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // ===== DecodeGenericInstruction =====
     // 5 intermediates computed from flags
     m31 op1_base_op0 = cuda_evaluator.add_intermediate(sub(sub(sub(m31(1), op1_imm_col8), op1_base_fp_col9), op1_base_ap_col10));
@@ -880,6 +877,9 @@ __global__ void evaluate_generic_opcode_pre_kernel(
 
     // next_fp constraint (1 constraint)
     cuda_evaluator.add_constraint(sub(next_fp_col241, add(add(mul(fp_update_regular, input_fp_col2), mul(opcode_ret_col19, dst_as_addr_ur)), mul(opcode_call_col18, add(input_ap_col1, m31(2))))));
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // opcodes_in and opcodes_out relations (2 relations)
     { m31 v[4] = { OPCODES_RELATION_ID, input_pc_col0, input_ap_col1, input_fp_col2 }; cuda_evaluator.add_to_relation<4>(generic_opcode_eval->common_lookup_elements, qm31{{enabler, m31(0)}, {m31(0), m31(0)}}, v); }

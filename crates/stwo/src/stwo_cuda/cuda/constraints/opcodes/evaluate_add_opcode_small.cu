@@ -89,9 +89,6 @@ __global__ void evaluate_add_opcode_small_pre_kernel(
 
     const m31 M31_1 = m31(1);
 
-    // enabler is boolean
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     m31 decode_instruction_bc3cd_output_tmp_756b7_10[19] = {0};
     evaluate_decode_instruction_bc3cd(
         input_pc_col0,
@@ -199,6 +196,9 @@ __global__ void evaluate_add_opcode_small_pre_kernel(
             add(read_small_output_tmp_756b7_22[0], read_small_output_tmp_756b7_28[0])
         )
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // lookup
     {

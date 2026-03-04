@@ -86,9 +86,6 @@ __global__ void evaluate_call_opcode_pre_kernel(
     const m31 M31_32768 = m31(32768);
     const m31 M31_32769 = m31(32769);
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // Inline DecodeInstructionF1Edd logic:
     // 1. Add constraint: op1_base_fp is a bit
     cuda_evaluator.add_constraint(
@@ -236,6 +233,9 @@ __global__ void evaluate_call_opcode_pre_kernel(
     // Compute new_ap and new_fp for opcodes relation
     m31 new_ap = add(input_ap_col1, M31_2);
     m31 new_fp = new_ap;
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add first opcodes relation entry (positive)
     {

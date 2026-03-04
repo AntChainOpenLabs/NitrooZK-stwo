@@ -123,9 +123,6 @@ __global__ void evaluate_cube_252_pre_kernel(
     // Column 140: enabler
     m31 enabler = cuda_evaluator1.next_trace_mask();
 
-    // Constraint 0: enabler^2 = enabler
-    cuda_evaluator1.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // Step 1: Felt252UnpackFrom27RangeCheckOutput
     // This computes the derived limbs and range checks all 28 limbs
     m31 computed_limbs[10];  // Output: limbs 2,5,8,11,14,17,20,23,26,27
@@ -198,6 +195,9 @@ __global__ void evaluate_cube_252_pre_kernel(
         cube_eval->common_lookup_elements,
         &cuda_evaluator1
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator1.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Step 4: Add Cube252 relation entry with -enabler multiplicity
     // The relation has 20 values:

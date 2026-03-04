@@ -256,9 +256,6 @@ __global__ void evaluate_qm_31_add_mul_opcode_pre_kernel(
     m31 op1_delta_cd_inv_col71 = cuda_evaluator.next_trace_mask();
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    // enabler^2 = enabler
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstruction3802D
     m31 decode_out[19] = {0};
     evaluate_decode_instruction_3802d(
@@ -476,6 +473,9 @@ __global__ void evaluate_qm_31_add_mul_opcode_pre_kernel(
             sub(sub(dst_qm31[3], mul_part), add_part)
         );
     }
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Opcodes relation entries
     {

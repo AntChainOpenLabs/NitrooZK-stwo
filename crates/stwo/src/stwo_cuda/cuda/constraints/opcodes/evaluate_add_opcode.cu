@@ -155,8 +155,6 @@ __global__ void evaluate_add_opcode_pre_kernel(
 
     const m31 M31_1 = m31(1);
 
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     m31 decode_instruction_bc3cd_output_tmp_3fa46_10[19] = {0};
     evaluate_decode_instruction_bc3cd(
         input_pc_col0,
@@ -343,6 +341,9 @@ __global__ void evaluate_add_opcode_pre_kernel(
         sub_p_bit_col101,
         &cuda_evaluator
     );
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
+
     {
         m31 values[4] = {
             OPCODES_RELATION_ID,

@@ -62,9 +62,6 @@ __global__ void evaluate_assert_eq_pre_kernel(
 
     const m31 M31_1 = m31(1);
 
-    // enabler is boolean
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // callDecodeInstructionFe864
     m31 decode_instruction_fe864_output_tmp_d6f03_7[19] = {0};
     evaluate_decode_instruction_fe864(
@@ -113,6 +110,9 @@ __global__ void evaluate_assert_eq_pre_kernel(
         assert_eq_eval->common_lookup_elements,
         &cuda_evaluator
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // lookup
     {

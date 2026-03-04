@@ -72,9 +72,6 @@ __global__ void evaluate_assert_eq_double_deref_pre_kernel(
     const m31 M31_262144 = m31(262144);
     const m31 M31_134217728 = m31(134217728);
 
-    // enabler is boolean
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // --- DecodeInstructionCb32B ---
     m31 decode_instruction_cb32b_output_tmp_b1151_8[19] = {0};
     evaluate_decode_instruction_cb32b(
@@ -150,6 +147,9 @@ __global__ void evaluate_assert_eq_double_deref_pre_kernel(
         assert_eq_double_deref_eval->common_lookup_elements,
         &cuda_evaluator
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // --- Lookup: opcodes_0 ---
     {

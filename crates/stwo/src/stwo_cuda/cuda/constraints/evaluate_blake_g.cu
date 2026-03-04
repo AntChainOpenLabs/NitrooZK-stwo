@@ -106,7 +106,6 @@ __global__ void evaluate_blake_g_pre_kernel(
         m31 xor_col50 = cuda_evaluator.next_trace_mask();
         m31 xor_col51 = cuda_evaluator.next_trace_mask();
         m31 enabler = cuda_evaluator.next_trace_mask();
-        cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
         triple_sum32_evaluate(
             input_limb_0_col0,
@@ -248,6 +247,9 @@ __global__ void evaluate_blake_g_pre_kernel(
 
             &cuda_evaluator
         );
+
+        // enabler is boolean (v1.1.0: moved after subroutines)
+        cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
         m31 values[21] = {
             BLAKE_G_RELATION_ID,

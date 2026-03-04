@@ -73,9 +73,6 @@ __global__ void evaluate_ret_opcode_pre_kernel(
     const m31 M31_262144 = m31(262144);
     const m31 M31_134217728 = m31(134217728);
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstruction15A61 — uses CommonLookupElements
     m31 decode_output[19];
     evaluate_decode_instruction_15a61(
@@ -138,6 +135,9 @@ __global__ void evaluate_ret_opcode_pre_kernel(
             mul(next_fp_limb_3_col13, M31_134217728)
         )
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add first opcodes relation entry (positive) — RELATION_ID prepended
     {

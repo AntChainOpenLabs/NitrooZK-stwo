@@ -65,9 +65,6 @@ __global__ void evaluate_jump_opcode_rel_pre_kernel(
     m31 partial_limb_msb_col14 = cuda_evaluator.next_trace_mask();
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstructionBa944 (no separate op1_base_ap column)
     m31 decode_output[2];
     evaluate_decode_instruction_ba944(
@@ -108,6 +105,9 @@ __global__ void evaluate_jump_opcode_rel_pre_kernel(
 
     // read_small_output[0] contains the relative offset
     // next_pc = input_pc + relative_offset
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add first opcodes relation entry (positive)
     {

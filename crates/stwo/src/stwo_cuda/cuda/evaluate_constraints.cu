@@ -268,9 +268,11 @@ static bool dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("assert_eq_opcode_double_deref", "call cuda eval stwo-cairo assert_eq_opcode_double_deref", evaluate_assert_eq_opcode_double_deref);
         DISPATCH_EVAL_WITH_BOOLS("assert_eq_opcode_imm", "call cuda eval stwo-cairo assert_eq_opcode_imm", evaluate_assert_eq_opcode_imm);
         DISPATCH_EVAL_WITH_BOOLS("call_opcode", "call cuda eval stwo-cairo call_opcode", evaluate_call_opcode);
+        DISPATCH_EVAL_WITH_BOOLS("call_opcode_abs", "call cuda eval stwo-cairo call_opcode_abs", evaluate_call_opcode);
         DISPATCH_EVAL_WITH_BOOLS("call_opcode_rel_imm", "call cuda eval stwo-cairo call_opcode_rel_imm", evaluate_call_opcode_rel_imm);
         DISPATCH_EVAL_WITH_BOOLS("ret_opcode", "call cuda eval stwo-cairo ret_opcode", evaluate_ret_opcode);
         DISPATCH_EVAL_WITH_BOOLS("jump_opcode", "call cuda eval stwo-cairo jump_opcode", evaluate_jump_opcode);
+        DISPATCH_EVAL_WITH_BOOLS("jump_opcode_abs", "call cuda eval stwo-cairo jump_opcode_abs", evaluate_jump_opcode);
         DISPATCH_EVAL_WITH_BOOLS("jump_opcode_double_deref", "call cuda eval stwo-cairo jump_opcode_double_deref", evaluate_jump_opcode_double_deref);
         DISPATCH_EVAL_WITH_BOOLS("jump_opcode_rel_imm", "call cuda eval stwo-cairo jump_opcode_rel_imm", evaluate_jump_opcode_rel_imm);
         DISPATCH_EVAL_WITH_BOOLS("jump_opcode_rel", "call cuda eval stwo-cairo jump_opcode_rel", evaluate_jump_opcode_rel);

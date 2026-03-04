@@ -68,9 +68,6 @@ __global__ void evaluate_jump_opcode_pre_kernel(
     const m31 M31_262144 = m31(262144);
     const m31 M31_134217728 = m31(134217728);
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstructionB1597 (no separate op1_base_ap column)
     m31 decode_output[2];
     evaluate_decode_instruction_b1597(
@@ -118,6 +115,9 @@ __global__ void evaluate_jump_opcode_pre_kernel(
             mul(next_pc_limb_3_col11, M31_134217728)
         )
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add first opcodes relation entry (positive)
     {

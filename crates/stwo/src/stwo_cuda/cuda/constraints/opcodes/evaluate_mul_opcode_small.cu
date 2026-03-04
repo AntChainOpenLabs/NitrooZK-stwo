@@ -226,9 +226,6 @@ __global__ void evaluate_mul_opcode_small_pre_kernel(
     // Column 36: enabler
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    // Constraint 0: enabler is boolean
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // Define constants
     const m31 M31_0_local = m31(0);
     const m31 M31_1_local = m31(1);
@@ -306,6 +303,9 @@ __global__ void evaluate_mul_opcode_small_pre_kernel(
         carries,
         mul_eval
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add opcodes relation entries (state transition)
     // Forward entry: (input_pc, input_ap, input_fp) with multiplicity +enabler

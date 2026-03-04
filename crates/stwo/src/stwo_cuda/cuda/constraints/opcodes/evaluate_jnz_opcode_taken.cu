@@ -103,9 +103,6 @@ __global__ void evaluate_jnz_opcode_taken_pre_kernel(
     const m31 M31_136 = m31(136);
     const m31 M31_256 = m31(256);
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstructionDe75A
     m31 decode_output[1];
     evaluate_decode_instruction_de75a(
@@ -252,6 +249,9 @@ __global__ void evaluate_jnz_opcode_taken_pre_kernel(
 
     // read_small_output[0] contains the jump offset
     // next_pc = input_pc + offset
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add first opcodes relation entry (positive)
     {

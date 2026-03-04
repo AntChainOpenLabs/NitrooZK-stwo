@@ -60,9 +60,6 @@ __global__ void evaluate_assert_eq_imm_pre_kernel(
     const m31 M31_1 = m31(1);
     const m31 M31_2 = m31(2);
 
-    // enabler is boolean
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // --- DecodeInstruction161C9 ---
     m31 decode_instruction_161c9_output_tmp_bb09e_5[19] = {0};
     evaluate_decode_instruction_161c9(
@@ -98,6 +95,9 @@ __global__ void evaluate_assert_eq_imm_pre_kernel(
         assert_eq_imm_eval->common_lookup_elements,
         &cuda_evaluator
     );
+
+    // enabler is boolean (v1.1.0: moved after MemVerifyEqual)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // --- Lookup: opcodes_0 ---
     {

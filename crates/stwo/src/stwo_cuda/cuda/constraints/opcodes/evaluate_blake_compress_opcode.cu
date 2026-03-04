@@ -267,9 +267,6 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
     m31 new_state_7_id_col172 = cuda_evaluator1.next_trace_mask();
     m31 enabler = cuda_evaluator1.next_trace_mask();
 
-    // enabler * enabler - enabler (enabler must be 0 or 1)
-    cuda_evaluator1.add_constraint(sub(mul(enabler, enabler), enabler));
-
     m31 decode_blake_opcode_output_tmp_53f39_29_limb_0;
     m31 decode_blake_opcode_output_tmp_53f39_29_limb_1;
     m31 decode_blake_opcode_output_tmp_53f39_29_limb_2;
@@ -494,6 +491,9 @@ __global__ void evaluate_blake_compress_opcode_pre_kernel(
         blake_compress_opcode_eval->common_lookup_elements,
         &cuda_evaluator1
     );
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator1.add_constraint(sub(mul(enabler, enabler), enabler));
+
     // ==== opcodes: relation add ====
     {
         m31 values[4] = {OPCODES_RELATION_ID, input_pc_col0, input_ap_col1, input_fp_col2};

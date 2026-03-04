@@ -82,9 +82,6 @@ __global__ void evaluate_call_opcode_rel_imm_pre_kernel(
     const m31 M31_262144 = m31(262144);
     const m31 M31_134217728 = m31(134217728);
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstruction2A7A2 - simpler than DecodeInstructionF1Edd
     // No output values needed for call_opcode_rel_imm
     m31 decode_output[19];
@@ -189,6 +186,9 @@ __global__ void evaluate_call_opcode_rel_imm_pre_kernel(
     // Compute new_ap and new_fp for opcodes relation
     m31 new_ap = add(input_ap_col1, M31_2);
     m31 new_fp = new_ap;
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Add first opcodes relation entry (positive)
     {

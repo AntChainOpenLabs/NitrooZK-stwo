@@ -65,8 +65,6 @@ __global__ void evaluate_add_ap_opcode_pre_kernel(
     m31 range_check_ap_bot11bits_col15 = cuda_evaluator.next_trace_mask();
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     m31 decode_instruction_d2a10_output_tmp_c921e_5[19] = {0};
 
     evaluate_decode_instruction_d2a10(
@@ -116,6 +114,9 @@ __global__ void evaluate_add_ap_opcode_pre_kernel(
 
     // Compute next_ap intermediate value
     m31 next_ap_tmp_c921e_16 = add(input_ap_col1, read_small_output_tmp_c921e_11[0]);
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // RangeCheckAp::evaluate
     {

@@ -197,9 +197,6 @@ __global__ void evaluate_partial_ec_mul_window_bits_18_pre_kernel(
     // enabler -- col 296
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    // ===================== Constraint: enabler^2 - enabler = 0 =====================
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // ===================== 1. PedersenPointsTableWindowBits18 lookup =====================
     // 58 values: [RELATION_ID, (M31_262144 * input_limb_1 + input_limb_2), ped_out[0..55]]
     {
@@ -270,6 +267,9 @@ __global__ void evaluate_partial_ec_mul_window_bits_18_pre_kernel(
         verify_mul_252_evaluate(slope, x1_minus_rx, y1_plus_ry, k3, carry3,
             comp_eval->common_lookup_elements, &cuda_evaluator);
     }
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // ===================== 3. PartialEcMulWindowBits18 positive (+enabler) =====================
     // 73 values: [RELATION_ID, input_limb_0..input_limb_71]

@@ -61,9 +61,6 @@ __global__ void evaluate_jnz_opcode_non_taken_pre_kernel(
     m31 dst_id_col7 = cuda_evaluator.next_trace_mask();
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    // Constraint: enabler^2 = enabler (boolean constraint)
-    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
-
     // DecodeInstructionDe75A
     // Returns output_vec[0] = offset0 - 32768
     m31 decode_instruction_de75a_output[19] = {0};
@@ -126,6 +123,9 @@ __global__ void evaluate_jnz_opcode_non_taken_pre_kernel(
         jnz_opcode_non_taken_eval->common_lookup_elements,
         &cuda_evaluator
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // Opcodes relation: positive multiplicity (enabler)
     {

@@ -275,10 +275,6 @@ __global__ void evaluate_poseidon_3_partial_rounds_chain_pre_kernel(
     // Column 168: Enabler
     m31 enabler = cuda_evaluator.next_trace_mask();
 
-    // Constraint: enabler^2 - enabler = 0 (boolean constraint)
-    m31 enabler_constraint = sub(mul(enabler, enabler), enabler);
-    cuda_evaluator.add_constraint(enabler_constraint);
-
     // PoseidonRoundKeys lookup (32 values: RELATION_ID + input_limb_1_col1 + 30 output limbs)
     {
         m31 values[32];
@@ -470,6 +466,9 @@ __global__ void evaluate_poseidon_3_partial_rounds_chain_pre_kernel(
         // Evaluator
         &cuda_evaluator
     );
+
+    // enabler is boolean (v1.1.0: moved after subroutines)
+    cuda_evaluator.add_constraint(sub(mul(enabler, enabler), enabler));
 
     // First self-lookup: positive multiplicity (enabler)
     // Represents input state for this partial rounds chain
