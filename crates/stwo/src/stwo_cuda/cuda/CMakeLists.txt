@@ -128,7 +128,11 @@ add_library(
         constraints/pedersen/evaluate_pedersen_aggregator.cu
         constraints/pedersen/evaluate_partial_ec_mul_window_bits_18.cu
         constraints/pedersen/evaluate_pedersen_points_table_window_bits_18.cu
+        constraints/pedersen/evaluate_pedersen_aggregator_window_bits_9.cu
+        constraints/pedersen/evaluate_partial_ec_mul_window_bits_9.cu
+        constraints/pedersen/evaluate_pedersen_points_table_window_bits_9.cu
         pedersen_table_init.cu
+        pedersen_table_small_init.cu
         #poseidon
         constraints/poseidon/evaluate_poseidon_round_keys.cu
         constraints/poseidon/evaluate_poseidon_full_round_chain.cu
@@ -211,6 +215,9 @@ add_library(
         witness/gen_pedersen_points_table_trace.cu
         witness/gen_pedersen_builtin_trace.cu
         witness/gen_pedersen_aggregator_wb18_trace.cu
+        witness/gen_partial_ec_mul_wb9_trace.cu
+        witness/gen_pedersen_aggregator_wb9_trace.cu
+        witness/gen_pedersen_points_table_wb9_trace.cu
         # NOTE: gen_pedersen_table_on_gpu.cu is excluded due to multiple definition conflicts
         # with ec_ops.cuh and pedersen_table.cuh. The GPU table generation feature is experimental
         # and requires header refactoring to work properly.

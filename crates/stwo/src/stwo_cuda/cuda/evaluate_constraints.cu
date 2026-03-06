@@ -34,6 +34,9 @@
 #include "constraints/pedersen/evaluate_pedersen_aggregator.cuh"
 #include "constraints/pedersen/evaluate_partial_ec_mul_window_bits_18.cuh"
 #include "constraints/pedersen/evaluate_pedersen_points_table_window_bits_18.cuh"
+#include "constraints/pedersen/evaluate_pedersen_aggregator_window_bits_9.cuh"
+#include "constraints/pedersen/evaluate_partial_ec_mul_window_bits_9.cuh"
+#include "constraints/pedersen/evaluate_pedersen_points_table_window_bits_9.cuh"
 // Poseidon context components
 #include "constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cuh"
 #include "constraints/poseidon/evaluate_poseidon_full_round_chain.cuh"
@@ -296,6 +299,10 @@ static bool dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("pedersen_aggregator_window_bits_18", "call cuda eval stwo-cairo pedersen_aggregator_window_bits_18", evaluate_pedersen_aggregator_window_bits_18);
         DISPATCH_EVAL_WITH_BOOLS("partial_ec_mul_window_bits_18", "call cuda eval stwo-cairo partial_ec_mul_window_bits_18", evaluate_partial_ec_mul_window_bits_18);
         DISPATCH_EVAL_WITH_BOOLS("pedersen_points_table_window_bits_18", "call cuda eval stwo-cairo pedersen_points_table_window_bits_18", evaluate_pedersen_points_table_window_bits_18);
+        // Pedersen window_bits_9 context components
+        DISPATCH_EVAL_WITH_BOOLS("pedersen_aggregator_window_bits_9", "call cuda eval stwo-cairo pedersen_aggregator_window_bits_9", evaluate_pedersen_aggregator_window_bits_9);
+        DISPATCH_EVAL_WITH_BOOLS("partial_ec_mul_window_bits_9", "call cuda eval stwo-cairo partial_ec_mul_window_bits_9", evaluate_partial_ec_mul_window_bits_9);
+        DISPATCH_EVAL_WITH_BOOLS("pedersen_points_table_window_bits_9", "call cuda eval stwo-cairo pedersen_points_table_window_bits_9", evaluate_pedersen_points_table_window_bits_9);
         // Poseidon context components
         DISPATCH_EVAL_WITH_BOOLS("poseidon_3_partial_rounds_chain", "call cuda eval stwo-cairo poseidon_3_partial_rounds_chain", evaluate_poseidon_3_partial_rounds_chain);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_full_round_chain", "call cuda eval stwo-cairo poseidon_full_round_chain", evaluate_poseidon_full_round_chain);

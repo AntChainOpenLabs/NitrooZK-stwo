@@ -3737,4 +3737,199 @@ extern "C" {
         claimed_sum: *mut u32,                          // 4 m31s for qm31
     );
 
+    // ========================================================================
+    // Pedersen window_bits_9 (small table) components
+    // ========================================================================
+
+    // GPU-native small pedersen table generation (window_bits_9, ~7MB)
+    pub fn initialize_pedersen_table_small();
+    pub fn is_pedersen_table_small_initialized() -> bool;
+    pub fn free_pedersen_table_small();
+
+    /// Add inputs to small pedersen_points_table multiplicity tracking on GPU.
+    pub fn pedersen_points_table_small_add_inputs(
+        input_table_indices: *const u32,             // table index column
+        n_rows: u32,                                  // number of rows
+        multiplicities: *const u32,                   // multiplicity array (atomicAdd target)
+        log_size: u32,                                // log2 of table size
+    );
+
+    /// Generate interaction trace for pedersen_points_table_wb9 on GPU.
+    pub fn pedersen_points_table_wb9_interaction_trace(
+        lookup_elements: *mut c_void,                 // CommonLookupElements
+        multiplicities: *const u32,                    // multiplicity data
+        log_size: u32,                                 // log2 of table size
+        interaction_trace_columns: *const *const u32, // 4 columns (4*1 logup)
+        claimed_sum: *const u32,                       // 4 m31s for qm31
+    );
+
+    // ========================================================================
+    // partial_ec_mul_window_bits_9 (311-col "now" architecture)
+    // ========================================================================
+
+    /// Merged CUDA trace generation for partial_ec_mul_wb9.
+    /// Generates 311-col trace, lookup_data, and sub_component_inputs in a single kernel.
+    pub fn gen_partial_ec_mul_wb9_trace(
+        traces: *const *const u32,                      // 311 trace output columns
+        // Lookup data - self-interaction
+        lookup_partial_ec_mul_0: *const *const u32,     // 87 arrays
+        lookup_partial_ec_mul_1: *const *const u32,     // 87 arrays
+        // Lookup data - pedersen_points_table
+        lookup_ppt_0: *const *const u32,                // 58 arrays
+        // Lookup data - rc_20 variants (2 elements per entry)
+        lookup_rc_20: *const *const u32,                // 12*2=24 flat ptrs
+        lookup_rc_20_b: *const *const u32,              // 12*2=24
+        lookup_rc_20_c: *const *const u32,              // 12*2=24
+        lookup_rc_20_d: *const *const u32,              // 12*2=24
+        lookup_rc_20_e: *const *const u32,              // 9*2=18
+        lookup_rc_20_f: *const *const u32,              // 9*2=18
+        lookup_rc_20_g: *const *const u32,              // 9*2=18
+        lookup_rc_20_h: *const *const u32,              // 9*2=18
+        // Lookup data - rc_9_9 variants (3 elements per entry)
+        lookup_rc_9_9: *const *const u32,               // 6*3=18 flat ptrs
+        lookup_rc_9_9_b: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_c: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_d: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_e: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_f: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_g: *const *const u32,             // 3*3=9
+        lookup_rc_9_9_h: *const *const u32,             // 3*3=9
+        // Sub-component inputs - pedersen_points_table
+        sub_inputs_ppt: *const *const u32,              // 1*1=1 flat ptrs
+        // Sub-component inputs - rc_9_9 variants (2 cols per feed)
+        sub_inputs_rc_9_9: *const *const u32,           // 6*2=12 flat ptrs
+        sub_inputs_rc_9_9_b: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_c: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_d: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_e: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_f: *const *const u32,         // 6*2=12
+        sub_inputs_rc_9_9_g: *const *const u32,         // 3*2=6
+        sub_inputs_rc_9_9_h: *const *const u32,         // 3*2=6
+        // Sub-component inputs - rc_20 variants (1 col per feed)
+        sub_inputs_rc_20: *const *const u32,            // 12*1=12 flat ptrs
+        sub_inputs_rc_20_b: *const *const u32,          // 12*1=12
+        sub_inputs_rc_20_c: *const *const u32,          // 12*1=12
+        sub_inputs_rc_20_d: *const *const u32,          // 12*1=12
+        sub_inputs_rc_20_e: *const *const u32,          // 9*1=9
+        sub_inputs_rc_20_f: *const *const u32,          // 9*1=9
+        sub_inputs_rc_20_g: *const *const u32,          // 9*1=9
+        sub_inputs_rc_20_h: *const *const u32,          // 9*1=9
+        // Inputs
+        inputs: *const *const u32,                      // 86 input columns
+        n_rows: u32,                                    // Number of valid rows
+        log_size: u32,                                  // Log2 of trace size
+    );
+
+    /// Generate interaction trace for partial_ec_mul_wb9 from lookup_data.
+    pub fn gen_partial_ec_mul_wb9_interaction_trace(
+        // Lookup elements for each relation (18 total: pem + ppt + 8 rc_20 + 8 rc_9_9)
+        partial_ec_mul_lookup_elements: *mut c_void,
+        pedersen_points_table_lookup_elements: *mut c_void,
+        rc_20_lookup_elements: *mut c_void,
+        rc_20_b_lookup_elements: *mut c_void,
+        rc_20_c_lookup_elements: *mut c_void,
+        rc_20_d_lookup_elements: *mut c_void,
+        rc_20_e_lookup_elements: *mut c_void,
+        rc_20_f_lookup_elements: *mut c_void,
+        rc_20_g_lookup_elements: *mut c_void,
+        rc_20_h_lookup_elements: *mut c_void,
+        rc_9_9_lookup_elements: *mut c_void,
+        rc_9_9_b_lookup_elements: *mut c_void,
+        rc_9_9_c_lookup_elements: *mut c_void,
+        rc_9_9_d_lookup_elements: *mut c_void,
+        rc_9_9_e_lookup_elements: *mut c_void,
+        rc_9_9_f_lookup_elements: *mut c_void,
+        rc_9_9_g_lookup_elements: *mut c_void,
+        rc_9_9_h_lookup_elements: *mut c_void,
+        // Lookup data pointers
+        lookup_partial_ec_mul_0: *const *const u32,     // 87 arrays
+        lookup_partial_ec_mul_1: *const *const u32,     // 87 arrays
+        lookup_ppt_0: *const *const u32,                // 58 arrays
+        lookup_rc_20: *const *const u32,                // 12*2=24 flat ptrs
+        lookup_rc_20_b: *const *const u32,              // 12*2=24
+        lookup_rc_20_c: *const *const u32,              // 12*2=24
+        lookup_rc_20_d: *const *const u32,              // 12*2=24
+        lookup_rc_20_e: *const *const u32,              // 9*2=18
+        lookup_rc_20_f: *const *const u32,              // 9*2=18
+        lookup_rc_20_g: *const *const u32,              // 9*2=18
+        lookup_rc_20_h: *const *const u32,              // 9*2=18
+        lookup_rc_9_9: *const *const u32,               // 6*3=18 flat ptrs
+        lookup_rc_9_9_b: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_c: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_d: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_e: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_f: *const *const u32,             // 6*3=18
+        lookup_rc_9_9_g: *const *const u32,             // 3*3=9
+        lookup_rc_9_9_h: *const *const u32,             // 3*3=9
+        // Sizes
+        n_rows: u32,
+        log_size: u32,
+        // Output
+        interaction_trace_columns: *const *const u32,   // 4*65 = 260 cols
+        claimed_sum: *const u32,                        // 4 u32s for qm31
+    );
+
+    // ========================================================================
+    // pedersen_aggregator_window_bits_9 (234-col native CUDA)
+    // ========================================================================
+
+    /// Native CUDA trace generation for pedersen_aggregator_wb9.
+    /// Generates 234-col trace, lookup_data, and sub_component_inputs in a single kernel.
+    /// Uses the GPU-resident small pedersen table directly.
+    pub fn gen_pedersen_aggregator_wb9_trace(
+        traces: *const *const u32,                      // 234 trace output columns
+        // Lookup data
+        lk_mem_0: *const *const u32,                    // 30 arrays (memory_id_to_big #0)
+        lk_mem_1: *const *const u32,                    // 30 arrays (memory_id_to_big #1)
+        lk_mem_2: *const *const u32,                    // 30 arrays (memory_id_to_big #2)
+        lk_rc8_0: *const *const u32,                    // 2 arrays (range_check_8 #0)
+        lk_rc8_1: *const *const u32,                    // 2 arrays (range_check_8 #1)
+        lk_rc8_2: *const *const u32,                    // 2 arrays (range_check_8 #2)
+        lk_rc8_3: *const *const u32,                    // 2 arrays (range_check_8 #3)
+        lk_pem_0: *const *const u32,                    // 87 arrays (PEM chain 0 input)
+        lk_pem_1: *const *const u32,                    // 87 arrays (PEM chain 0 output)
+        lk_pem_2: *const *const u32,                    // 87 arrays (PEM chain 1 input)
+        lk_pem_3: *const *const u32,                    // 87 arrays (PEM chain 1 output)
+        lk_agg_0: *const *const u32,                    // 4 arrays (self-lookup)
+        mults: *const u32,                              // multiplicity data
+        // Sub-component inputs
+        sub_mem: *const *const u32,                     // 3 arrays
+        sub_rc8: *const *const u32,                     // 4 arrays
+        sub_pem: *const *const u32,                     // 86 arrays (each 56*trace_size)
+        // Inputs
+        inputs: *const *const u32,                      // 3 input columns
+        // Memory state
+        transpose_big_value_ptr: *const *const u32,     // memory_id_to_big transpose ptrs
+        small_value_ptr: *const u32,                    // memory_id_to_big small values
+        // Sizes
+        n_rows: u32,
+        log_size: u32,
+    );
+
+    /// Native CUDA interaction trace generation for pedersen_aggregator_wb9.
+    /// Uses lookup data (already on GPU) to compute 6 logup columns entirely on GPU.
+    pub fn gen_pedersen_aggregator_wb9_interaction_trace(
+        // CommonLookupElements (= LookupElements<128>)
+        lookup_elements: *mut std::os::raw::c_void,
+        // Lookup data (all device pointers)
+        lk_mem_0: *const *const u32,                    // 30 arrays
+        lk_mem_1: *const *const u32,                    // 30 arrays
+        lk_mem_2: *const *const u32,                    // 30 arrays
+        lk_rc8_0: *const *const u32,                    // 2 arrays
+        lk_rc8_1: *const *const u32,                    // 2 arrays
+        lk_rc8_2: *const *const u32,                    // 2 arrays
+        lk_rc8_3: *const *const u32,                    // 2 arrays
+        lk_pem_0: *const *const u32,                    // 87 arrays
+        lk_pem_1: *const *const u32,                    // 87 arrays
+        lk_pem_2: *const *const u32,                    // 87 arrays
+        lk_pem_3: *const *const u32,                    // 87 arrays
+        lk_agg_0: *const *const u32,                    // 4 arrays
+        mults: *const u32,                              // multiplicities
+        // Sizes
+        log_size: u32,
+        // Output
+        interaction_trace_columns: *const *const u32,   // 4*6 = 24 columns
+        claimed_sum: *mut u32,                          // 4 m31s for qm31
+    );
+
 }
