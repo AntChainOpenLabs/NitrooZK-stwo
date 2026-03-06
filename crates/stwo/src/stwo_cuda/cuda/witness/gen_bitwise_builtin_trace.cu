@@ -432,6 +432,10 @@ void generate_bitwise_builtin_traces(
     m31 **device_sub_xor9 = clone_to_device<m31*>((m31**)sub_component_inputs_verify_bitwise_xor_9, 81);
     m31 **device_sub_xor8 = clone_to_device<m31*>((m31**)sub_component_inputs_verify_bitwise_xor_8, 3);
 
+    // Clone memory_id_to_big transposed_big_values pointer array to device
+    // (8 device pointers stored in host memory — must be on device for kernel access)
+    m31 **device_id2big_transposed = clone_to_device<m31*>((m31**)memory_id_to_big_transposed_big_values, 8);
+
     generate_bitwise_builtin_trace_kernel<<<gridDim, blockDim>>>(
         device_traces,
 
@@ -485,7 +489,7 @@ void generate_bitwise_builtin_traces(
         segment_start,
 
         (m31*)memory_address_to_id_address_to_raw_id,
-        (m31**)memory_id_to_big_transposed_big_values,
+        device_id2big_transposed,
         (m31*)memory_id_to_big_small_values,
 
         n_rows,
@@ -539,6 +543,7 @@ void generate_bitwise_builtin_traces(
     cuda_free_memory(device_sub_id2big);
     cuda_free_memory(device_sub_xor9);
     cuda_free_memory(device_sub_xor8);
+    cuda_free_memory(device_id2big_transposed);
 }
 
 // Column generation kernel for pairs of lookups (N elements + M elements)

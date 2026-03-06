@@ -166,6 +166,9 @@ void generate_range_check_builtin_bits_96_traces(
     m31 **device_sub_id2big = clone_to_device<m31*>((m31**)sub_component_inputs_memory_id_to_big, 1);
     m31 **device_sub_rc6 = clone_to_device<m31*>((m31**)sub_component_inputs_range_check_6, 1);
 
+    // Clone memory_id_to_big transposed_big_values pointer array to device
+    m31 **device_id2big_transposed = clone_to_device<m31*>((m31**)memory_id_to_big_transposed_big_values, 8);
+
     generate_range_check_builtin_bits_96_trace_kernel<<<gridDim, blockDim>>>(
         device_traces,
 
@@ -180,7 +183,7 @@ void generate_range_check_builtin_bits_96_traces(
         segment_start,
 
         (m31*)memory_address_to_id_address_to_raw_id,
-        (m31**)memory_id_to_big_transposed_big_values,
+        device_id2big_transposed,
         (m31*)memory_id_to_big_small_values,
 
         n_rows,
@@ -199,6 +202,7 @@ void generate_range_check_builtin_bits_96_traces(
     cuda_free_memory(device_sub_addr2id);
     cuda_free_memory(device_sub_id2big);
     cuda_free_memory(device_sub_rc6);
+    cuda_free_memory(device_id2big_transposed);
 
     global_timer.end("generate range_check_builtin_bits_96 base trace");
 }
