@@ -47,7 +47,6 @@
 #include "evaluate_range_check_4_3.cuh"
 #include "evaluate_range_check_4_4.cuh"
 #include "evaluate_range_check_4_4_4_4.cuh"
-#include "evaluate_range_check_5_4.cuh"
 #include "evaluate_range_check_6.cuh"
 #include "evaluate_range_check_8.cuh"
 #include "evaluate_range_check_9_9.cuh"
@@ -220,7 +219,6 @@ static bool dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("range_check_4_3", "call cuda eval stwo-cairo range_check_4_3", evaluate_range_check_4_3);
         DISPATCH_EVAL_WITH_BOOLS("range_check_4_4", "call cuda eval stwo-cairo range_check_4_4", evaluate_range_check_4_4);
         DISPATCH_EVAL_WITH_BOOLS("range_check_4_4_4_4", "call cuda eval stwo-cairo range_check_4_4_4_4", evaluate_range_check_4_4_4_4);
-        DISPATCH_EVAL_WITH_BOOLS("range_check_5_4", "call cuda eval stwo-cairo range_check_5_4", evaluate_range_check_5_4);
         DISPATCH_EVAL_WITH_BOOLS("range_check_6", "call cuda eval stwo-cairo range_check_6", evaluate_range_check_6);
         DISPATCH_EVAL_WITH_BOOLS("range_check_8", "call cuda eval stwo-cairo range_check_8", evaluate_range_check_8);
         DISPATCH_EVAL_WITH_BOOLS("range_check_9_9", "call cuda eval stwo-cairo range_check_9_9", evaluate_range_check_9_9);
