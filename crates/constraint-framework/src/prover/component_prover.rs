@@ -419,18 +419,18 @@ impl<E: FrameworkEval + Sync> ComponentProver<CudaBackend> for FrameworkComponen
             let eval_ptr = cuda_eval_buffer.as_ptr() as *mut std::os::raw::c_void;
             let logup_counts = self.logup_counts().values().sum::<usize>() as u32 / (1 << eval_log_size);
 
-            tracing::info!(
-                component = self.eval.cuda_eval_name(),
-                eval_id = format!("{:#x}", eval_id),
-                n_constraints = self.n_constraints(),
-                logup_counts = logup_counts,
-                trace0_len = trace0_evaluations_vec.len(),
-                trace1_len = trace1_evaluations_vec.len(),
-                trace2_len = trace2_evaluations_vec.len(),
-                domain_log_size = trace_domain.log_size(),
-                eval_domain_log_size = eval_domain.log_size(),
-                "CUDA dispatch"
-            );
+            // tracing::info!(
+            //     component = self.eval.cuda_eval_name(),
+            //     eval_id = format!("{:#x}", eval_id),
+            //     n_constraints = self.n_constraints(),
+            //     logup_counts = logup_counts,
+            //     trace0_len = trace0_evaluations_vec.len(),
+            //     trace1_len = trace1_evaluations_vec.len(),
+            //     trace2_len = trace2_evaluations_vec.len(),
+            //     domain_log_size = trace_domain.log_size(),
+            //     eval_domain_log_size = eval_domain.log_size(),
+            //     "CUDA dispatch"
+            // );
 
             bindings::evaluate_constraint_quotients_on_domain(
                 accum.col.columns[0].device_ptr,

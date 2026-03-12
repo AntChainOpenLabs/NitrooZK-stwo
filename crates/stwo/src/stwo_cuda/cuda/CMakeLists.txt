@@ -120,6 +120,7 @@ add_library(
         constraints/builtin/evaluate_mul_mod_builtin.cu
         constraints/builtin/evaluate_cube_252.cu
         constraints/builtin/evaluate_pedersen_builtin.cu
+        constraints/builtin/evaluate_pedersen_builtin_narrow_windows.cu
         constraints/builtin/evaluate_poseidon_builtin.cu
         #pedersen
         constraints/pedersen/evaluate_pedersen_points_table.cu
@@ -135,6 +136,7 @@ add_library(
         #poseidon
         constraints/poseidon/evaluate_poseidon_round_keys.cu
         constraints/poseidon/evaluate_poseidon_full_round_chain.cu
+        constraints/poseidon/evaluate_poseidon_aggregator.cu
         constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cu
         # Verify / bitwise XOR components
         constraints/verify/evaluate_verify_bitwise_xor_4.cu

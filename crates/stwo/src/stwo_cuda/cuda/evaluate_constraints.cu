@@ -27,6 +27,7 @@
 #include "evaluate_cube_252.cuh"
 #include "evaluate_poseidon_builtin.cuh"
 #include "evaluate_pedersen_builtin.cuh"
+#include "evaluate_pedersen_builtin_narrow_windows.cuh"
 #include "evaluate_bitwise_builtin.cuh"
 // Pedersen context components
 #include "constraints/pedersen/evaluate_partial_ec_mul.cuh"
@@ -38,6 +39,7 @@
 #include "constraints/pedersen/evaluate_partial_ec_mul_window_bits_9.cuh"
 #include "constraints/pedersen/evaluate_pedersen_points_table_window_bits_9.cuh"
 // Poseidon context components
+#include "constraints/poseidon/evaluate_poseidon_aggregator.cuh"
 #include "constraints/poseidon/evaluate_poseidon_3_partial_rounds_chain.cuh"
 #include "constraints/poseidon/evaluate_poseidon_full_round_chain.cuh"
 #include "constraints/poseidon/evaluate_poseidon_round_keys.cuh"
@@ -254,7 +256,9 @@ static bool dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("range_check_20_h", "call cuda eval stwo-cairo range_check_20_h", evaluate_range_check_20);
         DISPATCH_EVAL_WITH_BOOLS("range_check_builtin_bits_96", "call cuda eval stwo-cairo range_check_builtin_bits_96", evaluate_range_check_builtin_bits_96);
         DISPATCH_EVAL_WITH_BOOLS("range_check_builtin_bits_128", "call cuda eval stwo-cairo range_check_builtin_bits_128", evaluate_range_check_builtin_bits_128);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_builtin", "call cuda eval stwo-cairo range_check_builtin", evaluate_range_check_builtin_bits_128);
         DISPATCH_EVAL_WITH_BOOLS("range_check_felt_252_width_27", "call cuda eval stwo-cairo range_check_felt_252_width_27", evaluate_range_check_felt_252_width_27);
+        DISPATCH_EVAL_WITH_BOOLS("range_check_252_width_27", "call cuda eval stwo-cairo range_check_252_width_27", evaluate_range_check_felt_252_width_27);
         DISPATCH_EVAL_WITH_BOOLS("range_check_7_2_5", "call cuda eval stwo-cairo range_check_7_2_5", evaluate_range_check_7_2_5);
 
         DISPATCH_EVAL_WITH_BOOLS("blake_round_sigma", "call cuda eval stwo-cairo blake_round_sigma", evaluate_blake_round_sigma);
@@ -290,6 +294,7 @@ static bool dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("cube_252", "call cuda eval stwo-cairo cube_252", evaluate_cube_252);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_builtin", "call cuda eval stwo-cairo poseidon_builtin", evaluate_poseidon_builtin);
         DISPATCH_EVAL_WITH_BOOLS("pedersen_builtin", "call cuda eval stwo-cairo pedersen_builtin", evaluate_pedersen_builtin);
+        DISPATCH_EVAL_WITH_BOOLS("pedersen_builtin_narrow_windows", "call cuda eval stwo-cairo pedersen_builtin_narrow_windows", evaluate_pedersen_builtin_narrow_windows);
         DISPATCH_EVAL_WITH_BOOLS("bitwise_builtin", "call cuda eval stwo-cairo bitwise_builtin", evaluate_bitwise_builtin);
         // Pedersen context components
         DISPATCH_EVAL_WITH_BOOLS("partial_ec_mul", "call cuda eval stwo-cairo partial_ec_mul", evaluate_partial_ec_mul);
@@ -305,6 +310,7 @@ static bool dispatch_single_eval(
         DISPATCH_EVAL_WITH_BOOLS("poseidon_3_partial_rounds_chain", "call cuda eval stwo-cairo poseidon_3_partial_rounds_chain", evaluate_poseidon_3_partial_rounds_chain);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_full_round_chain", "call cuda eval stwo-cairo poseidon_full_round_chain", evaluate_poseidon_full_round_chain);
         DISPATCH_EVAL_WITH_BOOLS("poseidon_round_keys", "call cuda eval stwo-cairo poseidon_round_keys", evaluate_poseidon_round_keys);
+        DISPATCH_EVAL_WITH_BOOLS("poseidon_aggregator", "call cuda eval stwo-cairo poseidon_aggregator", evaluate_poseidon_aggregator);
 
         default:
             fprintf(stderr, "CUDA dispatch: eval id:%u not supported, falling back to CPU\n", eval_id);
