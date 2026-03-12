@@ -126,6 +126,32 @@ impl BaseFieldVec {
 
     /// Pads the vector to the target size by filling with zeros.
     /// If the current size is already >= target_size, does nothing.
+    /// Gather the same `indices` from multiple columns in a single GPU kernel launch.
+    /// Returns a flat Vec in row-major order: for each index, values from all columns.
+    /// i.e. result[idx * n_cols + col] = columns[col][indices[idx]]
+    pub fn batch_gather_multi(columns: &[&BaseFieldVec], indices: &[usize]) -> Vec<BaseField> {
+        if indices.is_empty() || columns.is_empty() {
+            return Vec::new();
+        }
+        let n_cols = columns.len();
+        let n_indices = indices.len();
+        let total = n_cols * n_indices;
+        let col_ptrs: Vec<*const u32> = columns.iter().map(|c| c.device_ptr).collect();
+        let indices_u32: Vec<u32> = indices.iter().map(|&i| i as u32).collect();
+        let mut result: Vec<BaseField> = Vec::with_capacity(total);
+        unsafe {
+            result.set_len(total);
+            bindings::cuda_batch_gather_multi_uint32(
+                col_ptrs.as_ptr(),
+                n_cols as u32,
+                indices_u32.as_ptr(),
+                n_indices as u32,
+                result.as_mut_ptr() as *mut u32,
+            );
+        }
+        result
+    }
+
     pub fn pad_to_size(&mut self, target_size: usize) {
         if self.size >= target_size {
             return;

@@ -70,6 +70,23 @@ pub trait Column<T>: Clone + Debug + FromIterator<T> + Send + Sync {
     fn batch_at(&self, indices: &[usize]) -> Vec<T> {
         indices.iter().map(|&i| self.at(i)).collect()
     }
+    /// Gather the same indices from multiple columns in one call.
+    /// Returns a flat Vec in row-major order: [col0[idx0], col1[idx0], ..., col0[idx1], col1[idx1], ...]
+    /// Override for GPU backends to reduce kernel launch overhead.
+    fn batch_at_multi(columns: &[&Self], indices: &[usize]) -> Vec<T>
+    where
+        T: Copy,
+    {
+        let n_cols = columns.len();
+        let batched: Vec<Vec<T>> = columns.iter().map(|col| col.batch_at(indices)).collect();
+        let mut result = Vec::with_capacity(n_cols * indices.len());
+        for idx in 0..indices.len() {
+            for col_vals in &batched {
+                result.push(col_vals[idx]);
+            }
+        }
+        result
+    }
     /// Splits the column into two halves.
     fn split_at_mid(self) -> (Self, Self);
 }

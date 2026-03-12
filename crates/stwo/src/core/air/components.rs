@@ -67,18 +67,6 @@ impl Components<'_> {
                 &mut evaluation_accumulator,
                 max_log_degree_bound,
             );
-            let after = evaluation_accumulator.current();
-            let delta = after - before;
-            if delta != SecureField::default() {
-                let bounds = component.trace_log_degree_bounds();
-                let n_trace0 = bounds.get(1).map_or(0, |v| v.len());
-                let n_trace2 = bounds.get(2).map_or(0, |v| v.len());
-                let log_size = bounds.get(1).and_then(|v| v.first().copied()).unwrap_or(0);
-                eprintln!(
-                    "[OODS] i={} n_constraints={} n_trace0={} n_trace2={} log_size={}",
-                    i, component.n_constraints(), n_trace0, n_trace2, log_size,
-                );
-            }
         }
         evaluation_accumulator.finalize()
     }

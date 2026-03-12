@@ -54,6 +54,10 @@ impl Column<BaseField> for interface::base_field_vec::BaseFieldVec {
         self.batch_get(indices)
     }
 
+    fn batch_at_multi(columns: &[&Self], indices: &[usize]) -> Vec<BaseField> {
+        Self::batch_gather_multi(columns, indices)
+    }
+
     fn set(&mut self, _index: usize, _value: BaseField) {
         Self::set_data(self, _index, _value);
     }

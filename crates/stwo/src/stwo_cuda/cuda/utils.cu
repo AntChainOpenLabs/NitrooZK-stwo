@@ -240,6 +240,63 @@ void cuda_batch_get_uint32_t(
     cuda_mem_pool_free(d_result);
 }
 
+// Multi-column batch gather: fetch the same indices from multiple columns in one kernel.
+// Output layout is row-major: dst[idx * n_columns + col] = columns[col][indices[idx]]
+__global__ void batch_gather_multi_uint32_kernel(
+    const uint32_t* const* src_ptrs,
+    uint32_t* dst,
+    const uint32_t* indices,
+    uint32_t n_indices,
+    uint32_t n_columns
+) {
+    uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t total = n_indices * n_columns;
+    if (tid >= total) return;
+
+    uint32_t idx = tid / n_columns;
+    uint32_t col = tid % n_columns;
+    dst[tid] = src_ptrs[col][indices[idx]];
+}
+
+void cuda_batch_gather_multi_uint32(
+    const uint32_t** column_device_ptrs,
+    uint32_t n_columns,
+    const uint32_t* host_indices,
+    uint32_t n_indices,
+    uint32_t* host_output
+) {
+    if (n_indices == 0 || n_columns == 0) return;
+
+    uint32_t total = n_indices * n_columns;
+
+    // Upload column pointers array to device.
+    const uint32_t** d_col_ptrs = cuda_mem_pool_allocate<const uint32_t*>(n_columns);
+    cudaMemcpyAsync((void*)d_col_ptrs, column_device_ptrs,
+                    n_columns * sizeof(uint32_t*), cudaMemcpyHostToDevice, 0);
+
+    // Upload indices to device.
+    uint32_t* d_indices = cuda_mem_pool_allocate<uint32_t>(n_indices);
+    cudaMemcpyAsync(d_indices, host_indices,
+                    n_indices * sizeof(uint32_t), cudaMemcpyHostToDevice, 0);
+
+    // Allocate output on device.
+    uint32_t* d_result = cuda_mem_pool_allocate<uint32_t>(total);
+
+    const int block_size = 256;
+    const int num_blocks = (total + block_size - 1) / block_size;
+    batch_gather_multi_uint32_kernel<<<num_blocks, block_size, 0, 0>>>(
+        d_col_ptrs, d_result, d_indices, n_indices, n_columns
+    );
+
+    cudaMemcpyAsync(host_output, d_result,
+                    total * sizeof(uint32_t), cudaMemcpyDeviceToHost, 0);
+    cudaStreamSynchronize(0);
+
+    cuda_mem_pool_free((void*)d_col_ptrs);
+    cuda_mem_pool_free(d_indices);
+    cuda_mem_pool_free(d_result);
+}
+
 // Multi-layer batch get kernel
 __global__ void multi_layer_batch_get_kernel(
     const Blake2sHash* const* layer_ptrs,  // Array of layer device pointers

@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use hashbrown::HashMap;
 use itertools::Itertools;
 use num_traits::Zero;
@@ -149,8 +147,6 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
         sampled_points: TreeVec<ColumnVec<Vec<CirclePoint<SecureField>>>>,
         channel: &mut MC::C,
     ) -> ExtendedCommitmentSchemeProof<MC::H> {
-        let t_prove_values_start = Instant::now();
-        let t_oods_start = Instant::now();
         let span = span!(
             Level::INFO,
             "Evaluate columns out of domain",
@@ -283,11 +279,7 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
             .map_cols(|x| x.iter().map(|o| o.value).collect());
         channel.mix_felts(&sampled_values.clone().flatten_cols());
 
-        let t_oods = t_oods_start.elapsed();
-
-        let t_quotients_start = Instant::now();
         let columns = self.evaluations();
-        print_column_size_histogram::<B, MC>(&columns);
         // Compute oods quotients for boundary constraints on the sampled points.
         let quotients = compute_fri_quotients(
             &columns,
@@ -296,33 +288,23 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
             lifting_log_size,
             self.config.fri_config.log_blowup_factor,
         );
-        let t_quotients = t_quotients_start.elapsed();
-
         // Run FRI commitment phase on the oods quotients.
-        let t_fri_commit_start = Instant::now();
         let fri_prover =
             FriProver::<B, MC>::commit(channel, self.config.fri_config, &quotients, self.twiddles);
-        let t_fri_commit = t_fri_commit_start.elapsed();
 
         // Proof of work.
-        let t_pow_start = Instant::now();
         let span1 = span!(Level::INFO, "Grind", class = "Queries POW").entered();
         let proof_of_work = B::grind(channel, self.config.pow_bits);
         span1.exit();
         channel.mix_u64(proof_of_work);
-        let t_pow = t_pow_start.elapsed();
 
         // FRI decommitment phase.
-        let t_fri_decommit_start = Instant::now();
         let FriDecommitResult {
             fri_proof,
             query_positions,
             unsorted_query_locations,
         } = fri_prover.decommit(channel);
-        let t_fri_decommit = t_fri_decommit_start.elapsed();
-
         // Build the query position tree.
-        let t_tree_decommit_start = Instant::now();
         let preprocessed_query_positions = prepare_preprocessed_query_positions(
             &query_positions,
             lifting_log_size,
@@ -350,17 +332,6 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
             .into_iter()
             .map(|(v, x)| (v, x.decommitment, x.aux))
             .multiunzip();
-        let t_tree_decommit = t_tree_decommit_start.elapsed();
-
-        let t_prove_values = t_prove_values_start.elapsed();
-        eprintln!("[PROFILE]   prove_values: OODS eval:       {}ms", t_oods.as_millis());
-        eprintln!("[PROFILE]   prove_values: quotients:       {}ms", t_quotients.as_millis());
-        eprintln!("[PROFILE]   prove_values: FRI commit:      {}ms", t_fri_commit.as_millis());
-        eprintln!("[PROFILE]   prove_values: PCS PoW:         {}ms", t_pow.as_millis());
-        eprintln!("[PROFILE]   prove_values: FRI decommit:    {}ms", t_fri_decommit.as_millis());
-        eprintln!("[PROFILE]   prove_values: tree decommit:   {}ms", t_tree_decommit.as_millis());
-        eprintln!("[PROFILE]   prove_values: TOTAL:           {}ms", t_prove_values.as_millis());
-
         ExtendedCommitmentSchemeProof {
             proof: CommitmentSchemeProof {
                 commitments: self.roots(),
@@ -500,21 +471,5 @@ impl<B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentTreeProver<B, MC> {
             .map(|poly| &poly.evals.values)
             .collect_vec();
         self.commitment.decommit(&queries_per_log_size, eval_vec)
-    }
-}
-
-fn print_column_size_histogram<B: BackendForChannel<MC>, MC: MerkleChannel>(
-    columns_per_tree: &TreeVec<ColumnVec<&CircleEvaluation<B, BaseField, BitReversedOrder>>>,
-) {
-    let mut log_size_histogram = HashMap::new();
-    for columns in columns_per_tree.iter() {
-        for column in columns {
-            *log_size_histogram
-                .entry(column.domain.log_size())
-                .or_insert(0) += 1;
-        }
-    }
-    for (log_size, count) in log_size_histogram {
-        info!("Log size {log_size}: {count}");
     }
 }

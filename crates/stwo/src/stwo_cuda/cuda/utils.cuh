@@ -275,6 +275,16 @@ void cuda_batch_get_uint32_t(
     uint32_t n_indices
 );
 
+// Multi-column batch gather: fetch same indices from multiple uint32 columns in one call
+extern "C"
+void cuda_batch_gather_multi_uint32(
+    const uint32_t** column_device_ptrs,
+    uint32_t n_columns,
+    const uint32_t* host_indices,
+    uint32_t n_indices,
+    uint32_t* host_output
+);
+
 // Multi-layer batch get: fetch hashes from multiple layers in one call
 extern "C"
 void cuda_multi_layer_batch_get_blake_2s_hash(

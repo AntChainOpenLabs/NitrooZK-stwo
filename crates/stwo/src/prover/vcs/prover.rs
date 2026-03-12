@@ -174,30 +174,22 @@ impl<B: MerkleOps<H>, H: MerkleHasher> MerkleProver<B, H> {
 
             all_node_values.push(all_node_values_for_layer);
 
-            // Batch fetch column values for queried nodes (one batch per column).
+            // Batch fetch column values for queried nodes (single multi-column gather).
             if !queried_column_nodes.is_empty() && !layer_columns.is_empty() {
-                let batched: Vec<Vec<BaseField>> = layer_columns
-                    .iter()
-                    .map(|col| col.batch_at(&queried_column_nodes))
-                    .collect();
-                for node_idx in 0..queried_column_nodes.len() {
-                    for col_values in &batched {
-                        queried_values.push(col_values[node_idx]);
-                    }
-                }
+                let col_refs: Vec<&Col<B, BaseField>> =
+                    layer_columns.iter().map(|c| **c).collect();
+                let gathered =
+                    Col::<B, BaseField>::batch_at_multi(&col_refs, &queried_column_nodes);
+                queried_values.extend_from_slice(&gathered);
             }
 
-            // Batch fetch column values for witness nodes (one batch per column).
+            // Batch fetch column values for witness nodes (single multi-column gather).
             if !witness_column_nodes.is_empty() && !layer_columns.is_empty() {
-                let batched: Vec<Vec<BaseField>> = layer_columns
-                    .iter()
-                    .map(|col| col.batch_at(&witness_column_nodes))
-                    .collect();
-                for node_idx in 0..witness_column_nodes.len() {
-                    for col_values in &batched {
-                        decommitment.column_witness.push(col_values[node_idx]);
-                    }
-                }
+                let col_refs: Vec<&Col<B, BaseField>> =
+                    layer_columns.iter().map(|c| **c).collect();
+                let gathered =
+                    Col::<B, BaseField>::batch_at_multi(&col_refs, &witness_column_nodes);
+                decommitment.column_witness.extend_from_slice(&gathered);
             }
 
             // Propagate all merged nodes as queries to the next (smaller) layer.
