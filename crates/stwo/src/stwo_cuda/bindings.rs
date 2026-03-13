@@ -323,6 +323,9 @@ extern "C" {
         size: usize,
     ) -> *const *const u32;
 
+    /// M31 modular add offset in-place: data[i] = (data[i] + offset) mod P for all i < n.
+    pub fn m31_vector_add_offset(data: *const u32, n: u32, offset: u32);
+
     pub fn accumulate_numerators_batch(
         size: u32,
         columns: *const *const u32,

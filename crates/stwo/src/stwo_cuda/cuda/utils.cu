@@ -409,6 +409,26 @@ void cuda_free_memory(void *device_ptr) {
 #endif
 }
 
+// M31 modular add offset: data[i] = add(data[i], offset) for all i < n.
+__global__ void m31_vector_add_offset_kernel(m31 *data, unsigned int n, m31 offset) {
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        data[idx] = add(data[idx], offset);
+    }
+}
+
+extern "C" void m31_vector_add_offset(uint32_t *data, unsigned int n, uint32_t offset) {
+    if (n == 0) return;
+    const int block_size = 256;
+    const int num_blocks = (n + block_size - 1) / block_size;
+    m31 offset_m31 = {offset};
+    m31_vector_add_offset_kernel<<<num_blocks, block_size>>>((m31*)data, n, offset_m31);
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("m31_vector_add_offset error: %s\n", cudaGetErrorString(err));
+    }
+}
+
 // Stub implementations for backward compatibility
 // These will be removed once all code is migrated to use CUDA memory pool directly
 extern "C" uint32_t* pool_allocate_cuda(size_t size) {

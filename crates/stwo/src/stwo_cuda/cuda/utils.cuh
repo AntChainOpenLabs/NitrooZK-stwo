@@ -297,6 +297,10 @@ void cuda_multi_layer_batch_get_blake_2s_hash(
 extern "C"
 uint32_t** copy_device_pointer_vec_from_host_to_device(uint32_t** host_ptr, uint32_t size);
 
+// M31 modular add offset in-place: data[i] = add(data[i], offset) for all i < n.
+extern "C"
+void m31_vector_add_offset(uint32_t *data, unsigned int n, uint32_t offset);
+
 #define THREAD_COUNT_MAX 1024
 
 HOST_DEVICE_FORCEINLINE constexpr unsigned int fnv1a_eval_id_gen(const char* s) {

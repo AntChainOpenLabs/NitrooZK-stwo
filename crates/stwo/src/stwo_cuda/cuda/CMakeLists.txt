@@ -206,6 +206,7 @@ add_library(
         witness/gen_range_check_builtin_bits_96_trace.cu
         witness/gen_range_check_builtin_bits_128_trace.cu
         witness/gen_poseidon_builtin_trace.cu
+        witness/gen_poseidon_aggregator_trace.cu
         witness/gen_verify_instruction_trace.cu
         witness/gen_cube_252_trace.cu
         witness/gen_poseidon_full_round_chain_trace.cu
@@ -215,6 +216,8 @@ add_library(
         witness/gen_partial_ec_mul_wb18_trace.cu
         witness/gen_pedersen_points_table_trace.cu
         witness/gen_pedersen_builtin_trace.cu
+        witness/gen_pedersen_builtin_narrow_trace.cu
+        witness/gen_poseidon_builtin_split_trace.cu
         witness/gen_pedersen_aggregator_wb18_trace.cu
         witness/gen_partial_ec_mul_wb9_trace.cu
         witness/gen_pedersen_aggregator_wb9_trace.cu

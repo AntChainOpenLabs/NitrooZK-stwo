@@ -2766,6 +2766,64 @@ extern "C" {
         claimed_sum: *mut u32,               // 4 m31s for qm31
     );
 
+    // === PEDERSEN_BUILTIN_NARROW (simplified: 3 columns, window_bits_9) ===
+    pub fn gen_pedersen_builtin_narrow_trace(
+        traces: *const *const u32,           // 3 output columns
+        lk_mem_0: *const *const u32,         // 3 arrays
+        lk_mem_1: *const *const u32,         // 3 arrays
+        lk_mem_2: *const *const u32,         // 3 arrays
+        lk_agg_0: *const *const u32,         // 4 arrays
+        sub_mem: *const *const u32,          // 3 arrays
+        sub_agg: *const *const u32,          // 3 arrays
+        address_to_raw_id: *const u32,       // GPU memory table
+        segment_start: u32,
+        n_rows: u32,
+        log_size: u32,
+    );
+
+    pub fn gen_pedersen_builtin_narrow_interaction_trace(
+        lookup_elements: *mut std::os::raw::c_void,
+        lk_mem_0: *const *const u32,         // 3 arrays
+        lk_mem_1: *const *const u32,         // 3 arrays
+        lk_mem_2: *const *const u32,         // 3 arrays
+        lk_agg_0: *const *const u32,         // 4 arrays
+        log_size: u32,
+        interaction_trace_columns: *const *const u32,  // 8 columns (4*2)
+        claimed_sum: *mut u32,               // 4 m31s for qm31
+    );
+
+    // === POSEIDON_BUILTIN_SPLIT (6 columns, split AIR) ===
+    pub fn gen_poseidon_builtin_split_trace(
+        traces: *const *const u32,           // 6 output columns
+        lk_mem_0: *const *const u32,         // 3 arrays
+        lk_mem_1: *const *const u32,         // 3 arrays
+        lk_mem_2: *const *const u32,         // 3 arrays
+        lk_mem_3: *const *const u32,         // 3 arrays
+        lk_mem_4: *const *const u32,         // 3 arrays
+        lk_mem_5: *const *const u32,         // 3 arrays
+        lk_agg_0: *const *const u32,         // 7 arrays
+        sub_mem: *const *const u32,          // 6 arrays
+        sub_agg: *const *const u32,          // 6 arrays
+        address_to_raw_id: *const u32,       // GPU memory table
+        segment_start: u32,
+        n_rows: u32,
+        log_size: u32,
+    );
+
+    pub fn gen_poseidon_builtin_split_interaction_trace(
+        lookup_elements: *mut std::os::raw::c_void,
+        lk_mem_0: *const *const u32,         // 3 arrays
+        lk_mem_1: *const *const u32,         // 3 arrays
+        lk_mem_2: *const *const u32,         // 3 arrays
+        lk_mem_3: *const *const u32,         // 3 arrays
+        lk_mem_4: *const *const u32,         // 3 arrays
+        lk_mem_5: *const *const u32,         // 3 arrays
+        lk_agg_0: *const *const u32,         // 7 arrays
+        log_size: u32,
+        interaction_trace_columns: *const *const u32,  // 16 columns (4*4)
+        claimed_sum: *mut u32,               // 4 m31s for qm31
+    );
+
     // GPU-native pedersen table generation (generates table directly on GPU)
     pub fn initialize_pedersen_table();
     pub fn is_pedersen_table_initialized() -> bool;
@@ -3930,6 +3988,125 @@ extern "C" {
         // Output
         interaction_trace_columns: *const *const u32,   // 4*6 = 24 columns
         claimed_sum: *mut u32,                          // 4 m31s for qm31
+    );
+
+    // === POSEIDON_AGGREGATOR (342 columns, native CUDA) ===
+    pub fn gen_poseidon_aggregator_trace(
+        traces: *const u32,                              // 342 output columns (m31**)
+        log_size: u32,
+        // Inputs (6 ID arrays + mults)
+        input_ids_0: *const u32,
+        input_ids_1: *const u32,
+        input_ids_2: *const u32,
+        input_ids_3: *const u32,
+        input_ids_4: *const u32,
+        input_ids_5: *const u32,
+        mults_in: *const u32,
+        // Memory tables
+        memory_id_to_big_transposed_big_values: *const *const u32,
+        memory_id_to_big_small_values: *const u32,
+        // Lookup data outputs (6 memory_id_to_big, 29 elements each)
+        lookup_memory_id_to_big_0: *const u32,
+        lookup_memory_id_to_big_1: *const u32,
+        lookup_memory_id_to_big_2: *const u32,
+        lookup_memory_id_to_big_3: *const u32,
+        lookup_memory_id_to_big_4: *const u32,
+        lookup_memory_id_to_big_5: *const u32,
+        // 2 range_check_3_3_3_3_3 (5 elements each)
+        lookup_range_check_3_3_3_3_3_0: *const u32,
+        lookup_range_check_3_3_3_3_3_1: *const u32,
+        // 6 range_check_4_4_4_4 (4 elements each)
+        lookup_range_check_4_4_4_4_0: *const u32,
+        lookup_range_check_4_4_4_4_1: *const u32,
+        lookup_range_check_4_4_4_4_2: *const u32,
+        lookup_range_check_4_4_4_4_3: *const u32,
+        lookup_range_check_4_4_4_4_4: *const u32,
+        lookup_range_check_4_4_4_4_5: *const u32,
+        // 3 range_check_4_4 (2 elements each)
+        lookup_range_check_4_4_0: *const u32,
+        lookup_range_check_4_4_1: *const u32,
+        lookup_range_check_4_4_2: *const u32,
+        // 10 poseidon_full_round_chain (32 elements each)
+        // pfrc 0-7: sub-component feeds, pfrc 8-9: IT boundary (round 4, round 35)
+        lookup_poseidon_full_round_chain_0: *const u32,
+        lookup_poseidon_full_round_chain_1: *const u32,
+        lookup_poseidon_full_round_chain_2: *const u32,
+        lookup_poseidon_full_round_chain_3: *const u32,
+        lookup_poseidon_full_round_chain_4: *const u32,
+        lookup_poseidon_full_round_chain_5: *const u32,
+        lookup_poseidon_full_round_chain_6: *const u32,
+        lookup_poseidon_full_round_chain_7: *const u32,
+        lookup_poseidon_full_round_chain_8: *const u32,
+        lookup_poseidon_full_round_chain_9: *const u32,
+        // 28 poseidon_3_partial_rounds_chain (42 elements each)
+        // p3prc 0-26: sub-component feeds, p3prc 27: IT boundary (round 31)
+        lookup_poseidon_3_partial_rounds_chain_0: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_1: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_2: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_3: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_4: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_5: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_6: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_7: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_8: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_9: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_10: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_11: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_12: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_13: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_14: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_15: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_16: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_17: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_18: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_19: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_20: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_21: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_22: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_23: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_24: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_25: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_26: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_27: *const u32,
+    );
+
+    pub fn gen_poseidon_aggregator_interaction_trace(
+        lookup_elements: *mut std::os::raw::c_void,     // opaque CommonLookupElements*
+        // 6 memory_id_to_big lookup data
+        lookup_memory_id_to_big_0: *const u32,
+        lookup_memory_id_to_big_1: *const u32,
+        lookup_memory_id_to_big_2: *const u32,
+        lookup_memory_id_to_big_3: *const u32,
+        lookup_memory_id_to_big_4: *const u32,
+        lookup_memory_id_to_big_5: *const u32,
+        // 2 rc_3_3_3_3_3
+        lookup_range_check_3_3_3_3_3_0: *const u32,
+        lookup_range_check_3_3_3_3_3_1: *const u32,
+        // 6 rc_4_4_4_4
+        lookup_range_check_4_4_4_4_0: *const u32,
+        lookup_range_check_4_4_4_4_1: *const u32,
+        lookup_range_check_4_4_4_4_2: *const u32,
+        lookup_range_check_4_4_4_4_3: *const u32,
+        lookup_range_check_4_4_4_4_4: *const u32,
+        lookup_range_check_4_4_4_4_5: *const u32,
+        // 3 rc_4_4
+        lookup_range_check_4_4_0: *const u32,
+        lookup_range_check_4_4_1: *const u32,
+        lookup_range_check_4_4_2: *const u32,
+        // 4 pfrc (for interaction trace)
+        lookup_poseidon_full_round_chain_0: *const u32,
+        lookup_poseidon_full_round_chain_1: *const u32,
+        lookup_poseidon_full_round_chain_2: *const u32,
+        lookup_poseidon_full_round_chain_3: *const u32,
+        // 2 p3prc (for interaction trace)
+        lookup_poseidon_3_partial_rounds_chain_0: *const u32,
+        lookup_poseidon_3_partial_rounds_chain_1: *const u32,
+        // Base trace column pointers
+        base_trace: *const u32,
+        log_size: u32,
+        // Output
+        interaction_trace_columns: *const u32,           // 4 * 14 = 56 columns
+        claimed_sum: *mut u32,                           // 4 m31s for qm31
     );
 
 }

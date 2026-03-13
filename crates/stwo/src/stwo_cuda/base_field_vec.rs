@@ -104,6 +104,45 @@ impl BaseFieldVec {
         }
     }
 
+    /// Copy `count` elements from `other` into `self` starting at `dst_offset`.
+    ///
+    /// Device-to-device copy — no CPU roundtrip.
+    /// Asserts: `dst_offset + count <= self.size` and `count <= other.size`.
+    pub fn copy_region_from(&mut self, other: &Self, dst_offset: usize, count: usize) {
+        assert!(
+            dst_offset + count <= self.size,
+            "copy_region_from: dst_offset({}) + count({}) > self.size({})",
+            dst_offset,
+            count,
+            self.size
+        );
+        assert!(
+            count <= other.size,
+            "copy_region_from: count({}) > other.size({})",
+            count,
+            other.size
+        );
+        unsafe {
+            bindings::copy_uint32_t_vec_from_device_to_device_offset(
+                other.device_ptr,
+                self.device_ptr,
+                count as u32,
+                dst_offset as u32,
+            );
+        }
+    }
+
+    /// Add `offset` (M31) to every element in-place on GPU.
+    /// Equivalent to `self[i] = (self[i] + offset) mod P` for all i.
+    pub fn add_offset_in_place(&mut self, offset: BaseField) {
+        if self.size == 0 {
+            return;
+        }
+        unsafe {
+            bindings::m31_vector_add_offset(self.device_ptr, self.size as u32, offset.0);
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<BaseField> {
         let mut host_data: Vec<BaseField> = Vec::with_capacity(self.size);
         unsafe {
