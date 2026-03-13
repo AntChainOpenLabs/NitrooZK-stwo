@@ -451,12 +451,8 @@ __global__ void set_global_pedersen_small_table_pointers_kernel(m31** ptrs, uint
 
 extern "C" void initialize_pedersen_table_small() {
     if (s_pedersen_table_small_initialized) {
-        printf("[PEDERSEN_TABLE_SMALL_GPU] Already initialized, skipping.\n");
         return;
     }
-
-    timer global_timer;
-    global_timer.start("initialize_pedersen_table_small (GPU generation)");
 
     // Compute padded size (next power of 2)
     uint32_t n_rows_unpadded = INIT_PED_SMALL_TABLE_N_ROWS_UNPADDED;  // 28672
@@ -465,9 +461,6 @@ extern "C" void initialize_pedersen_table_small() {
     // n_rows = 32768 (2^15)
 
     s_pedersen_table_small_n_rows = n_rows;
-    printf("[PEDERSEN_TABLE_SMALL_GPU] Allocating %u rows x %d columns (%zu MB)...\n",
-           n_rows, INIT_PED_SMALL_TABLE_N_COLUMNS,
-           (size_t)n_rows * INIT_PED_SMALL_TABLE_N_COLUMNS * sizeof(m31) / (1024 * 1024));
 
     // Allocate GPU memory for each column
     for (int i = 0; i < INIT_PED_SMALL_TABLE_N_COLUMNS; i++) {
@@ -481,7 +474,6 @@ extern "C" void initialize_pedersen_table_small() {
     const uint32_t BLOCK_SIZE = 256;
 
     // ---- P0 low section: 27 windows x 512 rows ----
-    printf("[PEDERSEN_TABLE_SMALL_GPU] Generating P0 low section (27 windows, binary decomposition)...\n");
     for (uint32_t window = 0; window < INIT_PED_SMALL_NUM_LOW_WINDOWS; window++) {
         uint32_t block_start = INIT_PED_SMALL_P0_LOW_START + window * INIT_PED_SMALL_ROWS_PER_WINDOW;
         uint32_t num_blocks = (INIT_PED_SMALL_ROWS_PER_WINDOW + BLOCK_SIZE - 1) / BLOCK_SIZE;
@@ -493,7 +485,6 @@ extern "C" void initialize_pedersen_table_small() {
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // ---- P0/P1 high section: 16 sub-blocks x 32 rows ----
-    printf("[PEDERSEN_TABLE_SMALL_GPU] Generating P0/P1 high section (16 sub-blocks)...\n");
     for (uint32_t sb = 0; sb < INIT_PED_SMALL_HIGH_NUM_SUBBLOCKS; sb++) {
         uint32_t num_blocks = (INIT_PED_SMALL_HIGH_ROWS_PER_SUBBLOCK + BLOCK_SIZE - 1) / BLOCK_SIZE;
         gen_pedersen_small_high_section_kernel<<<num_blocks, BLOCK_SIZE>>>(
@@ -504,7 +495,6 @@ extern "C" void initialize_pedersen_table_small() {
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // ---- P2 low section: 27 windows x 512 rows ----
-    printf("[PEDERSEN_TABLE_SMALL_GPU] Generating P2 low section (27 windows, binary decomposition)...\n");
     for (uint32_t window = 0; window < INIT_PED_SMALL_NUM_LOW_WINDOWS; window++) {
         uint32_t block_start = INIT_PED_SMALL_P2_LOW_START + window * INIT_PED_SMALL_ROWS_PER_WINDOW;
         uint32_t num_blocks = (INIT_PED_SMALL_ROWS_PER_WINDOW + BLOCK_SIZE - 1) / BLOCK_SIZE;
@@ -516,7 +506,6 @@ extern "C" void initialize_pedersen_table_small() {
     ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // ---- P2/P3 high section: 16 sub-blocks x 32 rows ----
-    printf("[PEDERSEN_TABLE_SMALL_GPU] Generating P2/P3 high section (16 sub-blocks)...\n");
     for (uint32_t sb = 0; sb < INIT_PED_SMALL_HIGH_NUM_SUBBLOCKS; sb++) {
         uint32_t num_blocks = (INIT_PED_SMALL_HIGH_ROWS_PER_SUBBLOCK + BLOCK_SIZE - 1) / BLOCK_SIZE;
         gen_pedersen_small_high_section_kernel<<<num_blocks, BLOCK_SIZE>>>(
@@ -529,7 +518,6 @@ extern "C" void initialize_pedersen_table_small() {
     // ---- Padding: copy row 0 to fill up to next power of 2 ----
     if (n_rows > n_rows_unpadded) {
         uint32_t pad_count = n_rows - n_rows_unpadded;
-        printf("[PEDERSEN_TABLE_SMALL_GPU] Padding %u rows (copying row 0)...\n", pad_count);
         uint32_t num_blocks = (pad_count + BLOCK_SIZE - 1) / BLOCK_SIZE;
         pad_pedersen_small_table_kernel<<<num_blocks, BLOCK_SIZE>>>(
             d_columns, 0, n_rows_unpadded, n_rows
@@ -544,9 +532,6 @@ extern "C" void initialize_pedersen_table_small() {
     cuda_free_memory(d_columns);
 
     s_pedersen_table_small_initialized = true;
-    global_timer.end("initialize_pedersen_table_small (GPU generation)");
-    printf("[PEDERSEN_TABLE_SMALL_GPU] Initialization complete! (%u rows padded from %u)\n",
-           n_rows, n_rows_unpadded);
 }
 
 extern "C" bool is_pedersen_table_small_initialized() {
@@ -579,5 +564,4 @@ extern "C" void free_pedersen_table_small() {
 
     s_pedersen_table_small_initialized = false;
     s_pedersen_table_small_n_rows = 0;
-    printf("[PEDERSEN_TABLE_SMALL_GPU] Freed GPU memory.\n");
 }
