@@ -35,24 +35,28 @@ static __device__ __constant__ uint8_t grind_blake2s_sigma[10][16] = {
         b = GRIND_ROTR32(b ^ c, 7); \
     } while(0)
 
-// Each thread tests one nonce. The kernel performs a single-block Blake2s hash:
-//   H(prefixed_digest || nonce)
-// where prefixed_digest is 32 bytes (8 x u32) and nonce is 8 bytes (u64),
-// giving a 40-byte single-block message (fits in one 64-byte Blake2s block).
-//
-// If hash[0] has >= pow_bits trailing zeros, the nonce is valid.
-// We use atomicMin to track the smallest valid nonce across all threads.
+// Keep the CUDA nonce search identical to the SIMD implementation:
+//   nonce = (hi << 32) | low
+// where 0 <= low < 2^20 and hi grows chunk-by-chunk.
+static constexpr uint32_t GRIND_LOW_BITS = 20;
+static constexpr uint32_t GRIND_LOW_RANGE = 1u << GRIND_LOW_BITS;
+static constexpr uint32_t M31_P = 0x7FFFFFFF;
+
+// Each thread tests one "low" nonce candidate in the current chunk.
+// The full nonce is ((uint64_t)hi << 32) | low.
 __global__ void grind_blake2s_kernel(
     const uint32_t* __restrict__ prefixed_digest,
     uint32_t pow_bits,
-    uint64_t nonce_offset,
-    unsigned long long* result_nonce
+    uint32_t hi,
+    unsigned long long* result_low
 ) {
-    uint64_t tid = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
-    uint64_t nonce = nonce_offset + tid;
+    uint32_t low = (uint32_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (low >= GRIND_LOW_RANGE) return;
 
-    // Early exit: if a smaller nonce was already found, skip this thread
-    if (nonce >= *result_nonce) return;
+    uint64_t nonce = ((uint64_t)hi << 32) | low;
+
+    // Early exit within the current hi-chunk: if a smaller low part was already found.
+    if ((unsigned long long)low >= *result_low) return;
 
     // Build 16-word message block:
     // m[0..7]  = prefixed_digest (32 bytes)
@@ -107,12 +111,12 @@ __global__ void grind_blake2s_kernel(
     uint32_t tz = (h0 == 0) ? 32 : __clz(__brev(h0));
 
     if (tz >= pow_bits) {
-        atomicMin(result_nonce, (unsigned long long)nonce);
+        atomicMin(result_low, (unsigned long long)low);
     }
 }
 
-// Host function: launches the GPU grind kernel in batches until a valid nonce is found.
-// Returns the smallest valid nonce.
+// Host function: launches the GPU grind kernel chunk-by-chunk until a valid nonce is found.
+// The search order and returned nonce now match the SIMD implementation.
 uint64_t grind_blake2s(const uint32_t* host_prefixed_digest, uint32_t pow_bits) {
     // Allocate device memory for prefixed_digest (8 x u32)
     uint32_t* d_prefixed_digest;
@@ -120,37 +124,45 @@ uint64_t grind_blake2s(const uint32_t* host_prefixed_digest, uint32_t pow_bits) 
     ASSERT_CUDA_SUCCESS(cudaMemcpy(d_prefixed_digest, host_prefixed_digest,
                                    8 * sizeof(uint32_t), cudaMemcpyHostToDevice));
 
-    // Allocate device memory for result nonce, initialize to UINT64_MAX
-    unsigned long long* d_result;
-    ASSERT_CUDA_SUCCESS(cudaMalloc(&d_result, sizeof(unsigned long long)));
-    unsigned long long init_val = UINT64_MAX;
-    ASSERT_CUDA_SUCCESS(cudaMemcpy(d_result, &init_val,
-                                   sizeof(unsigned long long), cudaMemcpyHostToDevice));
+    // Allocate device memory for the smallest successful low-part in the current chunk.
+    unsigned long long* d_result_low;
+    ASSERT_CUDA_SUCCESS(cudaMalloc(&d_result_low, sizeof(unsigned long long)));
 
     // Kernel launch parameters
     const int block_size = 256;
-    const int grid_size = 4096;  // 4096 blocks * 256 threads = 1,048,576 nonces per batch
-    const uint64_t batch_size = (uint64_t)block_size * grid_size;
+    const int grid_size = 4096;  // 4096 * 256 = 2^20 low values per hi chunk
+    static_assert((uint32_t)(block_size * grid_size) == GRIND_LOW_RANGE,
+                  "CUDA grind launch shape must match the SIMD low-range search space");
 
-    uint64_t nonce_offset = 0;
-    unsigned long long host_result = UINT64_MAX;
+    unsigned long long host_result_low = UINT64_MAX;
+    uint64_t host_result = UINT64_MAX;
 
-    while (host_result == UINT64_MAX) {
+    for (uint32_t hi = 0; hi < M31_P; ++hi) {
+        unsigned long long init_val = UINT64_MAX;
+        ASSERT_CUDA_SUCCESS(cudaMemcpy(d_result_low, &init_val,
+                                       sizeof(unsigned long long), cudaMemcpyHostToDevice));
         grind_blake2s_kernel<<<grid_size, block_size>>>(
-            d_prefixed_digest, pow_bits, nonce_offset, d_result
+            d_prefixed_digest, pow_bits, hi, d_result_low
         );
         ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
-        // Check if a valid nonce was found
-        ASSERT_CUDA_SUCCESS(cudaMemcpy(&host_result, d_result,
+        // Check if a valid nonce was found in this hi chunk.
+        ASSERT_CUDA_SUCCESS(cudaMemcpy(&host_result_low, d_result_low,
                                        sizeof(unsigned long long), cudaMemcpyDeviceToHost));
-
-        nonce_offset += batch_size;
+        if (host_result_low != UINT64_MAX) {
+            host_result = ((uint64_t)hi << 32) | (uint64_t)host_result_low;
+            break;
+        }
     }
 
     ASSERT_CUDA_SUCCESS(cudaFree(d_prefixed_digest));
-    ASSERT_CUDA_SUCCESS(cudaFree(d_result));
+    ASSERT_CUDA_SUCCESS(cudaFree(d_result_low));
 
-    return (uint64_t)host_result;
+    if (host_result == UINT64_MAX) {
+        fprintf(stderr, "CUDA grind failed to find a valid nonce\n");
+        exit(1);
+    }
+
+    return host_result;
 }
