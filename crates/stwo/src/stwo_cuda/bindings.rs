@@ -343,6 +343,14 @@ extern "C" {
     /// Vector add in-place: dst[i] += src[i] for i in [0, n).
     pub fn vector_add_u32(dst: *const u32, src: *const u32, n: u32);
 
+    /// GPU scatter-add: mults[indices[i] - offset] += 1 for each i.
+    pub fn scatter_add(
+        mults: *const u32,
+        device_indices: *const u32,
+        n_indices: u32,
+        offset: u32,
+    );
+
     pub fn accumulate_numerators_batch(
         size: u32,
         columns: *const *const u32,

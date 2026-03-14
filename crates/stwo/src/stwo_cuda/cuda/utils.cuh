@@ -323,6 +323,10 @@ void fill_zero_from(uint32_t *data, unsigned int start, unsigned int end);
 extern "C"
 void vector_add_u32(uint32_t *dst, const uint32_t *src, unsigned int n);
 
+// GPU scatter-add: mults[indices[i] - offset] += 1 for each i.
+extern "C"
+void scatter_add(uint32_t *mults, const uint32_t *device_indices, uint32_t n_indices, uint32_t offset);
+
 #define THREAD_COUNT_MAX 1024
 
 HOST_DEVICE_FORCEINLINE constexpr unsigned int fnv1a_eval_id_gen(const char* s) {

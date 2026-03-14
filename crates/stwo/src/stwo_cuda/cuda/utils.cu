@@ -532,6 +532,34 @@ extern "C" void histogram_by_binary_search(
     }
 }
 
+// GPU scatter-add: mults[indices[i] - offset] += 1 for each i.
+__global__ void scatter_add_kernel(
+    uint32_t *mults,
+    const uint32_t *indices,
+    uint32_t n_indices,
+    uint32_t offset
+) {
+    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= n_indices) return;
+    atomicAdd(mults + indices[idx] - offset, 1);
+}
+
+extern "C" void scatter_add(
+    uint32_t *mults,
+    const uint32_t *device_indices,
+    uint32_t n_indices,
+    uint32_t offset
+) {
+    if (n_indices == 0) return;
+    const int block_size = 256;
+    const int num_blocks = (n_indices + block_size - 1) / block_size;
+    scatter_add_kernel<<<num_blocks, block_size>>>(mults, device_indices, n_indices, offset);
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("scatter_add error: %s\n", cudaGetErrorString(err));
+    }
+}
+
 // Stub implementations for backward compatibility
 // These will be removed once all code is migrated to use CUDA memory pool directly
 extern "C" uint32_t* pool_allocate_cuda(size_t size) {

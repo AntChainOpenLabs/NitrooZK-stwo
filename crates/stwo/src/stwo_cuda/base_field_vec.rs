@@ -337,6 +337,25 @@ impl Uint32Vec {
         }
     }
 
+    /// Batch-get values by indices from GPU in a single kernel + D2H transfer.
+    pub fn batch_get(&self, indices: &[usize]) -> Vec<u32> {
+        if indices.is_empty() {
+            return Vec::new();
+        }
+        let indices_u32: Vec<u32> = indices.iter().map(|&i| i as u32).collect();
+        let mut result: Vec<u32> = Vec::with_capacity(indices.len());
+        unsafe {
+            result.set_len(indices.len());
+            bindings::cuda_batch_get_uint32_t(
+                self.device_ptr,
+                result.as_mut_ptr(),
+                indices_u32.as_ptr(),
+                indices.len() as u32,
+            );
+        }
+        result
+    }
+
     pub fn increase_at(&self, address: u32) {
         unsafe {
             bindings::cuda_increase_at(self.device_ptr as *const c_void, address)
