@@ -429,6 +429,65 @@ extern "C" void m31_vector_add_offset(uint32_t *data, unsigned int n, uint32_t o
     }
 }
 
+// Pad GPU array by cycling: data[idx] = data[idx % cycle_len] for idx in [actual_size, padded_size).
+__global__ void pad_with_cycle_kernel(uint32_t *data, unsigned int actual_size, unsigned int padded_size, unsigned int cycle_len) {
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x + actual_size;
+    if (idx < padded_size) {
+        data[idx] = data[idx % cycle_len];
+    }
+}
+
+extern "C" void pad_with_cycle(uint32_t *data, unsigned int actual_size, unsigned int padded_size, unsigned int cycle_len) {
+    unsigned int count = padded_size - actual_size;
+    if (count == 0) return;
+    const int block_size = 256;
+    const int num_blocks = (count + block_size - 1) / block_size;
+    pad_with_cycle_kernel<<<num_blocks, block_size>>>(data, actual_size, padded_size, cycle_len);
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("pad_with_cycle error: %s\n", cudaGetErrorString(err));
+    }
+}
+
+// Fill GPU array with zeros: data[idx] = 0 for idx in [start, end).
+__global__ void fill_zero_from_kernel(uint32_t *data, unsigned int start, unsigned int end) {
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x + start;
+    if (idx < end) {
+        data[idx] = 0;
+    }
+}
+
+extern "C" void fill_zero_from(uint32_t *data, unsigned int start, unsigned int end) {
+    unsigned int count = end - start;
+    if (count == 0) return;
+    const int block_size = 256;
+    const int num_blocks = (count + block_size - 1) / block_size;
+    fill_zero_from_kernel<<<num_blocks, block_size>>>(data, start, end);
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("fill_zero_from error: %s\n", cudaGetErrorString(err));
+    }
+}
+
+// Vector add in-place: dst[i] += src[i] for i in [0, n).
+__global__ void vector_add_u32_kernel(uint32_t *dst, const uint32_t *src, unsigned int n) {
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        dst[idx] += src[idx];
+    }
+}
+
+extern "C" void vector_add_u32(uint32_t *dst, const uint32_t *src, unsigned int n) {
+    if (n == 0) return;
+    const int block_size = 256;
+    const int num_blocks = (n + block_size - 1) / block_size;
+    vector_add_u32_kernel<<<num_blocks, block_size>>>(dst, src, n);
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("vector_add_u32 error: %s\n", cudaGetErrorString(err));
+    }
+}
+
 // Stub implementations for backward compatibility
 // These will be removed once all code is migrated to use CUDA memory pool directly
 extern "C" uint32_t* pool_allocate_cuda(size_t size) {

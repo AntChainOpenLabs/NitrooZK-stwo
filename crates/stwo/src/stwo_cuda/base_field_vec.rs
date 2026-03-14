@@ -191,6 +191,57 @@ impl BaseFieldVec {
         result
     }
 
+    /// Pad the GPU array in-place by cycling the first `cycle_len` elements.
+    /// Reallocates to `padded_size`, copies existing `actual_size` elements via D2D,
+    /// then fills [actual_size, padded_size) with data[idx % cycle_len] on GPU.
+    pub fn pad_with_cycle(&mut self, actual_size: usize, padded_size: usize, cycle_len: usize) {
+        if padded_size <= actual_size {
+            return;
+        }
+        // Realloc: allocate new buffer, D2D copy, replace self
+        let new_vec = Self::new_uninitialized(padded_size);
+        unsafe {
+            bindings::copy_uint32_t_vec_from_device_to_device(
+                self.device_ptr,
+                new_vec.device_ptr,
+                actual_size as u32,
+            );
+        }
+        let old = std::mem::replace(self, new_vec);
+        drop(old);
+        // Fill padding region on GPU
+        unsafe {
+            bindings::pad_with_cycle(
+                self.device_ptr,
+                actual_size as u32,
+                padded_size as u32,
+                cycle_len as u32,
+            );
+        }
+        self.size = padded_size;
+    }
+
+    /// Fill elements from `start` to `self.size` with zeros on GPU.
+    pub fn fill_zero_from(&mut self, start: usize) {
+        if start >= self.size {
+            return;
+        }
+        unsafe {
+            bindings::fill_zero_from(self.device_ptr, start as u32, self.size as u32);
+        }
+    }
+
+    /// In-place element-wise add: self[i] += other[i] for i in [0, min(self.size, other.size)).
+    pub fn add_from(&mut self, other: &Self) {
+        let n = self.size.min(other.size);
+        if n == 0 {
+            return;
+        }
+        unsafe {
+            bindings::vector_add_u32(self.device_ptr, other.device_ptr, n as u32);
+        }
+    }
+
     pub fn pad_to_size(&mut self, target_size: usize) {
         if self.size >= target_size {
             return;
@@ -320,6 +371,43 @@ impl Uint32Vec {
         new_vec.copy_from(self);
         new_vec.copy_from_offset(other, self.size);
         *self = new_vec;
+    }
+
+    /// Pad the GPU array in-place by cycling the first `cycle_len` elements.
+    pub fn pad_with_cycle(&mut self, actual_size: usize, padded_size: usize, cycle_len: usize) {
+        if padded_size <= actual_size {
+            return;
+        }
+        let new_vec = Self::new_uninitialized(padded_size);
+        unsafe {
+            bindings::copy_uint32_t_vec_from_device_to_device(
+                self.device_ptr,
+                new_vec.device_ptr,
+                actual_size as u32,
+            );
+        }
+        let old = std::mem::replace(self, new_vec);
+        drop(old);
+        unsafe {
+            bindings::pad_with_cycle(
+                self.device_ptr,
+                actual_size as u32,
+                padded_size as u32,
+                cycle_len as u32,
+            );
+        }
+        self.size = padded_size;
+    }
+
+    /// In-place element-wise add: self[i] += other[i] for i in [0, min(self.size, other.size)).
+    pub fn add_from(&mut self, other: &Self) {
+        let n = self.size.min(other.size);
+        if n == 0 {
+            return;
+        }
+        unsafe {
+            bindings::vector_add_u32(self.device_ptr, other.device_ptr, n as u32);
+        }
     }
 }
 

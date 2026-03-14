@@ -301,6 +301,18 @@ uint32_t** copy_device_pointer_vec_from_host_to_device(uint32_t** host_ptr, uint
 extern "C"
 void m31_vector_add_offset(uint32_t *data, unsigned int n, uint32_t offset);
 
+// Pad GPU array by cycling: data[idx] = data[idx % cycle_len] for idx in [actual_size, padded_size).
+extern "C"
+void pad_with_cycle(uint32_t *data, unsigned int actual_size, unsigned int padded_size, unsigned int cycle_len);
+
+// Fill GPU array with zeros: data[idx] = 0 for idx in [start, end).
+extern "C"
+void fill_zero_from(uint32_t *data, unsigned int start, unsigned int end);
+
+// Vector add in-place: dst[i] += src[i] for i in [0, n).
+extern "C"
+void vector_add_u32(uint32_t *dst, const uint32_t *src, unsigned int n);
+
 #define THREAD_COUNT_MAX 1024
 
 HOST_DEVICE_FORCEINLINE constexpr unsigned int fnv1a_eval_id_gen(const char* s) {

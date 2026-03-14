@@ -326,6 +326,15 @@ extern "C" {
     /// M31 modular add offset in-place: data[i] = (data[i] + offset) mod P for all i < n.
     pub fn m31_vector_add_offset(data: *const u32, n: u32, offset: u32);
 
+    /// Pad GPU array by cycling: data[idx] = data[idx % cycle_len] for idx in [actual_size, padded_size).
+    pub fn pad_with_cycle(data: *const u32, actual_size: u32, padded_size: u32, cycle_len: u32);
+
+    /// Fill GPU array with zeros: data[idx] = 0 for idx in [start, end).
+    pub fn fill_zero_from(data: *const u32, start: u32, end: u32);
+
+    /// Vector add in-place: dst[i] += src[i] for i in [0, n).
+    pub fn vector_add_u32(dst: *const u32, src: *const u32, n: u32);
+
     pub fn accumulate_numerators_batch(
         size: u32,
         columns: *const *const u32,

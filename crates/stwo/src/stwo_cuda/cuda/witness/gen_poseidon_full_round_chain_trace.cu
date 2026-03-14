@@ -422,6 +422,173 @@ extern "C" void poseidon_full_round_chain_generate_trace(
     cuda_mem_pool_free(d_round_keys);
 }
 
+// ============================================================================
+// Carry computation kernel for add_to_multiplicities
+// Reads trace columns from GPU, computes carries, writes 30 output arrays.
+// ============================================================================
+
+// Generic carry computation for one linear combination.
+// val[i] = c0*cube0[i] + c1*cube1[i] + c2*cube2[i] + key[i] - combo[i]
+// carry[0] = (val[0] - p_coef) * 16
+// carry[i] = (carry[i-1] + val[i]) * 16   for i in 1..6
+// carry[7] = (carry[6] + val[7] - p_coef * 136) * 16
+// carry[8] = (carry[7] + val[8]) * 16
+__device__ void compute_pfrc_carries(
+    m31* cube0, m31* cube1, m31* cube2, m31* key, m31* combo,
+    int c0, int c1, int c2,
+    m31 p_coef,
+    m31* carries  // output: 9 carries
+) {
+    // Helper lambda-like inline: compute val = c0*cube0[i] + c1*cube1[i] + c2*cube2[i] + key[i] - combo[i]
+    #define PFRC_VAL(i) \
+        sub(add(add(add( \
+            (c0 == 3 ? add(add(mul((m31)3, cube0[(i)]), (m31)0), (m31)0) : \
+             c0 == 1 ? cube0[(i)] : cube0[(i)]), \
+            (c1 == 1 ? cube1[(i)] : (c1 == -1 ? sub((m31)0, cube1[(i)]) : cube1[(i)])), \
+            (c2 == 1 ? cube2[(i)] : (c2 == -2 ? sub((m31)0, add(cube2[(i)], cube2[(i)])) : cube2[(i)]))), \
+            key[(i)]), combo[(i)])
+
+    // Actually, let's be more explicit to avoid macro complexity:
+    // We compute val directly based on coefficients.
+    auto compute_val = [&](int i) -> m31 {
+        m31 result = key[i];
+        if (c0 == 3) result = add(result, add(add(cube0[i], cube0[i]), cube0[i]));
+        else if (c0 == 1) result = add(result, cube0[i]);
+        if (c1 == 1) result = add(result, cube1[i]);
+        else if (c1 == -1) result = sub(result, cube1[i]);
+        if (c2 == 1) result = add(result, cube2[i]);
+        else if (c2 == -2) result = sub(sub(result, cube2[i]), cube2[i]);
+        result = sub(result, combo[i]);
+        return result;
+    };
+
+    #undef PFRC_VAL
+
+    // carry[0] = (val[0] - p_coef) * 16
+    carries[0] = mul(sub(compute_val(0), p_coef), (m31)16);
+
+    // carries 1-6: carry[i] = (carry[i-1] + val[i]) * 16
+    for (int i = 1; i < 7; i++) {
+        carries[i] = mul(add(carries[i-1], compute_val(i)), (m31)16);
+    }
+
+    // carry[7]: special case with p_coef * 136
+    carries[7] = mul(sub(add(carries[6], compute_val(7)), mul(p_coef, (m31)136)), (m31)16);
+
+    // carry[8]: final
+    carries[8] = mul(add(carries[7], compute_val(8)), (m31)16);
+}
+
+__global__ void poseidon_full_round_chain_compute_rc_inputs_kernel(
+    m31** trace_columns,
+    unsigned int n_rows,
+    m31** output_arrays  // 30 output arrays (6 sets × 5 columns)
+) {
+    unsigned int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= n_rows) return;
+
+    // Read trace columns
+    m31 cube0[10], cube1[10], cube2[10];
+    m31 key0[10], key1[10], key2[10];
+    m31 combo0[10], combo1[10], combo2[10];
+
+    for (int i = 0; i < 10; i++) {
+        cube0[i] = trace_columns[32 + i][row];
+        cube1[i] = trace_columns[42 + i][row];
+        cube2[i] = trace_columns[52 + i][row];
+        key0[i] = trace_columns[62 + i][row];
+        key1[i] = trace_columns[72 + i][row];
+        key2[i] = trace_columns[82 + i][row];
+        combo0[i] = trace_columns[92 + i][row];
+        combo1[i] = trace_columns[103 + i][row];
+        combo2[i] = trace_columns[114 + i][row];
+    }
+
+    m31 p_coef_0 = trace_columns[102][row];
+    m31 p_coef_1 = trace_columns[113][row];
+    m31 p_coef_2 = trace_columns[124][row];
+
+    m31 carries[9];
+
+    // ========== Linear Combination 0: Coefs (3, 1, 1) ==========
+    compute_pfrc_carries(cube0, cube1, cube2, key0, combo0, 3, 1, 1, p_coef_0, carries);
+
+    // Output set 0: [p_coef_0+1, carry0+1, carry1+1, carry2+1, carry3+1]
+    output_arrays[0][row] = add(p_coef_0, (m31)1);
+    output_arrays[1][row] = add(carries[0], (m31)1);
+    output_arrays[2][row] = add(carries[1], (m31)1);
+    output_arrays[3][row] = add(carries[2], (m31)1);
+    output_arrays[4][row] = add(carries[3], (m31)1);
+
+    // Output set 1: [carry4+1, carry5+1, carry6+1, carry7+1, carry8+1]
+    output_arrays[5][row] = add(carries[4], (m31)1);
+    output_arrays[6][row] = add(carries[5], (m31)1);
+    output_arrays[7][row] = add(carries[6], (m31)1);
+    output_arrays[8][row] = add(carries[7], (m31)1);
+    output_arrays[9][row] = add(carries[8], (m31)1);
+
+    // ========== Linear Combination 1: Coefs (1, -1, 1) ==========
+    compute_pfrc_carries(cube0, cube1, cube2, key1, combo1, 1, -1, 1, p_coef_1, carries);
+
+    // Output set 2: [p_coef_1+2, carry0+2, carry1+2, carry2+2, carry3+2]
+    output_arrays[10][row] = add(p_coef_1, (m31)2);
+    output_arrays[11][row] = add(carries[0], (m31)2);
+    output_arrays[12][row] = add(carries[1], (m31)2);
+    output_arrays[13][row] = add(carries[2], (m31)2);
+    output_arrays[14][row] = add(carries[3], (m31)2);
+
+    // Output set 3: [carry4+2, carry5+2, carry6+2, carry7+2, carry8+2]
+    output_arrays[15][row] = add(carries[4], (m31)2);
+    output_arrays[16][row] = add(carries[5], (m31)2);
+    output_arrays[17][row] = add(carries[6], (m31)2);
+    output_arrays[18][row] = add(carries[7], (m31)2);
+    output_arrays[19][row] = add(carries[8], (m31)2);
+
+    // ========== Linear Combination 2: Coefs (1, 1, -2) ==========
+    compute_pfrc_carries(cube0, cube1, cube2, key2, combo2, 1, 1, -2, p_coef_2, carries);
+
+    // Output set 4: [p_coef_2+3, carry0+3, carry1+3, carry2+3, carry3+3]
+    output_arrays[20][row] = add(p_coef_2, (m31)3);
+    output_arrays[21][row] = add(carries[0], (m31)3);
+    output_arrays[22][row] = add(carries[1], (m31)3);
+    output_arrays[23][row] = add(carries[2], (m31)3);
+    output_arrays[24][row] = add(carries[3], (m31)3);
+
+    // Output set 5: [carry4+3, carry5+3, carry6+3, carry7+3, carry8+3]
+    output_arrays[25][row] = add(carries[4], (m31)3);
+    output_arrays[26][row] = add(carries[5], (m31)3);
+    output_arrays[27][row] = add(carries[6], (m31)3);
+    output_arrays[28][row] = add(carries[7], (m31)3);
+    output_arrays[29][row] = add(carries[8], (m31)3);
+}
+
+extern "C" void poseidon_full_round_chain_compute_rc_inputs(
+    m31** trace_columns,
+    unsigned int n_rows,
+    m31** output_arrays  // 30 output device pointers
+) {
+    if (n_rows == 0) return;
+
+    // Copy pointer arrays to device
+    m31** d_trace_columns = clone_to_device<m31*>(trace_columns, POSEIDON_FULL_ROUND_CHAIN_N_TRACE_COLUMNS);
+    m31** d_output_arrays = clone_to_device<m31*>(output_arrays, 30);
+
+    unsigned int block_size = 256;
+    unsigned int grid_size = (n_rows + block_size - 1) / block_size;
+
+    poseidon_full_round_chain_compute_rc_inputs_kernel<<<grid_size, block_size>>>(
+        d_trace_columns,
+        n_rows,
+        d_output_arrays
+    );
+
+    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+
+    cuda_free_memory(d_trace_columns);
+    cuda_free_memory(d_output_arrays);
+}
+
 extern "C" void poseidon_full_round_chain_add_to_multiplicities(
     m31** trace_columns,
     unsigned int n_rows,
@@ -431,8 +598,7 @@ extern "C" void poseidon_full_round_chain_add_to_multiplicities(
     m31* rc_3_3_3_3_3_mults,
     unsigned int rc_3_3_3_3_3_log_size
 ) {
-    // TODO: Implement multiplicities update kernel
-    printf("[poseidon_full_round_chain] add_to_multiplicities not yet implemented\n");
+    // Stub kept for backward compatibility. Use poseidon_full_round_chain_compute_rc_inputs instead.
 }
 
 // =============================================================================

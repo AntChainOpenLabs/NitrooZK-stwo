@@ -3316,6 +3316,15 @@ extern "C" {
         rc_3_3_3_3_3_log_size: u32,
     );
 
+    /// Compute RC_3_3_3_3_3 inputs on GPU from trace columns.
+    /// Reads trace columns 32-124, computes carry chains for 3 linear combinations,
+    /// and writes 30 biased carry arrays (6 sets × 5 columns).
+    pub fn poseidon_full_round_chain_compute_rc_inputs(
+        trace_columns: *const *const u32,
+        n_rows: u32,
+        output_arrays: *const *const u32,  // 30 output device pointers
+    );
+
     pub fn poseidon_full_round_chain_generate_interaction_trace(
         trace_columns: *const *const u32,               // Base trace (126 columns)
         trace_size: u32,
