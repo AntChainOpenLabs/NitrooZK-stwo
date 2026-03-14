@@ -50,6 +50,20 @@ impl BaseFieldVec {
         Self::new(device_ptr, size)
     }
 
+    /// Create from Uint32Vec via device-to-device copy.
+    /// Safe because M31 and u32 have identical memory representation for valid values.
+    pub fn from_uint32_vec_device(src: &Uint32Vec) -> Self {
+        let dst = Self::new_uninitialized(src.size);
+        unsafe {
+            bindings::copy_uint32_t_vec_from_device_to_device(
+                src.device_ptr,
+                dst.device_ptr,
+                src.size as u32,
+            );
+        }
+        dst
+    }
+
     pub fn get_data(&self, index: usize) -> BaseField {
         let value = unsafe {
             bindings::cuda_get_uint32_t(self.device_ptr as *const c_void, index)

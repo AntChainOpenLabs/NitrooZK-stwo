@@ -110,6 +110,14 @@ extern "C" {
 
     pub fn cuda_increase_at(device_ptr: *const c_void, addr: u32);
 
+    pub fn histogram_by_binary_search(
+        input_values: *const u32,
+        n_inputs: u32,
+        sorted_keys: *const u32,
+        n_keys: u32,
+        mults: *const u32,
+    );
+
     pub fn cuda_get_secure_field(device_ptr: *const c_void, index: usize) -> CudaSecureField;
 
     pub fn cuda_malloc_blake_2s_hash(size: usize) -> *const Blake2sHash;

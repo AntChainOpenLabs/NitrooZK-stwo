@@ -71,15 +71,14 @@ void cuda_set_uint32_t(uint32_t *device_ptr, size_t index, uint32_t value) {
     cuda_mem_copy_host_to_device<uint32_t>(&value, device_ptr + index, 1);
 }
 
+// Single-element atomicAdd kernel — replaces GPU→CPU→GPU roundtrip.
+__global__ void increase_at_kernel(uint32_t *ptr, uint32_t address) {
+    atomicAdd(ptr + address, 1);
+}
+
 void cuda_increase_at(uint32_t *device_ptr, uint32_t address) {
-    uint32_t value;
-    cudaMemcpy(&value, device_ptr + address, sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    value += 1;
-    cudaMemcpy(device_ptr + address, &value, sizeof(uint32_t), cudaMemcpyHostToDevice);
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "CUDA error: %s\n", cudaGetErrorString(err));
-    }
+    increase_at_kernel<<<1, 1>>>(device_ptr, address);
+    // No sync needed — sequential kernel launches are ordered on default stream.
 }
 
 uint32_t cuda_get_uint32_t(uint32_t *device_ptr, size_t index) {
@@ -485,6 +484,51 @@ extern "C" void vector_add_u32(uint32_t *dst, const uint32_t *src, unsigned int 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         printf("vector_add_u32 error: %s\n", cudaGetErrorString(err));
+    }
+}
+
+// GPU histogram via binary search: for each input value, find its index in a
+// sorted key array and atomicAdd the corresponding multiplicity counter.
+__global__ void histogram_by_binary_search_kernel(
+    const uint32_t* input_values,
+    uint32_t n_inputs,
+    const uint32_t* sorted_keys,
+    uint32_t n_keys,
+    uint32_t* mults
+) {
+    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= n_inputs) return;
+    uint32_t val = input_values[idx];
+    // Binary search in sorted_keys
+    int lo = 0, hi = (int)n_keys - 1;
+    while (lo <= hi) {
+        int mid = (lo + hi) >> 1;
+        uint32_t key = sorted_keys[mid];
+        if (key == val) {
+            atomicAdd(mults + mid, 1);
+            return;
+        }
+        if (key < val) lo = mid + 1; else hi = mid - 1;
+    }
+    // Value not found in keys — no-op (matches CPU behavior of skipping unknown PCs)
+}
+
+extern "C" void histogram_by_binary_search(
+    const uint32_t* input_values,
+    uint32_t n_inputs,
+    const uint32_t* sorted_keys,
+    uint32_t n_keys,
+    uint32_t* mults
+) {
+    if (n_inputs == 0 || n_keys == 0) return;
+    const int block_size = 256;
+    const int num_blocks = (n_inputs + block_size - 1) / block_size;
+    histogram_by_binary_search_kernel<<<num_blocks, block_size>>>(
+        input_values, n_inputs, sorted_keys, n_keys, mults
+    );
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("histogram_by_binary_search error: %s\n", cudaGetErrorString(err));
     }
 }
 

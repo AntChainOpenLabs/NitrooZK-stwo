@@ -189,6 +189,16 @@ uint32_t cuda_get_uint32_t(uint32_t *device_ptr, size_t index);
 extern "C"
 void cuda_increase_at(uint32_t *device_ptr, uint32_t address);
 
+// GPU histogram via binary search + atomicAdd.
+extern "C"
+void histogram_by_binary_search(
+    const uint32_t* input_values,
+    uint32_t n_inputs,
+    const uint32_t* sorted_keys,
+    uint32_t n_keys,
+    uint32_t* mults
+);
+
 extern "C"
 qm31 cuda_get_secure_field(uint32_t *device_ptr, size_t index);
 
