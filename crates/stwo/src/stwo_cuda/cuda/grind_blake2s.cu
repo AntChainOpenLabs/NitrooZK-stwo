@@ -120,13 +120,13 @@ __global__ void grind_blake2s_kernel(
 uint64_t grind_blake2s(const uint32_t* host_prefixed_digest, uint32_t pow_bits) {
     // Allocate device memory for prefixed_digest (8 x u32)
     uint32_t* d_prefixed_digest;
-    ASSERT_CUDA_SUCCESS(cudaMalloc(&d_prefixed_digest, 8 * sizeof(uint32_t)));
+    d_prefixed_digest = cuda_mem_pool_allocate<uint32_t>(8);
     ASSERT_CUDA_SUCCESS(cudaMemcpy(d_prefixed_digest, host_prefixed_digest,
                                    8 * sizeof(uint32_t), cudaMemcpyHostToDevice));
 
     // Allocate device memory for the smallest successful low-part in the current chunk.
     unsigned long long* d_result_low;
-    ASSERT_CUDA_SUCCESS(cudaMalloc(&d_result_low, sizeof(unsigned long long)));
+    d_result_low = cuda_mem_pool_allocate<unsigned long long>(1);
 
     // Kernel launch parameters
     const int block_size = 256;
@@ -156,8 +156,8 @@ uint64_t grind_blake2s(const uint32_t* host_prefixed_digest, uint32_t pow_bits) 
         }
     }
 
-    ASSERT_CUDA_SUCCESS(cudaFree(d_prefixed_digest));
-    ASSERT_CUDA_SUCCESS(cudaFree(d_result_low));
+    cuda_mem_pool_free(d_prefixed_digest);
+    cuda_mem_pool_free(d_result_low);
 
     if (host_result == UINT64_MAX) {
         fprintf(stderr, "CUDA grind failed to find a valid nonce\n");
