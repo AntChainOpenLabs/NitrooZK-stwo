@@ -2644,7 +2644,7 @@ extern "C" void partial_ec_mul_generate_interaction_trace(
 
     // Initialize claimed_sum to zero
     m31* d_coord_sums = cuda_malloc<m31>(4);
-    cudaMemset(d_coord_sums, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(d_coord_sums, 0, 4 * sizeof(m31), 0);
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
     partial_ec_mul_interaction_cumsum_shift_kernel<<<num_blocks, block_dim, shared_size>>>(
@@ -4195,7 +4195,7 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     // ========================================================================
 
     // Zero out claimed_sum before cumsum computation
-    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(claimed_sum, 0, 4 * sizeof(m31), 0);
 
     // Compute cumsum shift
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;

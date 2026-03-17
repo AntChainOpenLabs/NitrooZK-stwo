@@ -465,7 +465,7 @@ extern "C" void initialize_pedersen_table_small() {
     // Allocate GPU memory for each column
     for (int i = 0; i < INIT_PED_SMALL_TABLE_N_COLUMNS; i++) {
         s_pedersen_table_small_ptrs[i] = cuda_malloc<m31>(n_rows);
-        cudaMemset(s_pedersen_table_small_ptrs[i], 0, n_rows * sizeof(m31));
+        cudaMemsetAsync(s_pedersen_table_small_ptrs[i], 0, n_rows * sizeof(m31), 0);
     }
 
     // Clone pointers to device

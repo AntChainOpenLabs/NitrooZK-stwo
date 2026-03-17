@@ -1430,7 +1430,7 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     // Finalize: cumsum shift + prefix sum
     // ========================================================================
 
-    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(claimed_sum, 0, 4 * sizeof(m31), 0);
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
     wb9_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(

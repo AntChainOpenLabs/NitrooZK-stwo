@@ -2469,7 +2469,7 @@ extern "C" void generate_cube_252_interaction_trace(
     // Phase 4: Compute cumulative sum (for claimed_sum)
     m31* d_coordinate_sums;
     d_coordinate_sums = cuda_mem_pool_allocate<m31>(4);
-    cudaMemset(d_coordinate_sums, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(d_coordinate_sums, 0, 4 * sizeof(m31), 0);
 
     int cumsum_block_size = 256;
     int cumsum_grid_size = (trace_size + cumsum_block_size - 1) / cumsum_block_size;

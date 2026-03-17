@@ -559,7 +559,7 @@ void range_check_multi_relation_interaction_trace(
     }
 
     // Finalize: cumsum_shift + prefix sum on last 4 columns
-    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(claimed_sum, 0, 4 * sizeof(m31), 0);
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
     generate_range_check_interaction_trace_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(

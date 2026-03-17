@@ -17,7 +17,7 @@ void copy_uint32_t_vec_from_device_to_host(uint32_t *device_ptr, uint32_t *host_
 
 uint32_t* copy_uint32_t_vec_from_host_to_device(uint32_t *host_ptr, int size) {
     uint32_t* device_ptr = cuda_malloc<uint32_t>(size);
-    cudaMemset(device_ptr, 0x00, sizeof(uint32_t) * size);
+    cudaMemsetAsync(device_ptr, 0x00, sizeof(uint32_t) * size, 0);
     cuda_mem_copy_host_to_device(host_ptr, device_ptr, size);
     return device_ptr;
 }
@@ -34,12 +34,12 @@ uint32_t* cuda_malloc_uint32_t(int size) {
 #if USE_CUDA_MEM_POOL
     uint32_t* device_ptr = cuda_mem_pool_allocate<uint32_t>(size);
     if (device_ptr != nullptr) {
-        cudaMemset(device_ptr, 0x00, sizeof(uint32_t) * size);
+        cudaMemsetAsync(device_ptr, 0x00, sizeof(uint32_t) * size, 0);
     }
     return device_ptr;
 #else
     uint32_t* device_ptr = cuda_malloc<uint32_t>(size);
-    cudaMemset(device_ptr, 0x00, sizeof(uint32_t) * size);
+    cudaMemsetAsync(device_ptr, 0x00, sizeof(uint32_t) * size, 0);
     return device_ptr;
 #endif
 }
@@ -62,7 +62,7 @@ uint32_t* cuda_alloc_zeroes_uint32_t(int size) {
     return cuda_mem_pool_allocate_zeroes<uint32_t>(size);
 #else
     uint32_t* device_ptr = cuda_malloc_uint32_t(size);
-    cudaMemset(device_ptr, 0x00, sizeof(uint32_t) * size);
+    cudaMemsetAsync(device_ptr, 0x00, sizeof(uint32_t) * size, 0);
     return device_ptr;
 #endif
 }
@@ -95,7 +95,7 @@ qm31 cuda_get_secure_field(qm31 *device_ptr, size_t index) {
 
 Blake2sHash* cuda_alloc_zeroes_blake_2s_hash(int size) {
     Blake2sHash* device_ptr = cuda_malloc_blake_2s_hash(size);
-    cudaMemset(device_ptr, 0x00, sizeof(uint32_t) * size);
+    cudaMemsetAsync(device_ptr, 0x00, sizeof(uint32_t) * size, 0);
     return device_ptr;
 }
 

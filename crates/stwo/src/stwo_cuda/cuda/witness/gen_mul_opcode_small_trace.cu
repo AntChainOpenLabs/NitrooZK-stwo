@@ -1065,7 +1065,7 @@ void generate_mul_opcode_small_interaction_traces(
 
     // Compute claimed_sum
     m31 *device_coordinate_sums = cuda_malloc<m31>(4);
-    cudaMemset(device_coordinate_sums, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(device_coordinate_sums, 0, 4 * sizeof(m31), 0);
 
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
     num_blocks = block_dim < THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;

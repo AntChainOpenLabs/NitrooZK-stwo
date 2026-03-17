@@ -2521,7 +2521,7 @@ extern "C" void gen_poseidon_builtin_trace(
     // Zero-initialize all trace columns to prevent garbage values
     // This fixes the bug where some rows (e.g., 111, 226) have uninitialized data
     for (int i = 0; i < N_TRACE_COLUMNS; i++) {
-        cudaMemset(traces[i], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(traces[i], 0, trace_size * sizeof(m31), 0);
     }
 
     m31** device_lookup_addr2id_0 = clone_to_device<m31*>(lookup_memory_address_to_id_0, 2);
@@ -2533,12 +2533,12 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize lookup_memory_address_to_id arrays
     for (int j = 0; j < 2; j++) {
-        cudaMemset(lookup_memory_address_to_id_0[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_address_to_id_1[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_address_to_id_2[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_address_to_id_3[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_address_to_id_4[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_address_to_id_5[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_memory_address_to_id_0[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_address_to_id_1[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_address_to_id_2[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_address_to_id_3[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_address_to_id_4[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_address_to_id_5[j], 0, trace_size * sizeof(m31), 0);
     }
 
     m31** device_lookup_id2big_0 = clone_to_device<m31*>(lookup_memory_id_to_big_0, 29);
@@ -2550,12 +2550,12 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize lookup_memory_id_to_big arrays
     for (int j = 0; j < 29; j++) {
-        cudaMemset(lookup_memory_id_to_big_0[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_id_to_big_1[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_id_to_big_2[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_id_to_big_3[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_id_to_big_4[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_memory_id_to_big_5[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_memory_id_to_big_0[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_id_to_big_1[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_id_to_big_2[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_id_to_big_3[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_id_to_big_4[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_memory_id_to_big_5[j], 0, trace_size * sizeof(m31), 0);
     }
 
     // Clone range_check_3_3_3_3_3 lookup data to device (2 lookups, 5 elements each)
@@ -2564,8 +2564,8 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize range_check_3_3_3_3_3 arrays
     for (int j = 0; j < 5; j++) {
-        cudaMemset(lookup_range_check_3_3_3_3_3_0[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_3_3_3_3_3_1[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_range_check_3_3_3_3_3_0[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_3_3_3_3_3_1[j], 0, trace_size * sizeof(m31), 0);
     }
 
     // Clone range_check_4_4_4_4 lookup data to device (6 lookups, 4 elements each)
@@ -2578,12 +2578,12 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize range_check_4_4_4_4 arrays
     for (int j = 0; j < 4; j++) {
-        cudaMemset(lookup_range_check_4_4_4_4_0[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_4_4_4_4_1[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_4_4_4_4_2[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_4_4_4_4_3[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_4_4_4_4_4[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_4_4_4_4_5[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_range_check_4_4_4_4_0[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_4_4_4_4_1[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_4_4_4_4_2[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_4_4_4_4_3[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_4_4_4_4_4[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_4_4_4_4_5[j], 0, trace_size * sizeof(m31), 0);
     }
 
     // Clone range_check_4_4 lookup data to device (3 lookups, 2 elements each)
@@ -2593,9 +2593,9 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize range_check_4_4 arrays
     for (int j = 0; j < 2; j++) {
-        cudaMemset(lookup_range_check_4_4_0[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_4_4_1[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_range_check_4_4_2[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_range_check_4_4_0[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_4_4_1[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_range_check_4_4_2[j], 0, trace_size * sizeof(m31), 0);
     }
 
     // Clone poseidon_full_round_chain lookup data to device (8 lookups, 32 elements each)
@@ -2610,14 +2610,14 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize poseidon_full_round_chain arrays
     for (int j = 0; j < 32; j++) {
-        cudaMemset(lookup_poseidon_full_round_chain_0[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_full_round_chain_1[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_full_round_chain_2[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_full_round_chain_3[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_full_round_chain_4[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_full_round_chain_5[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_full_round_chain_6[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_full_round_chain_7[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_0[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_1[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_2[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_3[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_4[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_5[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_6[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_full_round_chain_7[j], 0, trace_size * sizeof(m31), 0);
     }
 
     // Clone poseidon_3_partial_rounds_chain lookup data to device (27 lookups, 42 elements each)
@@ -2651,33 +2651,33 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize poseidon_3_partial_rounds_chain arrays
     for (int j = 0; j < 42; j++) {
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_0[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_1[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_2[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_3[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_4[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_5[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_6[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_7[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_8[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_9[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_10[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_11[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_12[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_13[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_14[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_15[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_16[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_17[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_18[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_19[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_20[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_21[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_22[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_23[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_24[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_25[j], 0, trace_size * sizeof(m31));
-        cudaMemset(lookup_poseidon_3_partial_rounds_chain_26[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_0[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_1[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_2[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_3[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_4[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_5[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_6[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_7[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_8[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_9[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_10[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_11[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_12[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_13[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_14[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_15[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_16[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_17[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_18[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_19[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_20[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_21[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_22[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_23[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_24[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_25[j], 0, trace_size * sizeof(m31), 0);
+        cudaMemsetAsync(lookup_poseidon_3_partial_rounds_chain_26[j], 0, trace_size * sizeof(m31), 0);
     }
 
     // Clone base_trace_cols lookup data to device (164 columns: 120-283)
@@ -2685,7 +2685,7 @@ extern "C" void gen_poseidon_builtin_trace(
 
     // Zero-initialize base_trace_cols arrays
     for (int j = 0; j < 164; j++) {
-        cudaMemset(lookup_base_trace_cols[j], 0, trace_size * sizeof(m31));
+        cudaMemsetAsync(lookup_base_trace_cols[j], 0, trace_size * sizeof(m31), 0);
     }
 
 
@@ -3175,7 +3175,7 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
     // Step 1: Compute claimed_sum by summing all elements in the last column
     // Allocate and zero out coordinate_sums buffer
     m31* d_coordinate_sums = cuda_malloc<m31>(4);
-    cudaMemset(d_coordinate_sums, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(d_coordinate_sums, 0, 4 * sizeof(m31), 0);
 
     // Launch cumsum_shift kernel to sum all values
     // Use smaller number of blocks for reduction, with shared memory

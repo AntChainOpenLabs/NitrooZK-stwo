@@ -146,7 +146,7 @@ extern "C" Poseidon252Hash* cuda_malloc_poseidon252_hash(size_t size) {
 
 extern "C" Poseidon252Hash* cuda_alloc_zeroes_poseidon252_hash(size_t size) {
     Poseidon252Hash* ptr = cuda_malloc<Poseidon252Hash>(static_cast<unsigned int>(size));
-    cudaMemset(ptr, 0, size * sizeof(Poseidon252Hash));
+    cudaMemsetAsync(ptr, 0, size * sizeof(Poseidon252Hash), 0);
     return ptr;
 }
 

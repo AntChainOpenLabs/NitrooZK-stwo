@@ -1842,7 +1842,7 @@ extern "C" void gen_poseidon_aggregator_interaction_trace(
         numer0, numer1, numer2, numer3, device_it);
 
     // 6. Finalization
-    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(claimed_sum, 0, 4 * sizeof(m31), 0);
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
     posagg_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(

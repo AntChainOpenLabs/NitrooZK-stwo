@@ -455,7 +455,7 @@ extern "C" void gen_poseidon_builtin_split_interaction_trace(
     POS_BLT_IT_PROCESS_SINGLE(3, 7, d_agg_0);
 
     // Finalize: cumsum_shift + prefix sum on last 4 columns
-    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(claimed_sum, 0, 4 * sizeof(m31), 0);
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
     pos_blt_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(

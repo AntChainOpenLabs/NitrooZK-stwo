@@ -1009,7 +1009,7 @@ void generate_bitwise_builtin_interaction_traces(
 
     // Allocate coordinate sums buffer
     m31 *device_coordinate_sums = cuda_malloc<m31>(4);
-    ASSERT_CUDA_SUCCESS(cudaMemset(device_coordinate_sums, 0, 4 * sizeof(m31)));
+    ASSERT_CUDA_SUCCESS(cudaMemsetAsync(device_coordinate_sums, 0, 4 * sizeof(m31), 0));
 
     // Copy lookup element structs to device memory
     MemoryAddressToId *device_mem_addr_to_id = cuda_malloc<MemoryAddressToId>(1);

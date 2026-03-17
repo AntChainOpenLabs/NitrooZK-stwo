@@ -364,7 +364,7 @@ extern "C" void gen_pedersen_builtin_narrow_interaction_trace(
     PED_NRW_IT_PROCESS_ADD(1, 3, 4, d_mem_2, d_agg_0);
 
     // Finalize: cumsum_shift + prefix sum on last 4 columns
-    cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
+    cudaMemsetAsync(claimed_sum, 0, 4 * sizeof(m31), 0);
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
     ped_nrw_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
