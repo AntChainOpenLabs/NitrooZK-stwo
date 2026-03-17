@@ -699,12 +699,12 @@ extern "C" void partial_ec_mul_generate_trace(
     // Copy input pointers to device
     m31** d_inputs;
     d_inputs = cuda_mem_pool_allocate<m31*>(PARTIAL_EC_MUL_N_INPUT_COLUMNS);
-    cudaMemcpy(d_inputs, input_columns, PARTIAL_EC_MUL_N_INPUT_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_inputs, input_columns, PARTIAL_EC_MUL_N_INPUT_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Copy trace column pointers to device
     m31** d_trace_columns;
     d_trace_columns = cuda_mem_pool_allocate<m31*>(PARTIAL_EC_MUL_N_TRACE_COLUMNS);
-    cudaMemcpy(d_trace_columns, trace_columns, PARTIAL_EC_MUL_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_trace_columns, trace_columns, PARTIAL_EC_MUL_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Launch kernel for full trace_size (including padding rows)
     int block_size = PARTIAL_EC_MUL_BLOCK_SIZE;
@@ -1559,7 +1559,7 @@ extern "C" void partial_ec_mul_add_to_multiplicities(
     // Copy trace column pointers to device
     m31** d_trace_columns;
     d_trace_columns = cuda_mem_pool_allocate<m31*>(PARTIAL_EC_MUL_N_TRACE_COLUMNS);
-    cudaMemcpy(d_trace_columns, trace_columns, PARTIAL_EC_MUL_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_trace_columns, trace_columns, PARTIAL_EC_MUL_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Launch kernel - process trace_size rows (including padding rows)
     int block_size = PARTIAL_EC_MUL_BLOCK_SIZE;
@@ -2111,10 +2111,10 @@ extern "C" void partial_ec_mul_generate_interaction_trace(
 
     // Copy trace_columns and interaction_trace_columns pointers to device
     m31** d_trace_columns = cuda_malloc<m31*>(PARTIAL_EC_MUL_N_TRACE_COLUMNS);
-    cudaMemcpy(d_trace_columns, trace_columns, PARTIAL_EC_MUL_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_trace_columns, trace_columns, PARTIAL_EC_MUL_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     m31** d_interaction_traces = cuda_malloc<m31*>(4 * PARTIAL_EC_MUL_N_INTERACTION_COLUMNS);
-    cudaMemcpy(d_interaction_traces, interaction_trace_columns, 4 * PARTIAL_EC_MUL_N_INTERACTION_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_interaction_traces, interaction_trace_columns, 4 * PARTIAL_EC_MUL_N_INTERACTION_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     int block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
     int num_blocks = (trace_size + block_dim - 1) / block_dim;
@@ -2662,7 +2662,7 @@ extern "C" void partial_ec_mul_generate_interaction_trace(
     inclusive_prefix_sum((m31*)interaction_trace_columns[4 * PARTIAL_EC_MUL_N_INTERACTION_COLUMNS - 1], trace_size);
 
     // Copy claimed_sum to output
-    cudaMemcpy(claimed_sum, d_coord_sums, 4 * sizeof(m31), cudaMemcpyDeviceToDevice);
+    cudaMemcpyAsync(claimed_sum, d_coord_sums, 4 * sizeof(m31), cudaMemcpyDeviceToDevice, 0);
 
     global_timer.end("generate partial_ec_mul interaction trace");
 
@@ -4226,7 +4226,7 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
 
     // Print claimed_sum for verification
     m31 cs[4];
-    cudaMemcpy(cs, claimed_sum, 4 * sizeof(m31), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(cs, claimed_sum, 4 * sizeof(m31), cudaMemcpyDeviceToHost, 0);
     printf("[partial_ec_mul] CUDA interaction trace claimed_sum: (%u + %ui) + (%u + %ui)u\n",
            cs[0], cs[1], cs[2], cs[3]);
 

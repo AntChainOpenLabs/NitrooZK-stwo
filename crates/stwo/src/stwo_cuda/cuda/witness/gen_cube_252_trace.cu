@@ -1189,140 +1189,140 @@ extern "C" void generate_cube_252_trace(
     // Copy input pointers to device
     m31** d_inputs;
     d_inputs = cuda_mem_pool_allocate<m31*>(10);
-    cudaMemcpy(d_inputs, inputs, 10 * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_inputs, inputs, 10 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Copy trace column pointers to device
     m31** d_trace_columns;
     d_trace_columns = cuda_mem_pool_allocate<m31*>(CUBE_252_N_TRACE_COLUMNS);
-    cudaMemcpy(d_trace_columns, trace_columns, CUBE_252_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_trace_columns, trace_columns, CUBE_252_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Copy lookup data pointers to device
     // cube_252_0 has 20 elements
     m31** d_cube_252_0;
     d_cube_252_0 = cuda_mem_pool_allocate<m31*>(20);
-    cudaMemcpy(d_cube_252_0, lookup_cube_252_0, 20 * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_cube_252_0, lookup_cube_252_0, 20 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // rc_9_9 variants (2 elements each)
-    m31** d_rc_9_9_0; d_rc_9_9_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_0, lookup_rc_9_9_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_1; d_rc_9_9_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_1, lookup_rc_9_9_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_2; d_rc_9_9_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_2, lookup_rc_9_9_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_3; d_rc_9_9_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_3, lookup_rc_9_9_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_4; d_rc_9_9_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_4, lookup_rc_9_9_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_5; d_rc_9_9_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_5, lookup_rc_9_9_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_b_0; d_rc_9_9_b_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_b_0, lookup_rc_9_9_b_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_b_1; d_rc_9_9_b_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_b_1, lookup_rc_9_9_b_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_b_2; d_rc_9_9_b_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_b_2, lookup_rc_9_9_b_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_b_3; d_rc_9_9_b_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_b_3, lookup_rc_9_9_b_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_b_4; d_rc_9_9_b_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_b_4, lookup_rc_9_9_b_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_b_5; d_rc_9_9_b_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_b_5, lookup_rc_9_9_b_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_c_0; d_rc_9_9_c_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_c_0, lookup_rc_9_9_c_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_c_1; d_rc_9_9_c_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_c_1, lookup_rc_9_9_c_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_c_2; d_rc_9_9_c_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_c_2, lookup_rc_9_9_c_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_c_3; d_rc_9_9_c_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_c_3, lookup_rc_9_9_c_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_c_4; d_rc_9_9_c_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_c_4, lookup_rc_9_9_c_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_c_5; d_rc_9_9_c_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_c_5, lookup_rc_9_9_c_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_d_0; d_rc_9_9_d_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_d_0, lookup_rc_9_9_d_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_d_1; d_rc_9_9_d_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_d_1, lookup_rc_9_9_d_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_d_2; d_rc_9_9_d_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_d_2, lookup_rc_9_9_d_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_d_3; d_rc_9_9_d_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_d_3, lookup_rc_9_9_d_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_d_4; d_rc_9_9_d_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_d_4, lookup_rc_9_9_d_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_d_5; d_rc_9_9_d_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_d_5, lookup_rc_9_9_d_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_e_0; d_rc_9_9_e_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_e_0, lookup_rc_9_9_e_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_e_1; d_rc_9_9_e_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_e_1, lookup_rc_9_9_e_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_e_2; d_rc_9_9_e_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_e_2, lookup_rc_9_9_e_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_e_3; d_rc_9_9_e_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_e_3, lookup_rc_9_9_e_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_e_4; d_rc_9_9_e_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_e_4, lookup_rc_9_9_e_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_e_5; d_rc_9_9_e_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_e_5, lookup_rc_9_9_e_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_f_0; d_rc_9_9_f_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_f_0, lookup_rc_9_9_f_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_f_1; d_rc_9_9_f_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_f_1, lookup_rc_9_9_f_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_f_2; d_rc_9_9_f_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_f_2, lookup_rc_9_9_f_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_f_3; d_rc_9_9_f_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_f_3, lookup_rc_9_9_f_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_f_4; d_rc_9_9_f_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_f_4, lookup_rc_9_9_f_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_f_5; d_rc_9_9_f_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_f_5, lookup_rc_9_9_f_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_g_0; d_rc_9_9_g_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_g_0, lookup_rc_9_9_g_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_g_1; d_rc_9_9_g_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_g_1, lookup_rc_9_9_g_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_g_2; d_rc_9_9_g_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_g_2, lookup_rc_9_9_g_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_h_0; d_rc_9_9_h_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_h_0, lookup_rc_9_9_h_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_h_1; d_rc_9_9_h_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_h_1, lookup_rc_9_9_h_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_9_9_h_2; d_rc_9_9_h_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpy(d_rc_9_9_h_2, lookup_rc_9_9_h_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice);
+    m31** d_rc_9_9_0; d_rc_9_9_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_0, lookup_rc_9_9_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_1; d_rc_9_9_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_1, lookup_rc_9_9_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_2; d_rc_9_9_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_2, lookup_rc_9_9_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_3; d_rc_9_9_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_3, lookup_rc_9_9_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_4; d_rc_9_9_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_4, lookup_rc_9_9_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_5; d_rc_9_9_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_5, lookup_rc_9_9_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_b_0; d_rc_9_9_b_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_b_0, lookup_rc_9_9_b_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_b_1; d_rc_9_9_b_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_b_1, lookup_rc_9_9_b_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_b_2; d_rc_9_9_b_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_b_2, lookup_rc_9_9_b_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_b_3; d_rc_9_9_b_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_b_3, lookup_rc_9_9_b_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_b_4; d_rc_9_9_b_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_b_4, lookup_rc_9_9_b_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_b_5; d_rc_9_9_b_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_b_5, lookup_rc_9_9_b_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_c_0; d_rc_9_9_c_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_c_0, lookup_rc_9_9_c_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_c_1; d_rc_9_9_c_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_c_1, lookup_rc_9_9_c_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_c_2; d_rc_9_9_c_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_c_2, lookup_rc_9_9_c_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_c_3; d_rc_9_9_c_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_c_3, lookup_rc_9_9_c_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_c_4; d_rc_9_9_c_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_c_4, lookup_rc_9_9_c_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_c_5; d_rc_9_9_c_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_c_5, lookup_rc_9_9_c_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_d_0; d_rc_9_9_d_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_d_0, lookup_rc_9_9_d_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_d_1; d_rc_9_9_d_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_d_1, lookup_rc_9_9_d_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_d_2; d_rc_9_9_d_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_d_2, lookup_rc_9_9_d_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_d_3; d_rc_9_9_d_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_d_3, lookup_rc_9_9_d_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_d_4; d_rc_9_9_d_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_d_4, lookup_rc_9_9_d_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_d_5; d_rc_9_9_d_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_d_5, lookup_rc_9_9_d_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_e_0; d_rc_9_9_e_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_e_0, lookup_rc_9_9_e_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_e_1; d_rc_9_9_e_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_e_1, lookup_rc_9_9_e_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_e_2; d_rc_9_9_e_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_e_2, lookup_rc_9_9_e_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_e_3; d_rc_9_9_e_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_e_3, lookup_rc_9_9_e_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_e_4; d_rc_9_9_e_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_e_4, lookup_rc_9_9_e_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_e_5; d_rc_9_9_e_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_e_5, lookup_rc_9_9_e_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_f_0; d_rc_9_9_f_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_f_0, lookup_rc_9_9_f_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_f_1; d_rc_9_9_f_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_f_1, lookup_rc_9_9_f_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_f_2; d_rc_9_9_f_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_f_2, lookup_rc_9_9_f_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_f_3; d_rc_9_9_f_3 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_f_3, lookup_rc_9_9_f_3, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_f_4; d_rc_9_9_f_4 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_f_4, lookup_rc_9_9_f_4, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_f_5; d_rc_9_9_f_5 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_f_5, lookup_rc_9_9_f_5, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_g_0; d_rc_9_9_g_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_g_0, lookup_rc_9_9_g_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_g_1; d_rc_9_9_g_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_g_1, lookup_rc_9_9_g_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_g_2; d_rc_9_9_g_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_g_2, lookup_rc_9_9_g_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_h_0; d_rc_9_9_h_0 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_h_0, lookup_rc_9_9_h_0, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_h_1; d_rc_9_9_h_1 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_h_1, lookup_rc_9_9_h_1, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_9_9_h_2; d_rc_9_9_h_2 = cuda_mem_pool_allocate<m31*>(2); cudaMemcpyAsync(d_rc_9_9_h_2, lookup_rc_9_9_h_2, 2 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // rc_19 variants (1 element each)
-    m31** d_rc_19_0; d_rc_19_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_0, lookup_rc_19_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_1; d_rc_19_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_1, lookup_rc_19_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_2; d_rc_19_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_2, lookup_rc_19_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_3; d_rc_19_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_3, lookup_rc_19_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_4; d_rc_19_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_4, lookup_rc_19_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_5; d_rc_19_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_5, lookup_rc_19_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_6; d_rc_19_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_6, lookup_rc_19_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_7; d_rc_19_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_7, lookup_rc_19_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_0; d_rc_19_b_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_0, lookup_rc_19_b_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_1; d_rc_19_b_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_1, lookup_rc_19_b_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_2; d_rc_19_b_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_2, lookup_rc_19_b_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_3; d_rc_19_b_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_3, lookup_rc_19_b_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_4; d_rc_19_b_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_4, lookup_rc_19_b_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_5; d_rc_19_b_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_5, lookup_rc_19_b_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_6; d_rc_19_b_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_6, lookup_rc_19_b_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_b_7; d_rc_19_b_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_b_7, lookup_rc_19_b_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_0; d_rc_19_c_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_0, lookup_rc_19_c_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_1; d_rc_19_c_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_1, lookup_rc_19_c_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_2; d_rc_19_c_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_2, lookup_rc_19_c_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_3; d_rc_19_c_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_3, lookup_rc_19_c_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_4; d_rc_19_c_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_4, lookup_rc_19_c_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_5; d_rc_19_c_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_5, lookup_rc_19_c_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_6; d_rc_19_c_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_6, lookup_rc_19_c_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_c_7; d_rc_19_c_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_c_7, lookup_rc_19_c_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_d_0; d_rc_19_d_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_d_0, lookup_rc_19_d_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_d_1; d_rc_19_d_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_d_1, lookup_rc_19_d_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_d_2; d_rc_19_d_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_d_2, lookup_rc_19_d_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_d_3; d_rc_19_d_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_d_3, lookup_rc_19_d_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_d_4; d_rc_19_d_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_d_4, lookup_rc_19_d_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_d_5; d_rc_19_d_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_d_5, lookup_rc_19_d_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_e_0; d_rc_19_e_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_e_0, lookup_rc_19_e_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_e_1; d_rc_19_e_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_e_1, lookup_rc_19_e_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_e_2; d_rc_19_e_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_e_2, lookup_rc_19_e_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_e_3; d_rc_19_e_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_e_3, lookup_rc_19_e_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_e_4; d_rc_19_e_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_e_4, lookup_rc_19_e_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_e_5; d_rc_19_e_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_e_5, lookup_rc_19_e_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_f_0; d_rc_19_f_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_f_0, lookup_rc_19_f_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_f_1; d_rc_19_f_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_f_1, lookup_rc_19_f_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_f_2; d_rc_19_f_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_f_2, lookup_rc_19_f_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_f_3; d_rc_19_f_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_f_3, lookup_rc_19_f_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_f_4; d_rc_19_f_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_f_4, lookup_rc_19_f_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_f_5; d_rc_19_f_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_f_5, lookup_rc_19_f_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_g_0; d_rc_19_g_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_g_0, lookup_rc_19_g_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_g_1; d_rc_19_g_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_g_1, lookup_rc_19_g_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_g_2; d_rc_19_g_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_g_2, lookup_rc_19_g_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_g_3; d_rc_19_g_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_g_3, lookup_rc_19_g_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_g_4; d_rc_19_g_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_g_4, lookup_rc_19_g_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_g_5; d_rc_19_g_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_g_5, lookup_rc_19_g_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_0; d_rc_19_h_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_0, lookup_rc_19_h_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_1; d_rc_19_h_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_1, lookup_rc_19_h_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_2; d_rc_19_h_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_2, lookup_rc_19_h_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_3; d_rc_19_h_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_3, lookup_rc_19_h_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_4; d_rc_19_h_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_4, lookup_rc_19_h_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_5; d_rc_19_h_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_5, lookup_rc_19_h_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_6; d_rc_19_h_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_6, lookup_rc_19_h_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_rc_19_h_7; d_rc_19_h_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpy(d_rc_19_h_7, lookup_rc_19_h_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice);
+    m31** d_rc_19_0; d_rc_19_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_0, lookup_rc_19_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_1; d_rc_19_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_1, lookup_rc_19_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_2; d_rc_19_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_2, lookup_rc_19_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_3; d_rc_19_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_3, lookup_rc_19_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_4; d_rc_19_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_4, lookup_rc_19_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_5; d_rc_19_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_5, lookup_rc_19_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_6; d_rc_19_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_6, lookup_rc_19_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_7; d_rc_19_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_7, lookup_rc_19_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_0; d_rc_19_b_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_0, lookup_rc_19_b_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_1; d_rc_19_b_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_1, lookup_rc_19_b_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_2; d_rc_19_b_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_2, lookup_rc_19_b_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_3; d_rc_19_b_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_3, lookup_rc_19_b_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_4; d_rc_19_b_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_4, lookup_rc_19_b_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_5; d_rc_19_b_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_5, lookup_rc_19_b_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_6; d_rc_19_b_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_6, lookup_rc_19_b_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_b_7; d_rc_19_b_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_b_7, lookup_rc_19_b_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_0; d_rc_19_c_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_0, lookup_rc_19_c_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_1; d_rc_19_c_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_1, lookup_rc_19_c_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_2; d_rc_19_c_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_2, lookup_rc_19_c_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_3; d_rc_19_c_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_3, lookup_rc_19_c_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_4; d_rc_19_c_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_4, lookup_rc_19_c_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_5; d_rc_19_c_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_5, lookup_rc_19_c_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_6; d_rc_19_c_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_6, lookup_rc_19_c_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_c_7; d_rc_19_c_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_c_7, lookup_rc_19_c_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_d_0; d_rc_19_d_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_d_0, lookup_rc_19_d_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_d_1; d_rc_19_d_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_d_1, lookup_rc_19_d_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_d_2; d_rc_19_d_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_d_2, lookup_rc_19_d_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_d_3; d_rc_19_d_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_d_3, lookup_rc_19_d_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_d_4; d_rc_19_d_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_d_4, lookup_rc_19_d_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_d_5; d_rc_19_d_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_d_5, lookup_rc_19_d_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_e_0; d_rc_19_e_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_e_0, lookup_rc_19_e_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_e_1; d_rc_19_e_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_e_1, lookup_rc_19_e_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_e_2; d_rc_19_e_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_e_2, lookup_rc_19_e_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_e_3; d_rc_19_e_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_e_3, lookup_rc_19_e_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_e_4; d_rc_19_e_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_e_4, lookup_rc_19_e_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_e_5; d_rc_19_e_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_e_5, lookup_rc_19_e_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_f_0; d_rc_19_f_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_f_0, lookup_rc_19_f_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_f_1; d_rc_19_f_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_f_1, lookup_rc_19_f_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_f_2; d_rc_19_f_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_f_2, lookup_rc_19_f_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_f_3; d_rc_19_f_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_f_3, lookup_rc_19_f_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_f_4; d_rc_19_f_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_f_4, lookup_rc_19_f_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_f_5; d_rc_19_f_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_f_5, lookup_rc_19_f_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_g_0; d_rc_19_g_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_g_0, lookup_rc_19_g_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_g_1; d_rc_19_g_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_g_1, lookup_rc_19_g_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_g_2; d_rc_19_g_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_g_2, lookup_rc_19_g_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_g_3; d_rc_19_g_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_g_3, lookup_rc_19_g_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_g_4; d_rc_19_g_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_g_4, lookup_rc_19_g_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_g_5; d_rc_19_g_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_g_5, lookup_rc_19_g_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_0; d_rc_19_h_0 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_0, lookup_rc_19_h_0, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_1; d_rc_19_h_1 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_1, lookup_rc_19_h_1, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_2; d_rc_19_h_2 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_2, lookup_rc_19_h_2, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_3; d_rc_19_h_3 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_3, lookup_rc_19_h_3, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_4; d_rc_19_h_4 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_4, lookup_rc_19_h_4, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_5; d_rc_19_h_5 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_5, lookup_rc_19_h_5, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_6; d_rc_19_h_6 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_6, lookup_rc_19_h_6, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_rc_19_h_7; d_rc_19_h_7 = cuda_mem_pool_allocate<m31*>(1); cudaMemcpyAsync(d_rc_19_h_7, lookup_rc_19_h_7, 1 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Copy sub_component_inputs pointers to device
     // rc_9_9 variants
-    m31** d_sub_rc_9_9; d_sub_rc_9_9 = cuda_mem_pool_allocate<m31*>(12); cudaMemcpy(d_sub_rc_9_9, sub_rc_9_9, 12 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_9_9_b; d_sub_rc_9_9_b = cuda_mem_pool_allocate<m31*>(12); cudaMemcpy(d_sub_rc_9_9_b, sub_rc_9_9_b, 12 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_9_9_c; d_sub_rc_9_9_c = cuda_mem_pool_allocate<m31*>(12); cudaMemcpy(d_sub_rc_9_9_c, sub_rc_9_9_c, 12 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_9_9_d; d_sub_rc_9_9_d = cuda_mem_pool_allocate<m31*>(12); cudaMemcpy(d_sub_rc_9_9_d, sub_rc_9_9_d, 12 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_9_9_e; d_sub_rc_9_9_e = cuda_mem_pool_allocate<m31*>(12); cudaMemcpy(d_sub_rc_9_9_e, sub_rc_9_9_e, 12 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_9_9_f; d_sub_rc_9_9_f = cuda_mem_pool_allocate<m31*>(12); cudaMemcpy(d_sub_rc_9_9_f, sub_rc_9_9_f, 12 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_9_9_g; d_sub_rc_9_9_g = cuda_mem_pool_allocate<m31*>(6); cudaMemcpy(d_sub_rc_9_9_g, sub_rc_9_9_g, 6 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_9_9_h; d_sub_rc_9_9_h = cuda_mem_pool_allocate<m31*>(6); cudaMemcpy(d_sub_rc_9_9_h, sub_rc_9_9_h, 6 * sizeof(m31*), cudaMemcpyHostToDevice);
+    m31** d_sub_rc_9_9; d_sub_rc_9_9 = cuda_mem_pool_allocate<m31*>(12); cudaMemcpyAsync(d_sub_rc_9_9, sub_rc_9_9, 12 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_9_9_b; d_sub_rc_9_9_b = cuda_mem_pool_allocate<m31*>(12); cudaMemcpyAsync(d_sub_rc_9_9_b, sub_rc_9_9_b, 12 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_9_9_c; d_sub_rc_9_9_c = cuda_mem_pool_allocate<m31*>(12); cudaMemcpyAsync(d_sub_rc_9_9_c, sub_rc_9_9_c, 12 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_9_9_d; d_sub_rc_9_9_d = cuda_mem_pool_allocate<m31*>(12); cudaMemcpyAsync(d_sub_rc_9_9_d, sub_rc_9_9_d, 12 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_9_9_e; d_sub_rc_9_9_e = cuda_mem_pool_allocate<m31*>(12); cudaMemcpyAsync(d_sub_rc_9_9_e, sub_rc_9_9_e, 12 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_9_9_f; d_sub_rc_9_9_f = cuda_mem_pool_allocate<m31*>(12); cudaMemcpyAsync(d_sub_rc_9_9_f, sub_rc_9_9_f, 12 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_9_9_g; d_sub_rc_9_9_g = cuda_mem_pool_allocate<m31*>(6); cudaMemcpyAsync(d_sub_rc_9_9_g, sub_rc_9_9_g, 6 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_9_9_h; d_sub_rc_9_9_h = cuda_mem_pool_allocate<m31*>(6); cudaMemcpyAsync(d_sub_rc_9_9_h, sub_rc_9_9_h, 6 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
     // rc_19 variants
-    m31** d_sub_rc_19; d_sub_rc_19 = cuda_mem_pool_allocate<m31*>(8); cudaMemcpy(d_sub_rc_19, sub_rc_19, 8 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_19_b; d_sub_rc_19_b = cuda_mem_pool_allocate<m31*>(8); cudaMemcpy(d_sub_rc_19_b, sub_rc_19_b, 8 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_19_c; d_sub_rc_19_c = cuda_mem_pool_allocate<m31*>(8); cudaMemcpy(d_sub_rc_19_c, sub_rc_19_c, 8 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_19_d; d_sub_rc_19_d = cuda_mem_pool_allocate<m31*>(6); cudaMemcpy(d_sub_rc_19_d, sub_rc_19_d, 6 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_19_e; d_sub_rc_19_e = cuda_mem_pool_allocate<m31*>(6); cudaMemcpy(d_sub_rc_19_e, sub_rc_19_e, 6 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_19_f; d_sub_rc_19_f = cuda_mem_pool_allocate<m31*>(6); cudaMemcpy(d_sub_rc_19_f, sub_rc_19_f, 6 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_19_g; d_sub_rc_19_g = cuda_mem_pool_allocate<m31*>(6); cudaMemcpy(d_sub_rc_19_g, sub_rc_19_g, 6 * sizeof(m31*), cudaMemcpyHostToDevice);
-    m31** d_sub_rc_19_h; d_sub_rc_19_h = cuda_mem_pool_allocate<m31*>(8); cudaMemcpy(d_sub_rc_19_h, sub_rc_19_h, 8 * sizeof(m31*), cudaMemcpyHostToDevice);
+    m31** d_sub_rc_19; d_sub_rc_19 = cuda_mem_pool_allocate<m31*>(8); cudaMemcpyAsync(d_sub_rc_19, sub_rc_19, 8 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_19_b; d_sub_rc_19_b = cuda_mem_pool_allocate<m31*>(8); cudaMemcpyAsync(d_sub_rc_19_b, sub_rc_19_b, 8 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_19_c; d_sub_rc_19_c = cuda_mem_pool_allocate<m31*>(8); cudaMemcpyAsync(d_sub_rc_19_c, sub_rc_19_c, 8 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_19_d; d_sub_rc_19_d = cuda_mem_pool_allocate<m31*>(6); cudaMemcpyAsync(d_sub_rc_19_d, sub_rc_19_d, 6 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_19_e; d_sub_rc_19_e = cuda_mem_pool_allocate<m31*>(6); cudaMemcpyAsync(d_sub_rc_19_e, sub_rc_19_e, 6 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_19_f; d_sub_rc_19_f = cuda_mem_pool_allocate<m31*>(6); cudaMemcpyAsync(d_sub_rc_19_f, sub_rc_19_f, 6 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_19_g; d_sub_rc_19_g = cuda_mem_pool_allocate<m31*>(6); cudaMemcpyAsync(d_sub_rc_19_g, sub_rc_19_g, 6 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    m31** d_sub_rc_19_h; d_sub_rc_19_h = cuda_mem_pool_allocate<m31*>(8); cudaMemcpyAsync(d_sub_rc_19_h, sub_rc_19_h, 8 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Build the lookup pointers structure
     Cube252LookupPtrs lookup = {
@@ -2333,12 +2333,12 @@ extern "C" void generate_cube_252_interaction_trace(
     // Copy trace column pointers to device
     m31** d_trace_columns;
     d_trace_columns = cuda_mem_pool_allocate<m31*>(CUBE_252_N_TRACE_COLUMNS);
-    cudaMemcpy(d_trace_columns, trace_columns, CUBE_252_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_trace_columns, trace_columns, CUBE_252_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Copy interaction trace column pointers to device
     m31** d_interaction_traces;
     d_interaction_traces = cuda_mem_pool_allocate<m31*>(4 * CUBE_252_N_LOGUP_COLS);
-    cudaMemcpy(d_interaction_traces, interaction_trace_columns, 4 * CUBE_252_N_LOGUP_COLS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_interaction_traces, interaction_trace_columns, 4 * CUBE_252_N_LOGUP_COLS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     unsigned int n_fractions = CUBE_252_N_LOGUP_COLS * trace_size;
 
@@ -2394,23 +2394,23 @@ extern "C" void generate_cube_252_interaction_trace(
     d_rc_19_g_le = cuda_mem_pool_allocate<LookupElementsBasic<1>>(1);
     d_rc_19_h_le = cuda_mem_pool_allocate<LookupElementsBasic<1>>(1);
 
-    cudaMemcpy(d_cube_252_le, cube_252_lookup_elements, sizeof(LookupElementsBasic<20>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_le, rc_9_9_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_b_le, rc_9_9_b_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_c_le, rc_9_9_c_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_d_le, rc_9_9_d_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_e_le, rc_9_9_e_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_f_le, rc_9_9_f_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_g_le, rc_9_9_g_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_9_9_h_le, rc_9_9_h_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_le, rc_19_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_b_le, rc_19_b_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_c_le, rc_19_c_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_d_le, rc_19_d_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_e_le, rc_19_e_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_f_le, rc_19_f_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_g_le, rc_19_g_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_19_h_le, rc_19_h_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_cube_252_le, cube_252_lookup_elements, sizeof(LookupElementsBasic<20>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_le, rc_9_9_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_b_le, rc_9_9_b_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_c_le, rc_9_9_c_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_d_le, rc_9_9_d_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_e_le, rc_9_9_e_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_f_le, rc_9_9_f_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_g_le, rc_9_9_g_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_9_9_h_le, rc_9_9_h_lookup_elements, sizeof(LookupElementsBasic<2>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_le, rc_19_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_b_le, rc_19_b_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_c_le, rc_19_c_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_d_le, rc_19_d_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_e_le, rc_19_e_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_f_le, rc_19_f_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_g_le, rc_19_g_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_19_h_le, rc_19_h_lookup_elements, sizeof(LookupElementsBasic<1>), cudaMemcpyHostToDevice, 0);
 
     unsigned int block_size = CUBE_252_BLOCK_SIZE;
     unsigned int grid_size = (trace_size + block_size - 1) / block_size;
@@ -2483,9 +2483,9 @@ extern "C" void generate_cube_252_interaction_trace(
 
     // Read claimed_sum from device and write to device output pointer
     m31 h_sums[4];
-    cudaMemcpy(h_sums, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(h_sums, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost, 0);
     qm31 h_claimed_sum = qm31{cm31{h_sums[0], h_sums[1]}, cm31{h_sums[2], h_sums[3]}};
-    cudaMemcpy(claimed_sum, &h_claimed_sum, sizeof(qm31), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(claimed_sum, &h_claimed_sum, sizeof(qm31), cudaMemcpyHostToDevice, 0);
 
     // Phase 5: Apply cumsum shift to last column
     cube_252_apply_cumsum_shift_kernel<<<grid_size, block_size>>>(

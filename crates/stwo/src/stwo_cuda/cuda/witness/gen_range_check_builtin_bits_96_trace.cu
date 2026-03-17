@@ -444,13 +444,13 @@ void generate_range_check_builtin_bits_96_interaction_traces(
 
     // Copy lookup element structs to device memory
     MemoryAddressToId *device_mem_addr_to_id = cuda_malloc<MemoryAddressToId>(1);
-    ASSERT_CUDA_SUCCESS(cudaMemcpy(device_mem_addr_to_id, memory_address_to_id, sizeof(MemoryAddressToId), cudaMemcpyHostToDevice));
+    ASSERT_CUDA_SUCCESS(cudaMemcpyAsync(device_mem_addr_to_id, memory_address_to_id, sizeof(MemoryAddressToId), cudaMemcpyHostToDevice, 0));
 
     MemoryIdToBig *device_mem_id_to_big = cuda_malloc<MemoryIdToBig>(1);
-    ASSERT_CUDA_SUCCESS(cudaMemcpy(device_mem_id_to_big, memory_id_to_big, sizeof(MemoryIdToBig), cudaMemcpyHostToDevice));
+    ASSERT_CUDA_SUCCESS(cudaMemcpyAsync(device_mem_id_to_big, memory_id_to_big, sizeof(MemoryIdToBig), cudaMemcpyHostToDevice, 0));
 
     RangeCheck_6 *device_rc6 = cuda_malloc<RangeCheck_6>(1);
-    ASSERT_CUDA_SUCCESS(cudaMemcpy(device_rc6, range_check_6, sizeof(RangeCheck_6), cudaMemcpyHostToDevice));
+    ASSERT_CUDA_SUCCESS(cudaMemcpyAsync(device_rc6, range_check_6, sizeof(RangeCheck_6), cudaMemcpyHostToDevice, 0));
 
     // Copy pointer arrays to device memory
     m31 **device_lookup_addr2id_0 = clone_to_device<m31*>((m31**)lookup_memory_address_to_id_0, 2);
@@ -511,7 +511,7 @@ void generate_range_check_builtin_bits_96_interaction_traces(
     inclusive_prefix_sum(interaction_trace[4 * RANGE_CHECK_96_BUILTIN_N_INTERACTION_TRACE_COLUMNS - 1], trace_size);
 
     // Copy coordinate sums to claimed_sum output
-    ASSERT_CUDA_SUCCESS(cudaMemcpy(claimed_sum, device_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost));
+    ASSERT_CUDA_SUCCESS(cudaMemcpyAsync(claimed_sum, device_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost, 0));
 
     // Free intermediate buffers
     cuda_free_memory(device_numerator0);

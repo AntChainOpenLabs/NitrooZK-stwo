@@ -713,9 +713,9 @@ void range_check_felt_252_width_27_generate_interaction_trace(
 
     // Read claimed_sum from device and write to device output pointer
     m31 h_sums[4];
-    cudaMemcpy(h_sums, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(h_sums, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost, 0);
     qm31 h_claimed_sum = qm31{cm31{h_sums[0], h_sums[1]}, cm31{h_sums[2], h_sums[3]}};
-    cudaMemcpy(claimed_sum, &h_claimed_sum, sizeof(qm31), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(claimed_sum, &h_claimed_sum, sizeof(qm31), cudaMemcpyHostToDevice, 0);
 
     // Phase 5: Apply cumsum shift to last column
     range_check_felt_252_width_27_apply_cumsum_shift_kernel<<<grid_size, block_size>>>(

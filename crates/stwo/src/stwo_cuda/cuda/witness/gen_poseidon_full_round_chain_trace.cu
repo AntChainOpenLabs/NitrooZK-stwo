@@ -383,19 +383,19 @@ extern "C" void poseidon_full_round_chain_generate_trace(
     d_state_0 = cuda_mem_pool_allocate<m31*>(10);
     d_state_1 = cuda_mem_pool_allocate<m31*>(10);
     d_state_2 = cuda_mem_pool_allocate<m31*>(10);
-    cudaMemcpy(d_state_0, state_0, 10 * sizeof(m31*), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_state_1, state_1, 10 * sizeof(m31*), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_state_2, state_2, 10 * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_state_0, state_0, 10 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_state_1, state_1, 10 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_state_2, state_2, 10 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Copy trace column pointers to device
     m31** d_trace_columns;
     d_trace_columns = cuda_mem_pool_allocate<m31*>(POSEIDON_FULL_ROUND_CHAIN_N_TRACE_COLUMNS);
-    cudaMemcpy(d_trace_columns, trace_columns, POSEIDON_FULL_ROUND_CHAIN_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_trace_columns, trace_columns, POSEIDON_FULL_ROUND_CHAIN_N_TRACE_COLUMNS * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Copy round keys table pointers to device
     m31** d_round_keys;
     d_round_keys = cuda_mem_pool_allocate<m31*>(30);
-    cudaMemcpy(d_round_keys, poseidon_round_keys_table, 30 * sizeof(m31*), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_round_keys, poseidon_round_keys_table, 30 * sizeof(m31*), cudaMemcpyHostToDevice, 0);
 
     // Launch kernel
     int block_size = POSEIDON_FRC_BLOCK_SIZE;
@@ -1064,9 +1064,9 @@ extern "C" void poseidon_full_round_chain_generate_interaction_trace(
 
     // Read claimed_sum from device and write to device output pointer
     m31 h_sums[4];
-    cudaMemcpy(h_sums, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(h_sums, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost, 0);
     qm31 h_claimed_sum = qm31{cm31{h_sums[0], h_sums[1]}, cm31{h_sums[2], h_sums[3]}};
-    cudaMemcpy(claimed_sum, &h_claimed_sum, sizeof(qm31), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(claimed_sum, &h_claimed_sum, sizeof(qm31), cudaMemcpyHostToDevice, 0);
 
     // Phase 5: Apply cumsum shift to last column
     poseidon_full_round_chain_apply_cumsum_shift_kernel<<<grid_size, block_size>>>(

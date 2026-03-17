@@ -2908,8 +2908,8 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
     MemoryAddressToId* d_mem_addr2id_rel = cuda_malloc<MemoryAddressToId>(1);
     MemoryIdToBig* d_mem_id2big_rel = cuda_malloc<MemoryIdToBig>(1);
 
-    cudaMemcpy(d_mem_addr2id_rel, memory_address_to_id_relation, sizeof(MemoryAddressToId), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_mem_id2big_rel, memory_id_to_big_relation, sizeof(MemoryIdToBig), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_mem_addr2id_rel, memory_address_to_id_relation, sizeof(MemoryAddressToId), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_mem_id2big_rel, memory_id_to_big_relation, sizeof(MemoryIdToBig), cudaMemcpyHostToDevice, 0);
 
     // Clone lookup data to device
     m31** d_interaction_trace = clone_to_device<m31*>(interaction_trace, N_LOGUP_COLS * 4);
@@ -3002,13 +3002,13 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
     RangeCheck_4_4* d_rc_44_rel = cuda_malloc<RangeCheck_4_4>(1);
     Poseidon3PartialRoundsChain* d_partial_chain_rel = cuda_malloc<Poseidon3PartialRoundsChain>(1);
 
-    cudaMemcpy(d_poseidon_chain_rel, poseidon_full_round_chain_relation, sizeof(PoseidonFullRoundChain), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_felt252_rel, range_check_felt_252_width_27_relation, sizeof(RangeCheckFelt252Width27), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_cube_rel, cube_252_relation, sizeof(Cube252), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_33333_rel, range_check_3_3_3_3_3_relation, sizeof(RangeCheck_3_3_3_3_3), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_4444_rel, range_check_4_4_4_4_relation, sizeof(RangeCheck_4_4_4_4), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rc_44_rel, range_check_4_4_relation, sizeof(RangeCheck_4_4), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_partial_chain_rel, poseidon_3_partial_rounds_chain_relation, sizeof(Poseidon3PartialRoundsChain), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_poseidon_chain_rel, poseidon_full_round_chain_relation, sizeof(PoseidonFullRoundChain), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_felt252_rel, range_check_felt_252_width_27_relation, sizeof(RangeCheckFelt252Width27), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_cube_rel, cube_252_relation, sizeof(Cube252), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_33333_rel, range_check_3_3_3_3_3_relation, sizeof(RangeCheck_3_3_3_3_3), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_4444_rel, range_check_4_4_4_4_relation, sizeof(RangeCheck_4_4_4_4), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_rc_44_rel, range_check_4_4_relation, sizeof(RangeCheck_4_4), cudaMemcpyHostToDevice, 0);
+    cudaMemcpyAsync(d_partial_chain_rel, poseidon_3_partial_rounds_chain_relation, sizeof(Poseidon3PartialRoundsChain), cudaMemcpyHostToDevice, 0);
 
     // Column 3: poseidon_full_round_chain_0 - poseidon_full_round_chain_1 (SUBTRACT)
     // pfrc_1 is reconstructed from base trace cols 120-149 (indices 0-29 in lookup_base_trace_cols)
@@ -3199,7 +3199,7 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
     inclusive_prefix_sum(interaction_trace[4 * N_LOGUP_COLS - 1], n_rows);
 
     // Step 4: Copy coordinate_sums (claimed_sum) back to host
-    cudaMemcpy(claimed_sum, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(claimed_sum, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost, 0);
 
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 

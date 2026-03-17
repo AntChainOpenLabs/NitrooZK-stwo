@@ -214,7 +214,7 @@ void generate_memory_address_to_id_traces(
 
         // Copy lookup_elements to device memory
         MemoryAddressToId *device_lookup_elements = cuda_malloc<MemoryAddressToId>(1);
-        ASSERT_CUDA_SUCCESS(cudaMemcpy(device_lookup_elements, lookup_elements, sizeof(MemoryAddressToId), cudaMemcpyHostToDevice));
+        ASSERT_CUDA_SUCCESS(cudaMemcpyAsync(device_lookup_elements, lookup_elements, sizeof(MemoryAddressToId), cudaMemcpyHostToDevice, 0));
 
         generate_memory_address_to_id_interaction_trace_kernel<<<num_blocks, block_dim>>>(
             device_interaction_traces,
