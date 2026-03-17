@@ -200,7 +200,6 @@ void evaluate_poseidon_constraint_quotients_on_domain(
         constraint_index_array
     );
 
-    ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Calculate batching
@@ -239,7 +238,6 @@ void evaluate_poseidon_constraint_quotients_on_domain(
         );
     }
 
-    ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Launch generic finalize kernel
@@ -255,7 +253,6 @@ void evaluate_poseidon_constraint_quotients_on_domain(
         g_should_accumulate_host  // Read from global variable set by dispatcher
     );
 
-    ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     global_timer.end("evaluate_poseidon_constraint_quotients_on_domain");
@@ -358,9 +355,7 @@ void generate_poseidon_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
     cuda_free_memory(device_traces);
     cuda_free_memory(device_lookup_init);
     cuda_free_memory(device_lookup_final);
@@ -594,7 +589,6 @@ void generate_poseidon_interaction_traces(
             device_numerator3
         );
 
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -611,8 +605,6 @@ void generate_poseidon_interaction_traces(
             device_numerator3,
             device_interaction_traces
         );
-
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     }
@@ -627,7 +619,6 @@ void generate_poseidon_interaction_traces(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
@@ -638,7 +629,6 @@ void generate_poseidon_interaction_traces(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[4 * N_INSTANCES_PER_ROW - 4], trace_size);

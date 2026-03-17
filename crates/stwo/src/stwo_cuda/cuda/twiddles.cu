@@ -22,8 +22,6 @@ m31 *sort_values_and_permute_with_bit_reverse_order(m31 *from, int size) {
 
     sort_values_kernel<<<num_blocks, block_dim>>>(from, dst, size);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     bit_reverse_base_field(dst, size);
     return dst;
@@ -71,8 +69,6 @@ m31 *precompute_twiddles(point initial, point step, int size) {
         i += 1;
     }
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
+    // No sync: twiddles consumed by subsequent stream-ordered NTT operations.
     return twiddles;
 }
