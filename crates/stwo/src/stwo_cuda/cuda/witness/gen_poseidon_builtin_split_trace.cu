@@ -197,7 +197,6 @@ extern "C" void gen_poseidon_builtin_split_trace(
         n_rows,
         trace_size
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 }
 
 // ============================================================================
@@ -389,21 +388,17 @@ __global__ void pos_blt_it_coord_prefix_sum(
     pos_blt_it_add_pair_kernel<N1, N2><<<num_blocks, block_dim>>>( \
         d_lookup, d0_ptrs, d1_ptrs, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     pos_blt_it_finalize_col_kernel<<<num_blocks, block_dim>>>(col_idx, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 #define POS_BLT_IT_PROCESS_SINGLE(col_idx, N, d_ptrs) \
     pos_blt_it_single_kernel<N><<<num_blocks, block_dim>>>( \
         d_lookup, d_ptrs, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     pos_blt_it_finalize_col_kernel<<<num_blocks, block_dim>>>(col_idx, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 extern "C" void gen_poseidon_builtin_split_interaction_trace(
     void* lookup_elements,
@@ -465,11 +460,9 @@ extern "C" void gen_poseidon_builtin_split_interaction_trace(
     size_t shared_size = 4 * block_dim * sizeof(m31);
     pos_blt_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
         POS_BLT_N_LOGUP_COLUMNS, trace_size, device_it, claimed_sum);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     pos_blt_it_coord_prefix_sum<<<num_blocks, block_dim>>>(
         claimed_sum, POS_BLT_N_LOGUP_COLUMNS, trace_size, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Inclusive prefix sum on last 4 columns
     inclusive_prefix_sum(interaction_trace_columns[4 * POS_BLT_N_LOGUP_COLUMNS - 4], trace_size);

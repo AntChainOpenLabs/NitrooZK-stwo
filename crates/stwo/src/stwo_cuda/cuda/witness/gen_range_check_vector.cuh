@@ -58,7 +58,6 @@ void range_check_vector_generate_interaction_trace(
             device_numerator2, \
             device_numerator3 \
         ); \
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
         ASSERT_CUDA_SUCCESS(cudaGetLastError()); \
         cuda_free_memory(device_lookup_elements); \
     }

@@ -717,7 +717,6 @@ extern "C" void partial_ec_mul_generate_trace(
         d_trace_columns
     );
 
-    cudaDeviceSynchronize();
 
     // Cleanup
     cuda_mem_pool_free(d_inputs);
@@ -1589,7 +1588,6 @@ extern "C" void partial_ec_mul_add_to_multiplicities(
         rc_19_h_mults, rc_19_h_log_size
     );
 
-    cudaDeviceSynchronize();
 
     // Cleanup
     cuda_mem_pool_free(d_trace_columns);
@@ -2006,12 +2004,10 @@ __global__ void partial_ec_mul_interaction_coord_prefix_sum_kernel(
 #define EXECUTE_ROUND(round_num, kernel_call) \
     do { \
         kernel_call; \
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
         ASSERT_CUDA_SUCCESS(cudaGetLastError()); \
         batch_inverse_secure_field(d_logup_denom, d_denom_inv, trace_size); \
         partial_ec_mul_interaction_finalize_kernel<<<num_blocks, block_dim>>>( \
             round_num, trace_size, d_denom_inv, d_num0, d_num1, d_num2, d_num3, d_interaction_traces); \
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
         ASSERT_CUDA_SUCCESS(cudaGetLastError()); \
     } while(0)
 
@@ -2653,12 +2649,10 @@ extern "C" void partial_ec_mul_generate_interaction_trace(
     size_t shared_size = 4 * block_dim * sizeof(m31);
     partial_ec_mul_interaction_cumsum_shift_kernel<<<num_blocks, block_dim, shared_size>>>(
         PARTIAL_EC_MUL_N_INTERACTION_COLUMNS, trace_size, d_interaction_traces, d_coord_sums);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     partial_ec_mul_interaction_coord_prefix_sum_kernel<<<num_blocks, block_dim>>>(
         d_coord_sums, PARTIAL_EC_MUL_N_INTERACTION_COLUMNS, trace_size, d_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Apply prefix sum to final column
@@ -2737,7 +2731,6 @@ extern "C" void pedersen_points_table_add_inputs(
     pedersen_points_table_add_inputs_kernel<<<num_blocks, block_dim>>>(
         indices, n_rows, mults, mults_log_size);
     
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -3411,7 +3404,6 @@ extern "C" void generate_partial_ec_mul_trace(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     global_timer.end("generate partial_ec_mul trace + lookup + sub_inputs");
@@ -3712,11 +3704,9 @@ __global__ void pem_interaction_trace_coord_prefix_sum(
     pem_interaction_trace_col_gen_kernel<N1, N2><<<num_blocks, block_dim>>>( \
         elem1, elem2, lookup1, lookup2, trace_size, \
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx, trace_size, denom_inv, \
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 // ============================================================================
 // Main interaction trace generation function
@@ -3885,11 +3875,9 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     pem_interaction_trace_col_gen_kernel<57, 2><<<num_blocks, block_dim>>>(
         d_ppt, d_rc_9_9, d_lookup_ppt, d_lookup_rc_9_9, trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 1: range_check_9_9_b_0 + range_check_9_9_c_0
     PEM_PROCESS_COL(col_idx++, d_rc_9_9_b, d_rc_9_9_c, d_lookup_rc_9_9_b, d_lookup_rc_9_9_c, 2, 2);
@@ -3976,21 +3964,17 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     pem_interaction_trace_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
         d_rc_9_9_f, d_rc_19_h, &d_lookup_rc_9_9_f[14], d_lookup_rc_19_h, trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 29: range_check_19_0 + range_check_19_b_0
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19, d_rc_19_b, d_lookup_rc_19, d_lookup_rc_19_b, trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Columns 30-41 and 49-97 continue the pattern with range_check_19 variants
     // Due to the complexity, I'll use a helper macro approach for the remaining columns
@@ -3999,31 +3983,25 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_c, d_rc_19_d, d_lookup_rc_19_c, d_lookup_rc_19_d, trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 31: range_check_19_e_0 + range_check_19_f_0
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_e, d_rc_19_f, d_lookup_rc_19_e, d_lookup_rc_19_f, trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 32: range_check_19_g_0 + range_check_19_h_1
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_g, d_rc_19_h, d_lookup_rc_19_g, &d_lookup_rc_19_h[1], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Continue the pattern for remaining columns (33-104)
     // This follows the same interleaving pattern from the SIMD implementation
@@ -4037,101 +4015,81 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19, d_rc_19_b, &d_lookup_rc_19[1], &d_lookup_rc_19_b[1], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 34: range_check_19_c_1 + range_check_19_d_1
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[1], &d_lookup_rc_19_d[1], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 35: range_check_19_e_1 + range_check_19_f_1
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[1], &d_lookup_rc_19_f[1], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 36: range_check_19_g_1 + range_check_19_h_2
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[1], &d_lookup_rc_19_h[2], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 37: range_check_19_2 + range_check_19_b_2
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19, d_rc_19_b, &d_lookup_rc_19[2], &d_lookup_rc_19_b[2], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 38: range_check_19_c_2 + range_check_19_d_2
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[2], &d_lookup_rc_19_d[2], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 39: range_check_19_e_2 + range_check_19_f_2
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[2], &d_lookup_rc_19_f[2], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 40: range_check_19_g_2 + range_check_19_h_3
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[2], &d_lookup_rc_19_h[3], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 41: range_check_19_3 + range_check_19_b_3
     pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(
         d_rc_19, d_rc_19_b, &d_lookup_rc_19[3], &d_lookup_rc_19_b[3], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 42: range_check_19_c_3 + range_check_9_9_8
     pem_interaction_trace_col_gen_kernel<1, 2><<<num_blocks, block_dim>>>(
         d_rc_19_c, d_rc_9_9, &d_lookup_rc_19_c[3], &d_lookup_rc_9_9[16], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Columns 43-104: Continue the complex interleaving pattern
     // Process remaining columns following the same approach
@@ -4160,41 +4118,25 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     pem_interaction_trace_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
         d_rc_9_9_f, d_rc_19_h, &d_lookup_rc_9_9_f[18], &d_lookup_rc_19_h[4], trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Continue pattern for columns 50-104...
     // For the remaining columns (50-104), I'll add them in a batch here
 
     // Column 50-62: More range_check_19 combinations
     // Column 50: range_check_19_4 + range_check_19_b_4
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[4], &d_lookup_rc_19_b[4], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 51: range_check_19_c_4 + range_check_19_d_3
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[4], &d_lookup_rc_19_d[3], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 52: range_check_19_e_3 + range_check_19_f_3
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[3], &d_lookup_rc_19_f[3], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 53: range_check_19_g_3 + range_check_19_h_5
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[3], &d_lookup_rc_19_h[5], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 54-62 continue with range_check_19
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[5], &d_lookup_rc_19_b[5], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 54
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[5], &d_lookup_rc_19_d[4], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 55
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[4], &d_lookup_rc_19_f[4], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 56
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[4], &d_lookup_rc_19_h[6], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 57
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[6], &d_lookup_rc_19_b[6], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 58
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[6], &d_lookup_rc_19_d[5], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 59
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[5], &d_lookup_rc_19_f[5], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 60
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[5], &d_lookup_rc_19_h[7], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 61
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[7], &d_lookup_rc_19_b[7], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 62
 
     // Column 63: range_check_19_c_7 + range_check_9_9_10
-    pem_interaction_trace_col_gen_kernel<1, 2><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_9_9, &d_lookup_rc_19_c[7], &d_lookup_rc_9_9[20], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Columns 64-83: range_check_9_9 columns (10-15)
     PEM_PROCESS_COL(col_idx++, d_rc_9_9_b, d_rc_9_9_c, &d_lookup_rc_9_9_b[20], &d_lookup_rc_9_9_c[20], 2, 2); // 64
@@ -4219,25 +4161,10 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     PEM_PROCESS_COL(col_idx++, d_rc_9_9_d, d_rc_9_9_e, &d_lookup_rc_9_9_d[30], &d_lookup_rc_9_9_e[30], 2, 2); // 83
 
     // Column 84: range_check_9_9_f_15 + range_check_19_h_8
-    pem_interaction_trace_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(d_rc_9_9_f, d_rc_19_h, &d_lookup_rc_9_9_f[30], &d_lookup_rc_19_h[8], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Columns 85-97: More range_check_19 combinations
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[8], &d_lookup_rc_19_b[8], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 85
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[8], &d_lookup_rc_19_d[6], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 86
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[6], &d_lookup_rc_19_f[6], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 87
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[6], &d_lookup_rc_19_h[9], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 88
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[9], &d_lookup_rc_19_b[9], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 89
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[9], &d_lookup_rc_19_d[7], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 90
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[7], &d_lookup_rc_19_f[7], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 91
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[7], &d_lookup_rc_19_h[10], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 92
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[10], &d_lookup_rc_19_b[10], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 93
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_19_d, &d_lookup_rc_19_c[10], &d_lookup_rc_19_d[8], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 94
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_e, d_rc_19_f, &d_lookup_rc_19_e[8], &d_lookup_rc_19_f[8], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 95
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19_g, d_rc_19_h, &d_lookup_rc_19_g[8], &d_lookup_rc_19_h[11], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 96
-    pem_interaction_trace_col_gen_kernel<1, 1><<<num_blocks, block_dim>>>(d_rc_19, d_rc_19_b, &d_lookup_rc_19[11], &d_lookup_rc_19_b[11], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); // 97
 
     // Column 98: range_check_19_c_11 + range_check_9_9_16
-    pem_interaction_trace_col_gen_kernel<1, 2><<<num_blocks, block_dim>>>(d_rc_19_c, d_rc_9_9, &d_lookup_rc_19_c[11], &d_lookup_rc_9_9[32], trace_size, device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv, device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces); ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Columns 99-104: Final range_check_9_9 columns (16-17)
     PEM_PROCESS_COL(col_idx++, d_rc_9_9_b, d_rc_9_9_c, &d_lookup_rc_9_9_b[32], &d_lookup_rc_9_9_c[32], 2, 2); // 99
@@ -4251,21 +4178,17 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
     pem_interaction_trace_col_105_kernel<2, 73><<<num_blocks, block_dim>>>(
         d_rc_9_9_f, d_pem, &d_lookup_rc_9_9_f[34], d_lookup_pem_0, n_rows, trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 106: partial_ec_mul_1 (final column with -enabler)
     pem_interaction_trace_col_single_gen_kernel<73><<<num_blocks, block_dim>>>(
         d_pem, d_lookup_pem_1, n_rows, trace_size,
         device_logup_denom, device_numerator0, device_numerator1, device_numerator2, device_numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     pem_interaction_trace_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx++, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3, device_interaction_traces);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // ========================================================================
     // Finalize: Compute cumsum shift and prefix sum
@@ -4284,7 +4207,6 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Apply coordinate prefix sum adjustment
     pem_interaction_trace_coord_prefix_sum<<<num_blocks, block_dim>>>(
@@ -4293,7 +4215,6 @@ extern "C" void generate_partial_ec_mul_interaction_traces(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Apply inclusive prefix sum to final 4 columns
     inclusive_prefix_sum(interaction_trace_columns[4 * PARTIAL_EC_MUL_N_INTERACTION_COLUMNS - 4], trace_size);

@@ -353,7 +353,6 @@ void generate_assert_eq_opcode_double_deref_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     global_timer.end("generate assert_eq_opcode_double_deref base trace");
@@ -725,7 +724,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         device_numerator3
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -745,7 +743,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         device_interaction_traces
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_interaction_traces(interaction_traces, 0, trace_size);
@@ -768,7 +765,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         device_numerator3
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -788,7 +784,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         device_interaction_traces
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_interaction_traces(interaction_traces, 1, trace_size);
@@ -812,7 +807,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         row_offset
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -832,7 +826,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         device_interaction_traces
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_interaction_traces(interaction_traces, 2, trace_size);
@@ -854,7 +847,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         row_offset
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     // dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
 
@@ -873,7 +865,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         device_interaction_traces
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_interaction_traces(interaction_traces, 3, trace_size);
@@ -888,7 +879,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
@@ -899,7 +889,6 @@ void generate_assert_eq_opcode_double_deref_interaction_traces(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[4 * ASSERT_EQ_OPCODE_DOUBLE_DEREF_N_INTERACTION_TRACE_COLUMNS - 4], trace_size);

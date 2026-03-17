@@ -695,7 +695,6 @@ extern "C" void gen_pedersen_aggregator_wb9_trace(
     uint32_t num_blocks = (trace_size + AGG9_BLOCK_SIZE - 1) / AGG9_BLOCK_SIZE;
     agg9_trace_kernel<<<num_blocks, AGG9_BLOCK_SIZE>>>();
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Cleanup device pointer arrays
     cuda_free_memory(d_traces);
@@ -941,21 +940,17 @@ __global__ void agg9_it_coord_prefix_sum(
     agg9_it_add_pair_kernel<N1, N2><<<num_blocks, block_dim>>>( \
         d_lookup, d0_ptrs, d1_ptrs, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     agg9_it_finalize_col_kernel<<<num_blocks, block_dim>>>(col_idx, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 #define AGG9_IT_PROCESS_SUB(col_idx, N1, N2, d0_ptrs, d1_ptrs) \
     agg9_it_sub_pair_kernel<N1, N2><<<num_blocks, block_dim>>>( \
         d_lookup, d0_ptrs, d1_ptrs, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     agg9_it_finalize_col_kernel<<<num_blocks, block_dim>>>(col_idx, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 extern "C" void gen_pedersen_aggregator_wb9_interaction_trace(
     // CommonLookupElements (= LookupElements<128>)
@@ -1034,11 +1029,9 @@ extern "C" void gen_pedersen_aggregator_wb9_interaction_trace(
     agg9_it_special_mults_kernel<30, 4><<<num_blocks, block_dim>>>(
         d_lookup, d_mem_2, d_agg_0, mults, trace_size,
         device_logup_denom, numer0, numer1, numer2, numer3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     agg9_it_finalize_col_kernel<<<num_blocks, block_dim>>>(5, trace_size, denom_inv,
         numer0, numer1, numer2, numer3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Finalize: cumsum_shift + prefix sum on last 4 columns
     cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
@@ -1046,11 +1039,9 @@ extern "C" void gen_pedersen_aggregator_wb9_interaction_trace(
     size_t shared_size = 4 * block_dim * sizeof(m31);
     agg9_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
         AGG9_N_LOGUP_COLUMNS, trace_size, device_it, claimed_sum);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     agg9_it_coord_prefix_sum<<<num_blocks, block_dim>>>(
         claimed_sum, AGG9_N_LOGUP_COLUMNS, trace_size, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Inclusive prefix sum on last 4 columns
     inclusive_prefix_sum(interaction_trace_columns[4 * AGG9_N_LOGUP_COLUMNS - 4], trace_size);

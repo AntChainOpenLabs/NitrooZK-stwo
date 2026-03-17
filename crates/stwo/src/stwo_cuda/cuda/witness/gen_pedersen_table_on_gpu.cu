@@ -320,7 +320,6 @@ extern "C" void pedersen_table_generate_on_gpu(
             PEDERSEN_P0_X, PEDERSEN_P0_Y, window
         );
     }
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Generate P1 section (16 rows)
     printf("[PEDERSEN_TABLE] Generating P1 section (16 rows)...\n");
@@ -328,7 +327,6 @@ extern "C" void pedersen_table_generate_on_gpu(
         d_columns, n_rows, P1_START, 16,
         PEDERSEN_P1_X, PEDERSEN_P1_Y
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Generate P2 section (14 blocks)
     printf("[PEDERSEN_TABLE] Generating P2 section (14 blocks × 262144 rows)...\n");
@@ -341,7 +339,6 @@ extern "C" void pedersen_table_generate_on_gpu(
             PEDERSEN_P2_X, PEDERSEN_P2_Y, window
         );
     }
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Generate P3 section (16 rows)
     printf("[PEDERSEN_TABLE] Generating P3 section (16 rows)...\n");
@@ -349,7 +346,6 @@ extern "C" void pedersen_table_generate_on_gpu(
         d_columns, n_rows, P3_START, 16,
         PEDERSEN_P3_X, PEDERSEN_P3_Y
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Pad remaining rows (copy row 0)
     if (TABLE_END < n_rows) {

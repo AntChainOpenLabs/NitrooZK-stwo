@@ -431,7 +431,6 @@ void range_check_felt_252_width_27_generate_trace(
         device_trace_columns
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_input_limbs);
@@ -625,7 +624,6 @@ void range_check_felt_252_width_27_add_to_multiplicities(
         rc_9_9_e_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_trace_columns);
@@ -686,11 +684,9 @@ void range_check_felt_252_width_27_generate_interaction_trace(
         d_rc_9_9_c, d_rc_9_9_d, d_rc_9_9_e, d_rc_felt252_w27,
         denom_ptr, numerator0, numerator1, numerator2, numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 2: Batch inverse on denominators
     batch_inverse_secure_field(denom_ptr, denom_inv, n_fractions);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 3: Finalize with accumulation
     range_check_felt_252_width_27_finalize_interaction_kernel<<<grid_size, block_size>>>(
@@ -699,7 +695,6 @@ void range_check_felt_252_width_27_generate_interaction_trace(
         numerator0, numerator1, numerator2, numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 4: Compute cumulative sum (for claimed_sum)
     m31* d_coordinate_sums;
@@ -715,7 +710,6 @@ void range_check_felt_252_width_27_generate_interaction_trace(
         device_interaction_traces,
         d_coordinate_sums
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Read claimed_sum from device and write to device output pointer
     m31 h_sums[4];
@@ -729,7 +723,6 @@ void range_check_felt_252_width_27_generate_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 6: Inclusive prefix sum on last column (columns 28-31)
     int last_base_col = (RC_FELT252_W27_N_LOGUP_COLS - 1) * 4;

@@ -1367,7 +1367,6 @@ extern "C" void generate_cube_252_trace(
         sub_inputs
     );
 
-    cudaDeviceSynchronize();
 
     // Cleanup - free all device pointer arrays
     cuda_mem_pool_free(d_inputs);
@@ -2429,11 +2428,9 @@ extern "C" void generate_cube_252_interaction_trace(
         d_rc_19_e_le, d_rc_19_f_le, d_rc_19_g_le, d_rc_19_h_le,
         denom_ptr, numerator0, numerator1, numerator2, numerator3
     );
-    cudaDeviceSynchronize();
 
     // Phase 2: Batch inverse on denominators
     batch_inverse_secure_field(denom_ptr, denom_inv, n_fractions);
-    cudaDeviceSynchronize();
 
     // Phase 3: Finalize with accumulation
     cube_252_finalize_interaction_kernel<<<grid_size, block_size>>>(
@@ -2442,7 +2439,6 @@ extern "C" void generate_cube_252_interaction_trace(
         numerator0, numerator1, numerator2, numerator3,
         d_interaction_traces
     );
-    cudaDeviceSynchronize();
 
     // Free fraction temporaries — no longer needed after finalize
     cuda_mem_pool_free(denom_ptr);
@@ -2484,7 +2480,6 @@ extern "C" void generate_cube_252_interaction_trace(
         d_interaction_traces,
         d_coordinate_sums
     );
-    cudaDeviceSynchronize();
 
     // Read claimed_sum from device and write to device output pointer
     m31 h_sums[4];
@@ -2498,7 +2493,6 @@ extern "C" void generate_cube_252_interaction_trace(
         trace_size,
         d_interaction_traces
     );
-    cudaDeviceSynchronize();
 
     // Phase 6: Inclusive prefix sum on last column
     int last_base_col = (CUBE_252_N_LOGUP_COLS - 1) * 4;

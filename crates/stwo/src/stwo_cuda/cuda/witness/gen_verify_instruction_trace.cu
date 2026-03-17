@@ -273,7 +273,6 @@ void generate_verify_instruction_trace(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     global_timer.start("generate verify_instruction base trace");
 
@@ -582,7 +581,6 @@ void generate_verify_instruction_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 2: Batch inverse all denominators
@@ -602,7 +600,6 @@ void generate_verify_instruction_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 4: Compute claimed_sum via parallel reduction
@@ -612,7 +609,6 @@ void generate_verify_instruction_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 5: Apply cumsum shift to last column (8-11)
@@ -621,7 +617,6 @@ void generate_verify_instruction_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 6: Apply inclusive prefix sum ONLY to the LAST column (8-11)

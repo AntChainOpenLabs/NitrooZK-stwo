@@ -73,7 +73,6 @@ void partition_into_bit_segments_cuda(
         total_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_outputs);
@@ -126,7 +125,6 @@ void range_check_vector_add_inputs(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -340,7 +338,6 @@ void range_check_vector_generate_interaction_trace(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     block_dim = trace_size < RANGE_CHECK_TRACE_GEN_THREAD_COUNT_MAX ? trace_size : RANGE_CHECK_TRACE_GEN_THREAD_COUNT_MAX;
@@ -374,7 +371,6 @@ void range_check_vector_generate_interaction_trace(
         device_interaction_traces
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // dump_interaction_traces(interaction_traces, 4, trace_size);
@@ -389,7 +385,6 @@ void range_check_vector_generate_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
@@ -400,7 +395,6 @@ void range_check_vector_generate_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[4 * RANGE_CHECK_INTERACTION_TRACE_COLUMNS - 4], trace_size);
@@ -507,7 +501,6 @@ __global__ void rc_multi_relation_col_gen_kernel(
             multiplicities[2 * pair], multiplicities[2 * pair + 1], \
             device_ranges, trace_size, \
             device_logup_denom, numerator0, numerator1, numerator2, numerator3); \
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
         ASSERT_CUDA_SUCCESS(cudaGetLastError()); \
         cuda_free_memory(d_lookup_a); \
         cuda_free_memory(d_lookup_b); \
@@ -562,7 +555,6 @@ void range_check_multi_relation_interaction_trace(
             pair, trace_size, denom_inv,
             numerator0, numerator1, numerator2, numerator3,
             device_it);
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
     }
 
@@ -572,12 +564,10 @@ void range_check_multi_relation_interaction_trace(
     size_t shared_size = 4 * block_dim * sizeof(m31);
     generate_range_check_interaction_trace_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
         n_pairs, trace_size, device_it, claimed_sum);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     generate_range_check_interaction_trace_coord_prefix_sum<<<num_blocks, block_dim>>>(
         claimed_sum, n_pairs, trace_size, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Inclusive prefix sum on last 4 columns

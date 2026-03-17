@@ -1673,7 +1673,6 @@ void generate_add_mod_builtin_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Free device memory for pointer arrays
@@ -2093,7 +2092,6 @@ void generate_add_mod_builtin_interaction_traces(
             device_numerator0, device_numerator1, device_numerator2, device_numerator3,
             device_interaction_traces
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
     };
 
@@ -2112,7 +2110,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(0);
 
@@ -2123,7 +2120,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(1);
 
@@ -2134,7 +2130,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(2);
 
@@ -2145,7 +2140,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(3);
 
@@ -2156,7 +2150,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(4);
 
@@ -2167,7 +2160,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(5);
 
@@ -2178,7 +2170,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(6);
 
@@ -2189,7 +2180,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(7);
 
@@ -2200,7 +2190,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(8);
 
@@ -2211,7 +2200,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(9);
 
@@ -2222,7 +2210,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(10);
 
@@ -2233,7 +2220,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(11);
 
@@ -2244,7 +2230,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(12);
 
@@ -2255,7 +2240,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(13);
 
@@ -2266,7 +2250,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(14);
 
@@ -2277,7 +2260,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(15);
 
@@ -2288,7 +2270,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(16);
 
@@ -2299,7 +2280,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(17);
 
@@ -2310,7 +2290,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(18);
 
@@ -2321,7 +2300,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(19);
 
@@ -2332,7 +2310,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(20);
 
@@ -2343,7 +2320,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(21);
 
@@ -2354,7 +2330,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(22);
 
@@ -2365,7 +2340,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(23);
 
@@ -2376,7 +2350,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(24);
 
@@ -2387,7 +2360,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(25);
 
@@ -2398,7 +2370,6 @@ void generate_add_mod_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(26);
 
@@ -2411,7 +2382,6 @@ void generate_add_mod_builtin_interaction_traces(
             device_interaction_traces,
             (m31*)claimed_sum
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         generate_add_mod_builtin_interaction_coord_prefix_sum_kernel<<<num_blocks, block_dim_val>>>(
@@ -2420,7 +2390,6 @@ void generate_add_mod_builtin_interaction_traces(
             trace_size,
             device_interaction_traces
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         // Apply inclusive_prefix_sum only to the last 4 columns

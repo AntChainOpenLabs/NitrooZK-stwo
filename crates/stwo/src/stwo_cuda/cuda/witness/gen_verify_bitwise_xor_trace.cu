@@ -50,7 +50,6 @@ void verify_bitwise_xor_4_mults_init(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -96,7 +95,6 @@ void verify_bitwise_xor_7_mults_init(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -142,7 +140,6 @@ void verify_bitwise_xor_8_mults_init(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -175,7 +172,6 @@ void verify_bitwise_xor_8_b_mults_init(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -221,7 +217,6 @@ void verify_bitwise_xor_9_mults_init(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -281,7 +276,6 @@ void verify_bitwise_xor_12_mults_init(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -471,7 +465,6 @@ void verify_bitwise_xor_4_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 2: Batch inverse
@@ -487,7 +480,6 @@ void verify_bitwise_xor_4_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 4: Compute cumsum shift
@@ -497,7 +489,6 @@ void verify_bitwise_xor_4_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 5: Apply shift
@@ -506,7 +497,6 @@ void verify_bitwise_xor_4_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 6: Prefix sum
@@ -567,7 +557,6 @@ void verify_bitwise_xor_7_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -581,7 +570,6 @@ void verify_bitwise_xor_7_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
@@ -590,7 +578,6 @@ void verify_bitwise_xor_7_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     verify_bitwise_xor_interaction_trace_apply_shift<<<num_blocks, block_dim>>>(
@@ -598,7 +585,6 @@ void verify_bitwise_xor_7_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[0], trace_size);
@@ -657,7 +643,6 @@ void verify_bitwise_xor_8_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -671,7 +656,6 @@ void verify_bitwise_xor_8_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
@@ -680,7 +664,6 @@ void verify_bitwise_xor_8_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     verify_bitwise_xor_interaction_trace_apply_shift<<<num_blocks, block_dim>>>(
@@ -688,7 +671,6 @@ void verify_bitwise_xor_8_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[0], trace_size);
@@ -748,7 +730,6 @@ void verify_bitwise_xor_8_b_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -762,7 +743,6 @@ void verify_bitwise_xor_8_b_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
@@ -771,7 +751,6 @@ void verify_bitwise_xor_8_b_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     verify_bitwise_xor_interaction_trace_apply_shift<<<num_blocks, block_dim>>>(
@@ -779,7 +758,6 @@ void verify_bitwise_xor_8_b_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[0], trace_size);
@@ -838,7 +816,6 @@ void verify_bitwise_xor_9_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -852,7 +829,6 @@ void verify_bitwise_xor_9_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
@@ -861,7 +837,6 @@ void verify_bitwise_xor_9_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     verify_bitwise_xor_interaction_trace_apply_shift<<<num_blocks, block_dim>>>(
@@ -869,7 +844,6 @@ void verify_bitwise_xor_9_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[0], trace_size);
@@ -979,7 +953,6 @@ void verify_bitwise_xor_8_paired_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -993,7 +966,6 @@ void verify_bitwise_xor_8_paired_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     size_t shared_size = 4 * block_dim * sizeof(m31);
@@ -1002,7 +974,6 @@ void verify_bitwise_xor_8_paired_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     verify_bitwise_xor_interaction_trace_apply_shift<<<num_blocks, block_dim>>>(
@@ -1010,7 +981,6 @@ void verify_bitwise_xor_8_paired_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_traces[0], trace_size);
@@ -1187,7 +1157,6 @@ void verify_bitwise_xor_12_interaction_trace(
             device_numerator2,
             device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         // Step 2: Batch inverse
@@ -1204,7 +1173,6 @@ void verify_bitwise_xor_12_interaction_trace(
             device_interaction_traces,
             pair
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
     }
 
@@ -1216,7 +1184,6 @@ void verify_bitwise_xor_12_interaction_trace(
         device_last_4_cols,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 5: Apply shift to last 4 columns only
@@ -1225,7 +1192,6 @@ void verify_bitwise_xor_12_interaction_trace(
         trace_size,
         device_last_4_cols
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 6: Prefix sum on last 4 columns only

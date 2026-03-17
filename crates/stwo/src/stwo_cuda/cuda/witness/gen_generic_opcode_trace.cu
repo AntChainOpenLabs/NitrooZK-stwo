@@ -1181,7 +1181,6 @@ void generate_generic_opcode_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     global_timer.end("generate generic_opcode base trace");
@@ -1516,7 +1515,6 @@ __global__ void generic_opcode_interaction_coord_prefix_sum(
             trace_size, device_logup_denom, \
             device_numerator0, device_numerator1, device_numerator2, device_numerator3 \
         ); \
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
         ASSERT_CUDA_SUCCESS(cudaGetLastError()); \
         batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
         block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX; \
@@ -1526,7 +1524,6 @@ __global__ void generic_opcode_interaction_coord_prefix_sum(
             device_numerator0, device_numerator1, device_numerator2, device_numerator3, \
             device_interaction_trace \
         ); \
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
         ASSERT_CUDA_SUCCESS(cudaGetLastError()); \
     } while(0)
 
@@ -1811,7 +1808,6 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
     num_blocks = block_dim < THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;
@@ -1820,7 +1816,6 @@ void generate_generic_opcode_interaction_traces(
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 1: memory_id_to_big_0 + memory_address_to_id_1
     block_dim = trace_size < GENERIC_OPCODE_TRACE_GEN_THREAD_COUNT_MAX ? trace_size : GENERIC_OPCODE_TRACE_GEN_THREAD_COUNT_MAX;
@@ -1831,7 +1826,6 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
     num_blocks = block_dim < THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;
@@ -1840,7 +1834,6 @@ void generate_generic_opcode_interaction_traces(
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 2: memory_id_to_big_1 + memory_address_to_id_2
     block_dim = trace_size < GENERIC_OPCODE_TRACE_GEN_THREAD_COUNT_MAX ? trace_size : GENERIC_OPCODE_TRACE_GEN_THREAD_COUNT_MAX;
@@ -1851,7 +1844,6 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
     num_blocks = block_dim < THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;
@@ -1860,7 +1852,6 @@ void generate_generic_opcode_interaction_traces(
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 3: memory_id_to_big_2 + range_check_9_9_0
     block_dim = trace_size < GENERIC_OPCODE_TRACE_GEN_THREAD_COUNT_MAX ? trace_size : GENERIC_OPCODE_TRACE_GEN_THREAD_COUNT_MAX;
@@ -1871,7 +1862,6 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
     num_blocks = block_dim < THREAD_COUNT_MAX ? 1 : (trace_size + block_dim - 1) / block_dim;
@@ -1880,7 +1870,6 @@ void generate_generic_opcode_interaction_traces(
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Columns 4-17: range_check_9_9 variants following exact CPU order
     // Column 4: range_check_9_9_b_0 + range_check_9_9_c_0
@@ -1892,14 +1881,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         4, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 5: range_check_9_9_d_0 + range_check_9_9_e_0
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -1908,14 +1895,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         5, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 6: range_check_9_9_f_0 + range_check_9_9_g_0
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -1924,14 +1909,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         6, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 7: range_check_9_9_h_0 + range_check_9_9_1
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -1940,14 +1923,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         7, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 8: range_check_9_9_b_1 + range_check_9_9_c_1
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -1956,14 +1937,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         8, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 9: range_check_9_9_d_1 + range_check_9_9_e_1
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -1972,14 +1951,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         9, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 10: range_check_9_9_f_1 + range_check_9_9_2
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -1988,14 +1965,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         10, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 11: range_check_9_9_b_2 + range_check_9_9_c_2
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -2004,14 +1979,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         11, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 12: range_check_9_9_d_2 + range_check_9_9_e_2
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -2020,14 +1993,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         12, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 13: range_check_9_9_f_2 + range_check_9_9_g_1
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -2036,14 +2007,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         13, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 14: range_check_9_9_h_1 + range_check_9_9_3
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -2052,14 +2021,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         14, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 15: range_check_9_9_b_3 + range_check_9_9_c_3
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -2068,14 +2035,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         15, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 16: range_check_9_9_d_3 + range_check_9_9_e_3
     generic_opcode_interaction_col_gen_kernel_round0<2, 2><<<num_blocks, block_dim>>>(
@@ -2084,14 +2049,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         16, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 17: range_check_9_9_f_3 + range_check_19_h_0
     generic_opcode_interaction_col_gen_kernel_round0<2, 1><<<num_blocks, block_dim>>>(
@@ -2100,14 +2063,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         17, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Continue with range_check_19 variants following exact CPU order
     // Column 18: range_check_19_0 + range_check_19_b_0
@@ -2117,14 +2078,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         18, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 19: range_check_19_c_0 + range_check_19_d_0
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2133,14 +2092,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         19, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 20: range_check_19_e_0 + range_check_19_f_0
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2149,14 +2106,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         20, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 21: range_check_19_g_0 + range_check_19_h_1
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2165,14 +2120,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         21, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 22: range_check_19_1 + range_check_19_b_1
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2181,14 +2134,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         22, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 23: range_check_19_c_1 + range_check_19_d_1
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2197,14 +2148,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         23, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 24: range_check_19_e_1 + range_check_19_f_1
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2213,14 +2162,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         24, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 25: range_check_19_g_1 + range_check_19_h_2
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2229,14 +2176,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         25, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 26: range_check_19_2 + range_check_19_b_2
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2245,14 +2190,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         26, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 27: range_check_19_c_2 + range_check_19_d_2
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2261,14 +2204,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         27, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 28: range_check_19_e_2 + range_check_19_f_2
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2277,14 +2218,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         28, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 29: range_check_19_g_2 + range_check_19_h_3
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2293,14 +2232,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         29, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 30: range_check_19_3 + range_check_19_b_3
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2309,14 +2246,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         30, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 31: range_check_19_c_3 + range_check_18_0
     generic_opcode_interaction_col_gen_kernel_round0<1, 1><<<num_blocks, block_dim>>>(
@@ -2325,14 +2260,12 @@ void generate_generic_opcode_interaction_traces(
         trace_size, device_logup_denom,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         31, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 32: range_check_11_0 * enabler + opcodes_0
     generic_opcode_interaction_col_gen_kernel_second2last<1, 3><<<num_blocks, block_dim>>>(
@@ -2342,14 +2275,12 @@ void generate_generic_opcode_interaction_traces(
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         n_rows
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         32, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Column 33: -1 * enabler / opcodes_1 (last column)
     generic_opcode_interaction_col_gen_kernel_last<3><<<num_blocks, block_dim>>>(
@@ -2359,14 +2290,12 @@ void generate_generic_opcode_interaction_traces(
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         n_rows
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     generic_opcode_interaction_finalize_col_kernel<<<num_blocks, block_dim>>>(
         33, trace_size, denom_inv,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Compute cumsum_shift
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
@@ -2378,7 +2307,6 @@ void generate_generic_opcode_interaction_traces(
         device_interaction_trace,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Apply prefix sum adjustment
     generic_opcode_interaction_coord_prefix_sum<<<num_blocks, block_dim>>>(
@@ -2387,7 +2315,6 @@ void generate_generic_opcode_interaction_traces(
         trace_size,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Apply inclusive prefix sum to last interaction column
     inclusive_prefix_sum(interaction_trace[4 * GENERIC_OPCODE_N_INTERACTION_TRACE_COLUMNS - 4], trace_size);

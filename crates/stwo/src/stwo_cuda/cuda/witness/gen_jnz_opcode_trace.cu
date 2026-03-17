@@ -252,7 +252,6 @@ void generate_jnz_opcode_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     global_timer.end("generate jnz_opcode base trace");
@@ -578,7 +577,6 @@ void generate_jnz_opcode_interaction_traces(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -595,7 +593,6 @@ void generate_jnz_opcode_interaction_traces(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // #1 Interaction trace For memory_id_to_big_0 * enabler & opcodes_0
@@ -614,7 +611,6 @@ void generate_jnz_opcode_interaction_traces(
         device_numerator3,
         n_rows
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -631,7 +627,6 @@ void generate_jnz_opcode_interaction_traces(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // #2 Interaction trace For opcodes_1 (with -enabler)
@@ -648,7 +643,6 @@ void generate_jnz_opcode_interaction_traces(
         device_numerator3,
         n_rows
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -665,7 +659,6 @@ void generate_jnz_opcode_interaction_traces(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Compute cumsum_shift.
@@ -678,7 +671,6 @@ void generate_jnz_opcode_interaction_traces(
         device_interaction_traces,
         (m31 *)claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
@@ -689,7 +681,6 @@ void generate_jnz_opcode_interaction_traces(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum((m31 *)interaction_traces[4 * JNZ_OPCODE_N_INTERACTION_TRACE_COLUMNS - 4], trace_size);

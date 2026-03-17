@@ -203,7 +203,6 @@ void pedersen_points_table_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 2: Batch inverse
@@ -219,7 +218,6 @@ void pedersen_points_table_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 4: Compute cumsum shift
@@ -229,7 +227,6 @@ void pedersen_points_table_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 5: Apply shift
@@ -238,7 +235,6 @@ void pedersen_points_table_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 6: Prefix sum

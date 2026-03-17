@@ -2523,7 +2523,6 @@ extern "C" void gen_poseidon_builtin_trace(
     for (int i = 0; i < N_TRACE_COLUMNS; i++) {
         cudaMemset(traces[i], 0, trace_size * sizeof(m31));
     }
-    cudaDeviceSynchronize();
 
     m31** device_lookup_addr2id_0 = clone_to_device<m31*>(lookup_memory_address_to_id_0, 2);
     m31** device_lookup_addr2id_1 = clone_to_device<m31*>(lookup_memory_address_to_id_1, 2);
@@ -2689,7 +2688,6 @@ extern "C" void gen_poseidon_builtin_trace(
         cudaMemset(lookup_base_trace_cols[j], 0, trace_size * sizeof(m31));
     }
 
-    cudaDeviceSynchronize();  // Ensure all memset operations complete before kernel launch
 
     // Clone memory_id_to_big_transposed_big_values to device (array of 8 pointers)
     unsigned** device_transposed_big_values = clone_to_device<unsigned*>(memory_id_to_big_transposed_big_values, 8);
@@ -2764,7 +2762,6 @@ extern "C" void gen_poseidon_builtin_trace(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Cleanup device memory
@@ -2963,7 +2960,6 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
         n_rows, d_denom, d_numerator0, d_numerator1, d_numerator2, d_numerator3,
         0  // Debug column 0
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     batch_inverse_secure_field(d_denom, d_denom_inv, n_rows);
     gen_poseidon_interaction_finalize_col_kernel<<<num_blocks, BLOCK_SIZE>>>(
@@ -2978,7 +2974,6 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
         n_rows, d_denom, d_numerator0, d_numerator1, d_numerator2, d_numerator3,
         1  // Debug column 1
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     batch_inverse_secure_field(d_denom, d_denom_inv, n_rows);
     gen_poseidon_interaction_finalize_col_kernel<<<num_blocks, BLOCK_SIZE>>>(
@@ -3189,14 +3184,12 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
     gen_poseidon_interaction_cumsum_shift_kernel<<<reduction_blocks, BLOCK_SIZE, shared_mem_size>>>(
         N_LOGUP_COLS, n_rows, d_interaction_trace, d_coordinate_sums
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 2: Subtract cumsum_shift from all elements in the last column
     gen_poseidon_interaction_coord_prefix_sum_kernel<<<num_blocks, BLOCK_SIZE>>>(
         d_coordinate_sums, N_LOGUP_COLS, n_rows, d_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 3: Apply inclusive prefix sum on the shifted last logup column
@@ -3208,7 +3201,6 @@ extern "C" void gen_poseidon_builtin_interaction_trace(
     // Step 4: Copy coordinate_sums (claimed_sum) back to host
     cudaMemcpy(claimed_sum, d_coordinate_sums, 4 * sizeof(m31), cudaMemcpyDeviceToHost);
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Cleanup

@@ -1769,7 +1769,6 @@ void generate_blake_compress_opcode_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     global_timer.end("generate blake_compress_opcode base trace");
@@ -2422,7 +2421,6 @@ void generate_blake_compress_opcode_interaction_traces(
             device_numerator0, device_numerator1, device_numerator2, device_numerator3,
             device_interaction_traces
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
     };
 
@@ -2436,7 +2434,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2456,7 +2453,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2476,7 +2472,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2496,7 +2491,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2516,7 +2510,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2536,7 +2529,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2556,7 +2548,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2576,7 +2567,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2596,7 +2586,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2616,7 +2605,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2636,7 +2624,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2656,7 +2643,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2676,7 +2662,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2696,7 +2681,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2716,7 +2700,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2736,7 +2719,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2756,7 +2738,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2776,7 +2757,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2796,7 +2776,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2816,7 +2795,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2836,7 +2814,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2856,7 +2833,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2876,7 +2852,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2896,7 +2871,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2916,7 +2890,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2936,7 +2909,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2956,7 +2928,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2976,7 +2947,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -2996,7 +2966,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3016,7 +2985,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3036,7 +3004,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3056,7 +3023,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3076,7 +3042,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3096,7 +3061,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3116,7 +3080,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3136,7 +3099,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size, device_logup_denom,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3162,7 +3124,6 @@ void generate_blake_compress_opcode_interaction_traces(
             device_numerator3,
             row_offset
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         dump_numerator_data(device_numerator0, device_numerator1, device_numerator2, device_numerator3, trace_size);
@@ -3183,7 +3144,6 @@ void generate_blake_compress_opcode_interaction_traces(
             device_interaction_traces,
             (m31 *)claimed_sum
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         blake_compress_interaction_coord_prefix_sum_kernel<<<num_blocks, block_dim>>>(
@@ -3192,7 +3152,6 @@ void generate_blake_compress_opcode_interaction_traces(
             trace_size,
             device_interaction_traces
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         inclusive_prefix_sum(interaction_trace[4 * BLAKE_COMPRESS_OPCODE_N_INTERACTION_TRACE_COLUMNS - 4], trace_size);

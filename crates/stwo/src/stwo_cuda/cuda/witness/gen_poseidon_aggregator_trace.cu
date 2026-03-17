@@ -1465,31 +1465,25 @@ __global__ void posagg_it_coord_prefix_sum(
     posagg_it_add_kernel<N0, N1><<<num_blocks, block_dim>>>( \
         d_lookup, r0, d0, r1, d1, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     posagg_it_finalize_kernel<<<num_blocks, block_dim>>>(col, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 #define POSAGG_IT_PROCESS_SUB_D1D0(col, N0, N1, r0, d0, r1, d1) \
     posagg_it_sub_d1d0_kernel<N0, N1><<<num_blocks, block_dim>>>( \
         d_lookup, r0, d0, r1, d1, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     posagg_it_finalize_kernel<<<num_blocks, block_dim>>>(col, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 #define POSAGG_IT_PROCESS_SUB_D0D1(col, N0, N1, r0, d0, r1, d1) \
     posagg_it_sub_d0d1_kernel<N0, N1><<<num_blocks, block_dim>>>( \
         d_lookup, r0, d0, r1, d1, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     posagg_it_finalize_kernel<<<num_blocks, block_dim>>>(col, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 // ============================================================================
 // C wrapper: gen_poseidon_aggregator_trace (base trace)
@@ -1656,7 +1650,6 @@ extern "C" void gen_poseidon_aggregator_trace(
         n_rows,
         trace_size
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Cleanup device pointer arrays
     cuda_free_memory(d_traces);
@@ -1844,11 +1837,9 @@ extern "C" void gen_poseidon_aggregator_interaction_trace(
     posagg_it_mult_kernel<29, 6><<<num_blocks, block_dim>>>(
         d_lookup, relid_mem, d_mem_5, relid_agg, d_agg_0, mults, trace_size,
         device_logup_denom, numer0, numer1, numer2, numer3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     posagg_it_finalize_kernel<<<num_blocks, block_dim>>>(13, trace_size, denom_inv,
         numer0, numer1, numer2, numer3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // 6. Finalization
     cudaMemset(claimed_sum, 0, 4 * sizeof(m31));
@@ -1856,11 +1847,9 @@ extern "C" void gen_poseidon_aggregator_interaction_trace(
     size_t shared_size = 4 * block_dim * sizeof(m31);
     posagg_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
         AGG_N_LOGUP_COLS, trace_size, device_it, (m31*)claimed_sum);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     posagg_it_coord_prefix_sum<<<num_blocks, block_dim>>>(
         (m31*)claimed_sum, AGG_N_LOGUP_COLS, trace_size, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Inclusive prefix sum on last 4 interaction columns
     m31** it_cols = (m31**)interaction_trace_columns;

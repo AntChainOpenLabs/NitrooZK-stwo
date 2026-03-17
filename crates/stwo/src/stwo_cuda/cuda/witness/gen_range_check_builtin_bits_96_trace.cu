@@ -191,7 +191,6 @@ void generate_range_check_builtin_bits_96_traces(
     );
 
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Free device memory
@@ -469,7 +468,6 @@ void generate_range_check_builtin_bits_96_interaction_traces(
             device_numerator0, device_numerator1, device_numerator2, device_numerator3,
             device_interaction_trace
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
     };
 
@@ -480,7 +478,6 @@ void generate_range_check_builtin_bits_96_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(0);
 
@@ -491,7 +488,6 @@ void generate_range_check_builtin_bits_96_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     launch_finalize(1);
 
@@ -501,13 +497,11 @@ void generate_range_check_builtin_bits_96_interaction_traces(
     generate_range_check_96_interaction_cumsum_shift_kernel<<<num_blocks, block_dim_val, shared_mem_size>>>(
         last_index, trace_size, device_interaction_trace, device_coordinate_sums
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     generate_range_check_96_interaction_coord_prefix_sum_kernel<<<num_blocks, block_dim_val>>>(
         device_coordinate_sums, last_index, trace_size, device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Apply inclusive_prefix_sum only to the last 4 columns

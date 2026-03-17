@@ -150,7 +150,6 @@ extern "C" void gen_pedersen_builtin_narrow_trace(
         n_rows,
         trace_size
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 }
 
 // ============================================================================
@@ -318,11 +317,9 @@ __global__ void ped_nrw_it_coord_prefix_sum(
     ped_nrw_it_add_pair_kernel<N1, N2><<<num_blocks, block_dim>>>( \
         d_lookup, d0_ptrs, d1_ptrs, trace_size, \
         device_logup_denom, numer0, numer1, numer2, numer3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     ped_nrw_it_finalize_col_kernel<<<num_blocks, block_dim>>>(col_idx, trace_size, denom_inv, \
         numer0, numer1, numer2, numer3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 extern "C" void gen_pedersen_builtin_narrow_interaction_trace(
     void* lookup_elements,
@@ -372,11 +369,9 @@ extern "C" void gen_pedersen_builtin_narrow_interaction_trace(
     size_t shared_size = 4 * block_dim * sizeof(m31);
     ped_nrw_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
         PED_NRW_N_LOGUP_COLUMNS, trace_size, device_it, claimed_sum);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     ped_nrw_it_coord_prefix_sum<<<num_blocks, block_dim>>>(
         claimed_sum, PED_NRW_N_LOGUP_COLUMNS, trace_size, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Inclusive prefix sum on last 4 columns
     inclusive_prefix_sum(interaction_trace_columns[4 * PED_NRW_N_LOGUP_COLUMNS - 4], trace_size);

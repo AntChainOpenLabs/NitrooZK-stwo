@@ -395,7 +395,6 @@ void generate_call_opcode_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     global_timer.end("generate call_opcode base trace");
@@ -737,7 +736,6 @@ void generate_call_opcode_interaction_traces(
         device_numerator3
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -755,7 +753,6 @@ void generate_call_opcode_interaction_traces(
         device_interaction_trace
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // #1 Interaction trace: memory_id_to_big_0 + memory_address_to_id_1
@@ -776,7 +773,6 @@ void generate_call_opcode_interaction_traces(
         device_numerator3
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -794,7 +790,6 @@ void generate_call_opcode_interaction_traces(
         device_interaction_trace
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // #2 Interaction trace: memory_id_to_big_1 + memory_address_to_id_2
@@ -815,7 +810,6 @@ void generate_call_opcode_interaction_traces(
         device_numerator3
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -833,7 +827,6 @@ void generate_call_opcode_interaction_traces(
         device_interaction_trace
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // #3 Interaction trace: memory_id_to_big_2 * enabler + opcodes_0
@@ -855,7 +848,6 @@ void generate_call_opcode_interaction_traces(
         n_rows
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -873,7 +865,6 @@ void generate_call_opcode_interaction_traces(
         device_interaction_trace
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // #4 Interaction trace: -1 * enabler / opcodes_1
@@ -893,7 +884,6 @@ void generate_call_opcode_interaction_traces(
         n_rows
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
@@ -911,7 +901,6 @@ void generate_call_opcode_interaction_traces(
         device_interaction_trace
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Compute cumsum_shift
@@ -924,7 +913,6 @@ void generate_call_opcode_interaction_traces(
         device_interaction_trace,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     block_dim = trace_size < THREAD_COUNT_MAX ? trace_size : THREAD_COUNT_MAX;
@@ -935,7 +923,6 @@ void generate_call_opcode_interaction_traces(
         trace_size,
         device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     inclusive_prefix_sum(interaction_trace[4 * CALL_OPCODE_N_INTERACTION_TRACE_COLUMNS - 4], trace_size);

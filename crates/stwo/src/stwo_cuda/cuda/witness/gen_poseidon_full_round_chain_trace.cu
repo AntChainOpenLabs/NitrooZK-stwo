@@ -412,7 +412,6 @@ extern "C" void poseidon_full_round_chain_generate_trace(
         d_round_keys
     );
 
-    cudaDeviceSynchronize();
 
     // Cleanup
     cuda_mem_pool_free(d_state_0);
@@ -582,7 +581,6 @@ extern "C" void poseidon_full_round_chain_compute_rc_inputs(
         d_output_arrays
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(d_trace_columns);
@@ -1037,11 +1035,9 @@ extern "C" void poseidon_full_round_chain_generate_interaction_trace(
         d_cube_252, d_poseidon_round_keys, d_range_check_3_3_3_3_3, d_poseidon_full_round_chain,
         denom_ptr, numerator0, numerator1, numerator2, numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 2: Batch inverse on denominators
     batch_inverse_secure_field(denom_ptr, denom_inv, n_fractions);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 3: Finalize with accumulation
     poseidon_full_round_chain_finalize_interaction_kernel<<<grid_size, block_size>>>(
@@ -1050,7 +1046,6 @@ extern "C" void poseidon_full_round_chain_generate_interaction_trace(
         numerator0, numerator1, numerator2, numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 4: Compute cumulative sum (for claimed_sum)
     m31* d_coordinate_sums;
@@ -1066,7 +1061,6 @@ extern "C" void poseidon_full_round_chain_generate_interaction_trace(
         device_interaction_traces,
         d_coordinate_sums
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Read claimed_sum from device and write to device output pointer
     m31 h_sums[4];
@@ -1080,7 +1074,6 @@ extern "C" void poseidon_full_round_chain_generate_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Phase 6: Inclusive prefix sum on last column (columns 20-23)
     int last_base_col = (POSEIDON_FRC_N_LOGUP_COLS - 1) * 4;

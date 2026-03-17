@@ -497,7 +497,6 @@ void generate_bitwise_builtin_traces(
     );
 
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Free device memory
     cuda_free_memory(device_traces);
@@ -1084,7 +1083,6 @@ void generate_bitwise_builtin_interaction_traces(
             device_numerator0, device_numerator1, device_numerator2, device_numerator3,
             device_interaction_trace
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
     };
 
@@ -1105,7 +1103,6 @@ void generate_bitwise_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     launch_finalize(0);
 
     // Column 1: pair(memory_address_to_id_1, memory_id_to_big_1)
@@ -1115,7 +1112,6 @@ void generate_bitwise_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     launch_finalize(1);
 
     // Columns 2-14: xor_9 pairs
@@ -1136,7 +1132,6 @@ void generate_bitwise_builtin_interaction_traces(
             trace_size, denom_ptr,
             device_numerator0, device_numerator1, device_numerator2, device_numerator3
         );
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         launch_finalize(2 + p);
     }
 
@@ -1147,7 +1142,6 @@ void generate_bitwise_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     launch_finalize(15);
 
     // Column 16: pair(memory_address_to_id_2, memory_id_to_big_2)
@@ -1157,7 +1151,6 @@ void generate_bitwise_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     launch_finalize(16);
 
     // Column 17: pair(memory_address_to_id_3, memory_id_to_big_3)
@@ -1167,7 +1160,6 @@ void generate_bitwise_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     launch_finalize(17);
 
     // Column 18: pair(memory_address_to_id_4, memory_id_to_big_4)
@@ -1177,7 +1169,6 @@ void generate_bitwise_builtin_interaction_traces(
         trace_size, denom_ptr,
         device_numerator0, device_numerator1, device_numerator2, device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     launch_finalize(18);
 
     // Compute cumsum_shift and apply coord_prefix_sum
@@ -1186,13 +1177,11 @@ void generate_bitwise_builtin_interaction_traces(
     generate_bitwise_builtin_interaction_cumsum_shift_kernel<<<num_blocks, block_dim_val, shared_mem_size>>>(
         last_index, trace_size, device_interaction_trace, device_coordinate_sums
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     generate_bitwise_builtin_interaction_coord_prefix_sum_kernel<<<num_blocks, block_dim_val>>>(
         device_coordinate_sums, last_index, trace_size, device_interaction_trace
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Apply inclusive_prefix_sum only to the last 4 columns

@@ -820,7 +820,6 @@ extern "C" void gen_partial_ec_mul_wb9_trace(
     int grid_size = (trace_size + WB9_BLOCK_SIZE - 1) / WB9_BLOCK_SIZE;
     wb9_trace_kernel<<<grid_size, WB9_BLOCK_SIZE>>>();
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Cleanup device pointer arrays
     cuda_free_memory(d_traces);
@@ -1077,11 +1076,9 @@ __global__ void wb9_it_coord_prefix_sum(
     wb9_it_col_gen_kernel<N1, N2><<<num_blocks, block_dim>>>( \
         elem1, elem2, lookup1, lookup2, trace_size, \
         device_logup_denom, numerator0, numerator1, numerator2, numerator3); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize()); \
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size); \
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col_idx, trace_size, denom_inv, \
         numerator0, numerator1, numerator2, numerator3, device_it); \
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
 // ============================================================================
 // Interaction trace type aliases for wb9
@@ -1253,11 +1250,9 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     wb9_it_col_gen_kernel<57, 2><<<num_blocks, block_dim>>>(
         d_ppt, d_rc99[0], &d_lk_ppt[1], &d_lk_rc99[0][1], trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Col 1: (Rc99(1,0), Rc99(2,0))
     WB9_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][1], &d_lk_rc99[2][1], 2, 2);
@@ -1275,11 +1270,9 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     wb9_it_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
         d_rc99[5], d_rc20[0], &d_lk_rc99[5][4], &d_lk_rc20[0][1], trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Col 8: (Rc20(1,0), Rc20(2,0))
     WB9_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][1], &d_lk_rc20[2][1], 1, 1);
@@ -1312,11 +1305,9 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     wb9_it_col_gen_kernel<1, 2><<<num_blocks, block_dim>>>(
         d_rc20[3], d_rc99[0], &d_lk_rc20[3][7], &d_lk_rc99[0][7], trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Col 22: (Rc99(1,2), Rc99(2,2))
     WB9_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][7], &d_lk_rc99[2][7], 2, 2);
@@ -1335,11 +1326,9 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     wb9_it_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
         d_rc99[5], d_rc20[0], &d_lk_rc99[5][10], &d_lk_rc20[0][9], trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Col 29: (Rc20(1,4), Rc20(2,4))
     WB9_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][9], &d_lk_rc20[2][9], 1, 1);
@@ -1372,11 +1361,9 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     wb9_it_col_gen_kernel<1, 2><<<num_blocks, block_dim>>>(
         d_rc20[3], d_rc99[0], &d_lk_rc20[3][15], &d_lk_rc99[0][13], trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Col 43: (Rc99(1,4), Rc99(2,4))
     WB9_PROCESS_COL(col++, d_rc99[1], d_rc99[2], &d_lk_rc99[1][13], &d_lk_rc99[2][13], 2, 2);
@@ -1395,11 +1382,9 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     wb9_it_col_gen_kernel<2, 1><<<num_blocks, block_dim>>>(
         d_rc99[5], d_rc20[0], &d_lk_rc99[5][16], &d_lk_rc20[0][17], trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Col 50: (Rc20(1,8), Rc20(2,8))
     WB9_PROCESS_COL(col++, d_rc20[1], d_rc20[2], &d_lk_rc20[1][17], &d_lk_rc20[2][17], 1, 1);
@@ -1432,21 +1417,17 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     wb9_it_enabler_col_gen_kernel<1, 86><<<num_blocks, block_dim>>>(
         d_rc20[3], d_pem, &d_lk_rc20[3][23], &d_lk_pem_0[1], n_rows, trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Col 64: NEG_ENABLER -- (Pem1)  frac = -en / d
     wb9_it_neg_enabler_col_gen_kernel<86><<<num_blocks, block_dim>>>(
         d_pem, &d_lk_pem_1[1], n_rows, trace_size,
         device_logup_denom, numerator0, numerator1, numerator2, numerator3);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     batch_inverse_secure_field(device_logup_denom, denom_inv, trace_size);
     wb9_it_finalize_col_kernel<<<num_blocks_fin, block_dim_fin>>>(col++, trace_size, denom_inv,
         numerator0, numerator1, numerator2, numerator3, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // ========================================================================
     // Finalize: cumsum shift + prefix sum
@@ -1457,11 +1438,9 @@ extern "C" void gen_partial_ec_mul_wb9_interaction_trace(
     size_t shared_size = 4 * block_dim * sizeof(m31);
     wb9_it_cumsum_shift<<<num_blocks, block_dim, shared_size>>>(
         PEM_WB9_N_LOGUP_COLUMNS, trace_size, device_it, claimed_sum);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     wb9_it_coord_prefix_sum<<<num_blocks, block_dim>>>(
         claimed_sum, PEM_WB9_N_LOGUP_COLUMNS, trace_size, device_it);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
     // Inclusive prefix sum on last 4 columns
     inclusive_prefix_sum(interaction_trace_columns[4 * PEM_WB9_N_LOGUP_COLUMNS - 4], trace_size);

@@ -60,7 +60,6 @@ void memory_address_to_id_add_inputs(
         mults_row_log_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     cuda_free_memory(device_inputs);
@@ -206,7 +205,6 @@ void generate_memory_address_to_id_traces(
         trace_size
     );
 
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Generate interaction trace if needed
@@ -226,7 +224,6 @@ void generate_memory_address_to_id_traces(
             device_lookup_elements
         );
 
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
         cuda_free_memory(device_interaction_traces);
@@ -483,7 +480,6 @@ void memory_address_to_id_generate_interaction_trace(
         device_numerator2,
         device_numerator3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 2: Batch inverse all denominators
@@ -499,7 +495,6 @@ void memory_address_to_id_generate_interaction_trace(
         device_numerator3,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 4: Compute claimed_sum via parallel reduction (sum last column)
@@ -509,7 +504,6 @@ void memory_address_to_id_generate_interaction_trace(
         device_interaction_traces,
         claimed_sum
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 5: Apply cumsum shift to the LAST column (28-31)
@@ -518,7 +512,6 @@ void memory_address_to_id_generate_interaction_trace(
         trace_size,
         device_interaction_traces
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
     // Step 6: Apply inclusive prefix sum ONLY to the LAST column (28-31)
