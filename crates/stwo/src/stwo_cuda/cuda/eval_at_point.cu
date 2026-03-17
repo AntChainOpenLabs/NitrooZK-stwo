@@ -405,7 +405,9 @@ void batch_eval_at_points(
 
     // Copy all results from device to host at once
     // Results are contiguous: temp[last_offset], temp[last_offset+1], ..., temp[last_offset+num_polys-1]
-    ASSERT_CUDA_SUCCESS(cudaMemcpy(results, &temp[last_offset], sizeof(qm31) * num_polys, cudaMemcpyDeviceToHost));
+    // Async D2H + stream sync (avoids implicit full-device sync from cudaMemcpy).
+    ASSERT_CUDA_SUCCESS(cudaMemcpyAsync(results, &temp[last_offset], sizeof(qm31) * num_polys, cudaMemcpyDeviceToHost, 0));
+    cudaStreamSynchronize(0);
 
     // 8. Cleanup
     cuda_free_memory(temp);
