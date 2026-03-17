@@ -47,9 +47,7 @@ void fold_line(m31 *gpu_domain, uint32_t twiddle_offset, uint32_t n, m31 **eval_
         folded_values_device
     );
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
+    // No sync: stream ordering ensures kernel completes before async frees.
     cuda_free_memory(eval_values_device);
     cuda_free_memory(folded_values_device);
 }

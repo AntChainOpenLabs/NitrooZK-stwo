@@ -17,8 +17,7 @@ void fix_first_variable_base_field(m31 *evals, int evals_size, qm31 assignment, 
     int num_blocks = ((evals_size >> 1) + block_size - 1) / block_size;
     fix_first_variable_kernel<<<num_blocks, block_size>>>(evals, evals_size, assignment, output_evals);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    // No sync: output consumed by subsequent stream-ordered operations.
 }
 
 void fix_first_variable_secure_field(qm31 *evals, int evals_size, qm31 assignment, qm31* output_evals) {
@@ -26,6 +25,6 @@ void fix_first_variable_secure_field(qm31 *evals, int evals_size, qm31 assignmen
     int num_blocks = ((evals_size >> 1) + block_size - 1) / block_size;
     fix_first_variable_kernel<<<num_blocks, block_size>>>(evals, evals_size, assignment, output_evals);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // No sync: output consumed by subsequent stream-ordered operations.
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }

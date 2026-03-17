@@ -21,7 +21,7 @@ void bit_reverse_base_field(m31 *array, int size) {
     int num_blocks = (size + block_size - 1) / block_size;
     bit_reverse_generic<<<num_blocks, block_size>>>(array, size, bits);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // No sync: in-place transform, stream ordering handles dependencies.
 }
 
 
@@ -31,5 +31,5 @@ void bit_reverse_secure_field(qm31 *array, int size) {
     int num_blocks = (size + block_size - 1) / block_size;
     bit_reverse_generic<<<num_blocks, block_size>>>(array, size, bits);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // No sync: in-place transform, stream ordering handles dependencies.
 }

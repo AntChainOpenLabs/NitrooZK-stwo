@@ -227,9 +227,8 @@ void accumulate_numerators_batch(
         num_coeffs,
         result_0, result_1, result_2, result_3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
+    // No sync: stream ordering ensures kernel completes before async frees take effect.
     cuda_free_memory(line_coeffs_b_device);
     cuda_free_memory(line_coeffs_c_device);
     cuda_free_memory(column_indices_device);
@@ -318,9 +317,8 @@ void compute_quotients_and_combine(
         sample_points_device,
         result_0, result_1, result_2, result_3
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
+    // No sync: stream ordering ensures kernel completes before async frees.
     cuda_free_memory(acc_partial_columns_device);
     cuda_free_memory(acc_log_sizes_device);
     cuda_free_memory(first_linear_term_accs_device);
@@ -385,8 +383,8 @@ void accumulate_quotients(
             flattened_line_coeffs_device,
             line_coeffs_sizes_device
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    // No sync: next kernel on same stream reads this kernel's output.
 
     // TODO: set to 1024
     int block_dim = 512;
@@ -409,9 +407,8 @@ void accumulate_quotients(
             line_coeffs_sizes_device,
             denominator_inverses
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
+    // No sync: async frees are stream-ordered after kernel completion.
     free(sample_batches);
     cuda_free_memory(sample_batches_device);
     cuda_free_memory(denominator_inverses);

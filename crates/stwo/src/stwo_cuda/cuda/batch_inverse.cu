@@ -171,8 +171,7 @@ void batch_inverse_base_field(m31 *from, m31 *dst, int size) {
 
     batch_inverse_base_field_kernel<<<num_blocks, block_size, shared_memory_bytes>>>(from, dst, size, log_size);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    // No sync: output consumed by subsequent stream-ordered operations.
 }
 
 void batch_inverse_secure_field(qm31 *from, qm31 *dst, int size) {
@@ -187,8 +186,7 @@ void batch_inverse_secure_field(qm31 *from, qm31 *dst, int size) {
         int num_blocks = (size + block_size - 1) / block_size;
         batch_inverse_secure_field_simple_kernel<<<num_blocks, block_size>>>(from, dst, size);
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-        ASSERT_CUDA_SUCCESS(cudaGetLastError());
+        // No sync: output consumed by subsequent stream-ordered operations.
         return;
     }
 
@@ -199,6 +197,5 @@ void batch_inverse_secure_field(qm31 *from, qm31 *dst, int size) {
 
     batch_inverse_secure_field_kernel<<<num_blocks, block_size, shared_memory_bytes>>>(from, dst, size, log_size);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    // No sync: output consumed by subsequent stream-ordered operations.
 }
