@@ -50,8 +50,9 @@ T* cuda_mem_pool_allocate(size_t count) {
         return ptr;
     }
 
-    // Synchronize to ensure allocation is complete
-    cudaStreamSynchronize(0);
+    // No sync needed: cudaMallocFromPoolAsync on stream 0 is ordered with
+    // subsequent kernel launches on the same stream. The pointer is valid for
+    // any operation enqueued after this call on stream 0.
 
     return ptr;
 }
@@ -62,7 +63,7 @@ T* cuda_mem_pool_allocate_zeroes(size_t count) {
     T* ptr = cuda_mem_pool_allocate<T>(count);
     if (ptr != nullptr) {
         cudaMemsetAsync(ptr, 0, sizeof(T) * count, 0);
-        cudaStreamSynchronize(0);
+        // No sync needed: memset is ordered on stream 0 with subsequent operations.
     }
     return ptr;
 }
@@ -74,8 +75,9 @@ void cuda_mem_pool_free(T* ptr) {
         if (!g_mem_pool_initialized || g_mem_pool == nullptr) {
             cudaFree(ptr);
         } else {
+            // Async free: stream ordering guarantees the memory won't be reused
+            // until all prior operations on stream 0 have completed.
             cudaFreeAsync(ptr, 0);
-            cudaStreamSynchronize(0);
         }
     }
 }
