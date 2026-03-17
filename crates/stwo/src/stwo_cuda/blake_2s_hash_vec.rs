@@ -100,6 +100,33 @@ impl Blake2sHashVec {
 
         result
     }
+
+    /// Batch get hashes from multiple layers in a single GPU kernel call.
+    /// This replaces N per-layer batch_get calls with one multi-layer call,
+    /// reducing GPU→CPU round-trips from N to 1.
+    pub fn batch_get_multi_layer(
+        layers: &[&Blake2sHashVec],
+        pairs: &[bindings::LayerIndexPair],
+    ) -> Vec<Blake2sHash> {
+        if pairs.is_empty() {
+            return Vec::new();
+        }
+
+        let layer_ptrs: Vec<*const Blake2sHash> =
+            layers.iter().map(|l| l.device_ptr).collect();
+
+        let mut result: Vec<Blake2sHash> = Vec::with_capacity(pairs.len());
+        unsafe {
+            result.set_len(pairs.len());
+            bindings::cuda_multi_layer_batch_get_blake_2s_hash(
+                layer_ptrs.as_ptr(),
+                result.as_mut_ptr(),
+                pairs.as_ptr(),
+                pairs.len() as u32,
+            );
+        }
+        result
+    }
 }
 
 impl Clone for Blake2sHashVec {
