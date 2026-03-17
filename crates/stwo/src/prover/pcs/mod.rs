@@ -69,6 +69,12 @@ impl<'a, B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentSchemeProver<'a,
         self.trees.push(tree);
     }
 
+    /// Push a pre-built commitment tree (cloned from cache) and mix its root.
+    pub fn push_cached_tree(&mut self, tree: CommitmentTreeProver<B, MC>, channel: &mut MC::C) {
+        MC::mix_root(channel, tree.commitment.root());
+        self.trees.push(tree);
+    }
+
     pub fn tree_builder(&mut self) -> TreeBuilder<'_, 'a, B, MC> {
         TreeBuilder {
             tree_index: self.trees.len(),
@@ -391,6 +397,7 @@ impl<B: BackendForChannel<MC>, MC: MerkleChannel> TreeBuilder<'_, '_, B, MC> {
 
 /// Prover data for a single commitment tree in a commitment scheme. The commitment scheme allows to
 /// commit on a set of polynomials at a time. This corresponds to such a set.
+#[derive(Clone)]
 pub struct CommitmentTreeProver<B: BackendForChannel<MC>, MC: MerkleChannel> {
     pub polynomials: ColumnVec<Poly<B>>,
     pub commitment: MerkleProver<B, MC::H>,

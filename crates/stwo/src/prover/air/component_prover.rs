@@ -36,6 +36,7 @@ pub struct Trace<'a, B: Backend> {
 /// A struct for representing a polynomial corresponding to a trace column.
 /// A polynomial is defined by it's evaluations on a circle domain of size at least it's degree,
 /// and optionally its coefficients in the FFT basis.
+#[derive(Clone)]
 pub struct Poly<B: Backend> {
     pub coeffs: Option<CircleCoefficients<B>>,
     pub evals: CircleEvaluation<B, BaseField, BitReversedOrder>,

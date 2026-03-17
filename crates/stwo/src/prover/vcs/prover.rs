@@ -14,6 +14,7 @@ use crate::core::vcs::verifier::{
 use crate::core::vcs::MerkleHasher;
 use crate::prover::backend::{Col, Column};
 
+#[derive(Clone)]
 pub struct MerkleProver<B: MerkleOps<H>, H: MerkleHasher> {
     /// Layers of the Merkle tree.
     /// The first layer is the root layer.
