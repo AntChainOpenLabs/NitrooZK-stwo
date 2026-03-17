@@ -72,7 +72,6 @@ void evaluate(int eval_domain_size, m31 *values, m31 *twiddles_tree, int twiddle
     }
 
     rfft_circle_part<<<num_blocks, block_dim>>>(values, twiddles_tree, values_size);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -149,7 +148,6 @@ void evaluate_columns(const int *eval_domain_sizes, m31 **values, m31 *twiddles_
     }
 
     batch_rfft_circle_part<<<grid_dimensions, block_size>>>(device_values, twiddles_tree, number_of_columns, number_of_rows);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     cuda_free_memory(device_values);
 }
@@ -272,7 +270,6 @@ EXTERN void ntt_n2b_nofinal_6_stage_batch(m31** input, m31** output,
     n2b_nofinal_block_batch<log_val_per_thread><<<grid_dim, block_dim, 0>>>(
         input, output, log_n, num_poly, start_stage, end_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 
 }
@@ -301,7 +298,6 @@ EXTERN void ntt_n2b_nofinal_8_stage_batch(m31** input, m31** output,
     n2b_nofinal_block_batch<log_val_per_thread><<<grid_dim, block_dim, 0>>>(
         input, output, log_n, num_poly, start_stage, end_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -409,7 +405,6 @@ EXTERN void ntt_n2b_final_7_stage_batch(m31** input, m31** output,
     n2b_final_warp_batch<log_val_per_thread><<<grid_dim, block_dim, 0>>>(
         input, output, log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -431,7 +426,6 @@ EXTERN void ntt_n2b_final_8_stage_batch(m31** input, m31** output,
     n2b_final_warp_batch<log_val_per_thread><<<grid_dim, block_dim, 0>>>(
         input, output, log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -583,7 +577,6 @@ EXTERN void ntt_n2b_final_10_stage_batch(m31** input, m31** output,
     n2b_final_block_warp_batch<log_warp_per_block><<<grid_dim, block_dim>>>(
         input, output, log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -603,7 +596,6 @@ EXTERN void ntt_n2b_final_11_stage_batch(m31** input, m31** output,
     n2b_final_block_warp_batch<log_warp_per_block><<<grid_dim, block_dim>>>(
         input, output,  log_n, num_poly, start_stage, g_twiddles);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -672,8 +664,6 @@ EXTERN void ntt_n2b_native_batch(m31** value,
     }
     if (end_stage == log_n) {
         ntt_n2b_stage_batch<<<grid_dim, block_dim, 0>>>(device_values, device_values, log_n, log_n, g_twiddles);
-        ASSERT_CUDA_SUCCESS(cudaGetLastError());
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
     }
     cuda_free_memory(device_values);
