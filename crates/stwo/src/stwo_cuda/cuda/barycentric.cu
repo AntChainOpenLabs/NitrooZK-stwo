@@ -164,8 +164,8 @@ void barycentric_weights_cuda(
         vn_p, p_x, p_y, exp_val,
         denom, result
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    // No sync: batch_inverse on same stream reads denom after this kernel.
 
     // Step 2: Batch inverse of denominators
     batch_inverse_secure_field(denom, inv_denom, domain_size);
@@ -174,10 +174,8 @@ void barycentric_weights_cuda(
     barycentric_assemble_kernel<<<num_blocks, block_dim>>>(
         result, inv_denom, domain_size
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
-    // Cleanup
+    // No sync: async frees are stream-ordered.
     cuda_free_memory(denom);
     cuda_free_memory(inv_denom);
 }

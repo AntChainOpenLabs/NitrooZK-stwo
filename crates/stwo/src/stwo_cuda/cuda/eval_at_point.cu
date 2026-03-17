@@ -141,7 +141,7 @@ qm31 eval_at_point(m31 *coeffs, int coeffs_size, qm31 point_x, qm31 point_y) {
     eval_at_point_first_pass<<<num_blocks, block_dim, shared_memory_bytes>>>(coeffs, temp, device_mappings, coeffs_size,
                                                                              log_coeffs_size, output_offset);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // No sync: next pass on same stream reads this output.
 
     // Second pass
     int mappings_offset = log_coeffs_size - 1;
@@ -155,16 +155,13 @@ qm31 eval_at_point(m31 *coeffs, int coeffs_size, qm31 point_x, qm31 point_y) {
                                                                                       mappings_offset, level_offset,
                                                                                       output_offset);
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+        // No sync: stream ordering handles inter-pass dependencies.
         num_blocks = new_num_blocks;
         level_offset = output_offset;
     }
 
     qm31 result = qm31{cm31{0, 0}, cm31{0, 1}};
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
-    ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
+    // cudaMemcpy D2H below acts as implicit sync.
     cuda_mem_copy_device_to_host<qm31>(temp, &result, 1);
 
     cuda_free_memory(temp);
@@ -380,9 +377,8 @@ void batch_eval_at_points(
         coeffs_ptrs, temp, device_mappings, coeffs_size, log_coeffs_size, level_sizes[0]
     );
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
 
-    // 6. Reduction passes
+    // 6. Reduction passes (stream ordering handles inter-pass dependencies)
     int mappings_offset = log_coeffs_size - 1;
     int current_num_blocks = first_num_blocks;
 
@@ -400,7 +396,6 @@ void batch_eval_at_points(
             level_offsets[lvl]      // output offset
         );
         ASSERT_CUDA_SUCCESS(cudaGetLastError());
-        ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
         current_num_blocks = new_num_blocks;
     }
 

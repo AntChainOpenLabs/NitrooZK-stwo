@@ -19,9 +19,8 @@ void accumulate(int size, m31 **left_columns, m31 **right_columns) {
     int block_dim = 1024;
     int num_blocks = (size + block_dim - 1) / block_dim;
     accumulate_kernel<<<num_blocks, block_dim>>>(size, left_columns_device, right_columns_device);
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-
+    // No sync: stream ordering + async free.
     cuda_free_memory(left_columns_device);
     cuda_free_memory(right_columns_device);
 }
@@ -59,6 +58,6 @@ void lift_and_accumulate(
         curr_0, curr_1, curr_2, curr_3,
         log_ratio
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
+    // No sync: stream ordering handles dependencies.
 }
