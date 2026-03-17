@@ -267,7 +267,7 @@ void blake2s_lifted_build_next_layer(
     blake2s_lifted_build_next_layer_kernel<<<num_blocks, block_dim>>>(
         size, prev_layer, result, is_m31_output
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // cudaDeviceSynchronize removed: stream-ordered ops handle dependencies
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -355,7 +355,7 @@ void blake2s_lift_states(
     blake2s_lift_states_kernel<<<num_blocks, block_dim>>>(
         prev_states, next_states, next_size, log_ratio
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // cudaDeviceSynchronize removed: stream-ordered ops handle dependencies
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     *next_states_out = (void*)next_states;
 }
@@ -372,7 +372,7 @@ void blake2s_update_columns(
     blake2s_update_columns_kernel<<<num_blocks, block_dim>>>(
         states, size, column_ptrs_device, num_columns
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // cudaDeviceSynchronize removed: stream-ordered ops handle dependencies
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
     cuda_free_memory(column_ptrs_device);
 }
@@ -388,7 +388,7 @@ void blake2s_finalize_all(
     blake2s_finalize_all_kernel<<<num_blocks, block_dim>>>(
         states, output, size, is_m31_output
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // cudaDeviceSynchronize removed: stream-ordered ops handle dependencies
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -447,7 +447,7 @@ void blake2s_build_leaves_fused(
     blake2s_build_leaves_fused_kernel<<<num_blocks, block_dim>>>(
         size, number_of_columns, device_columns, result, is_m31_output
     );
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // cudaDeviceSynchronize removed: stream-ordered ops handle dependencies
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 
@@ -467,7 +467,7 @@ void commit_on_first_layer(
     commit_on_first_layer_in_gpu<<<number_of_blocks_for(size), BLOCK_SIZE>>>(
         size, number_of_columns, device_columns, result);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // cudaDeviceSynchronize removed: stream-ordered ops handle dependencies
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
 void commit_on_layer_with_previous(
@@ -480,6 +480,6 @@ void commit_on_layer_with_previous(
     commit_on_layer_using_previous_in_gpu<<<number_of_blocks_for(size), BLOCK_SIZE>>>(
         size, number_of_columns, device_columns, previous_layer, result);
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
-    ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+    // cudaDeviceSynchronize removed: stream-ordered ops handle dependencies
     ASSERT_CUDA_SUCCESS(cudaGetLastError());
 }
