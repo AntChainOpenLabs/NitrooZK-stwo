@@ -733,11 +733,11 @@ extern "C" void gen_partial_ec_mul_wb18_trace(
     // Increase stack size for the kernel.
     // The kernel uses large local arrays (schoolbook ~3KB) plus deep call stacks
     // for Felt252 field operations (inverse requires many multiplications).
-    size_t prev_stack_size = 0;
-    cudaDeviceGetLimit(&prev_stack_size, cudaLimitStackSize);
-    size_t needed_stack = 32768;
-    if (prev_stack_size < needed_stack) {
-        cudaDeviceSetLimit(cudaLimitStackSize, needed_stack);
+    // Stack size: set once, skip on subsequent calls (avoids device sync).
+    static bool stack_set = false;
+    if (!stack_set) {
+        cudaDeviceSetLimit(cudaLimitStackSize, 32768);
+        stack_set = true;
     }
 
     // Copy all host pointer arrays to device
@@ -838,9 +838,7 @@ extern "C" void gen_partial_ec_mul_wb18_trace(
     }
 
     // Restore stack size
-    if (prev_stack_size < needed_stack) {
-        cudaDeviceSetLimit(cudaLimitStackSize, prev_stack_size);
-    }
+    // Stack restore removed — keep 32KB permanently.
 }
 
 // ============================================================================

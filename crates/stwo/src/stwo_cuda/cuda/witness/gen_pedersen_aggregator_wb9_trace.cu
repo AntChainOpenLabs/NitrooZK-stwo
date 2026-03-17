@@ -636,11 +636,11 @@ extern "C" void gen_pedersen_aggregator_wb9_trace(
     // Each thread performs 56 EC point additions (28 per chain), each requiring
     // a Felt252 field inversion. The inverse function uses deep recursion with
     // large local state, so we need a generous stack.
-    size_t prev_stack_size = 0;
-    cudaDeviceGetLimit(&prev_stack_size, cudaLimitStackSize);
-    size_t needed_stack = 32768;
-    if (prev_stack_size < needed_stack) {
-        cudaDeviceSetLimit(cudaLimitStackSize, needed_stack);
+    // Stack size: set once, skip on subsequent calls (avoids device sync).
+    static bool stack_set = false;
+    if (!stack_set) {
+        cudaDeviceSetLimit(cudaLimitStackSize, 32768);
+        stack_set = true;
     }
 
     // Clone all host pointer arrays to device
@@ -716,10 +716,7 @@ extern "C" void gen_pedersen_aggregator_wb9_trace(
     cuda_free_memory(d_sub_rc8);
     cuda_free_memory(d_sub_pem);
 
-    // Restore stack size
-    if (prev_stack_size < needed_stack) {
-        cudaDeviceSetLimit(cudaLimitStackSize, prev_stack_size);
-    }
+    // Stack restore removed — keep 32KB permanently.
 }
 
 // ============================================================================
