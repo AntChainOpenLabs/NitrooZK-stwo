@@ -397,10 +397,22 @@ impl<B: BackendForChannel<MC>, MC: MerkleChannel> TreeBuilder<'_, '_, B, MC> {
 
 /// Prover data for a single commitment tree in a commitment scheme. The commitment scheme allows to
 /// commit on a set of polynomials at a time. This corresponds to such a set.
-#[derive(Clone)]
 pub struct CommitmentTreeProver<B: BackendForChannel<MC>, MC: MerkleChannel> {
     pub polynomials: ColumnVec<Poly<B>>,
     pub commitment: MerkleProver<B, MC::H>,
+}
+
+impl<B: BackendForChannel<MC>, MC: MerkleChannel> Clone for CommitmentTreeProver<B, MC>
+where
+    Poly<B>: Clone,
+    MerkleProver<B, MC::H>: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            polynomials: self.polynomials.clone(),
+            commitment: self.commitment.clone(),
+        }
+    }
 }
 
 impl<B: BackendForChannel<MC>, MC: MerkleChannel> CommitmentTreeProver<B, MC> {
