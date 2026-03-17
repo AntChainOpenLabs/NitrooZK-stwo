@@ -227,7 +227,11 @@ T* cuda_malloc(unsigned int size) {
 
 template<typename T>
 void cuda_mem_copy_host_to_device(T* host_data, T* device_data, unsigned int data_size) {
-    cudaError_t err = cudaMemcpy(device_data, host_data, sizeof(T) * data_size, cudaMemcpyHostToDevice);
+    // Use cudaMemcpyAsync to avoid implicit cudaDeviceSynchronize that cudaMemcpy causes.
+    // With pageable host memory, the async call still synchronizes stream 0 but returns
+    // to the CPU after staging the copy (DMA may still be in-flight).
+    // This is faster than cudaMemcpy which blocks until DMA completes.
+    cudaError_t err = cudaMemcpyAsync(device_data, host_data, sizeof(T) * data_size, cudaMemcpyHostToDevice, 0);
     if (err != cudaSuccess) {
         printf("Error copying memory: %s\n", cudaGetErrorString(err));
     }
@@ -235,7 +239,8 @@ void cuda_mem_copy_host_to_device(T* host_data, T* device_data, unsigned int dat
 
 template<typename T>
 void cuda_mem_copy_device_to_device(T* device_data_from, T* device_data_to, unsigned int data_size) {
-    cudaError_t err = cudaMemcpy(device_data_to, device_data_from, sizeof(T) * data_size, cudaMemcpyDeviceToDevice);
+    // Async D2D: fully stream-ordered, no host-side sync needed.
+    cudaError_t err = cudaMemcpyAsync(device_data_to, device_data_from, sizeof(T) * data_size, cudaMemcpyDeviceToDevice, 0);
     if (err != cudaSuccess) {
         printf("Error copying memory: %s\n", cudaGetErrorString(err));
     }
@@ -243,7 +248,10 @@ void cuda_mem_copy_device_to_device(T* device_data_from, T* device_data_to, unsi
 
 template<typename T>
 void cuda_mem_copy_device_to_host(T* device_data, T* host_data, unsigned int data_size) {
-    cudaError_t err = cudaMemcpy(host_data, device_data, sizeof(T) * data_size, cudaMemcpyDeviceToHost);
+    // Use cudaMemcpyAsync to avoid implicit cudaDeviceSynchronize.
+    // For D2H with pageable memory, this still blocks until copy completes,
+    // but avoids synchronizing unrelated streams.
+    cudaError_t err = cudaMemcpyAsync(host_data, device_data, sizeof(T) * data_size, cudaMemcpyDeviceToHost, 0);
     if (err != cudaSuccess) {
         printf("Error copying memory: %s\n", cudaGetErrorString(err));
     }
